@@ -129,7 +129,7 @@ The harness emits one JSON **evidence artifact** per measurement (`laas.bucketB.
 | --- | --- |
 | `backtest.py` | reference implementation: estimator, intervals, tolerance lookup, decision logic, evidence emission, CLI |
 | `fixture_backtest.json` | synthetic held-out backtest set (CT2 PASS, CT3 FAIL, CT4 INDETERMINATE) |
-| _(generated)_ `evidence_ct{2,3,4}.json` | evidence artifacts emitted when you run the demo — produced by `backtest.py`, not committed |
+| *(generated)* `evidence_ct{2,3,4}.json` | evidence artifacts emitted when you run the demo — produced by `backtest.py`, not committed |
 | [`backtest-demo.md`](backtest-demo.md) | runnable demonstration + the opa cross-check |
 
 ---

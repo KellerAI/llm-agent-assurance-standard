@@ -36,3 +36,5 @@ and this project adheres to
 - Corrected the LAAS test-suite count from 15 to 19 in `README.md` and clarified the case breakdown in `conformance/laas/README.md` (12 obligation-specific + 3 pass/block/read-only + 4 OSI-adapter golden).
 - Repointed broken `DEMO.md` references in `docs/laas/backtest.md` to the real `backtest-demo.md`; clarified that `evidence_ct{2,3,4}.json` are generated, not committed.
 - Documented the previously-undocumented `error_ids` public output in the `conformance/laas/laas.rego` header comment.
+- Corrected `MD049` emphasis style in `docs/laas/backtest.md` (underscore → asterisk) so the Markdown-lint CI gate passes.
+- Replaced a dead external link in `docs/laas/osi-adapter.md` with plain text; excluded the bot-blocked IEC `electropedia.org` URL from link-checking in `.github/workflows/ci.yml`.

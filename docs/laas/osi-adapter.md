@@ -1,7 +1,7 @@
 # OSI-to-Surface Adapter
 
 The OSI-to-Surface adapter (`scripts/laas/osi_to_surface.py`) converts an
-[Open Semantic Interchange](https://www.osi-standard.org) (OSI) semantic model plus
+Open Semantic Interchange (OSI) semantic model plus
 an action reference into a LAAS `EffectSurface`, then emits a full decision record
 through the canonical emitter. The pipeline is:
 
