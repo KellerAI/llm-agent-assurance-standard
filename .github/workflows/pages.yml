@@ -26,6 +26,33 @@ jobs:
         with:
           enablement: true
 
+      - name: Generate root index
+        run: |
+          cat > docs/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head><meta charset="utf-8"><title>LLM-Agent Assurance Standard (LAAS)</title></head>
+          <body>
+            <h1>LLM-Agent Assurance Standard (LAAS)</h1>
+            <p>Normative spec, OPA enforcement policy, and reference tooling for action-level assurance of autonomous LLM agents.</p>
+            <h2>Standards renderings</h2>
+            <ul>
+              <li><a href="laas/standards/laas-ieee.md">IEEE</a></li>
+              <li><a href="laas/standards/laas-iso.md">ISO</a></li>
+              <li><a href="laas/standards/laas-nist.md">NIST</a></li>
+              <li><a href="laas/standards/laas-sr.md">SR</a></li>
+            </ul>
+            <h2>Docs</h2>
+            <ul>
+              <li><a href="laas/proposal-v1.1.md">Design proposal v1.1</a></li>
+              <li><a href="agents/glossary.md">Glossary</a></li>
+              <li><a href="articles/index.md">Article bibliography</a></li>
+            </ul>
+            <p>Source: <a href="https://github.com/KellerAI/llm-agent-assurance-standard">github.com/KellerAI/llm-agent-assurance-standard</a></p>
+          </body>
+          </html>
+          EOF
+
       - name: Upload docs artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
