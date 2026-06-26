@@ -1,0 +1,107 @@
+# Agentic conformance gates — IC-1..IC-7 from the golden-repo incident ledger.
+#
+# Self-contained repo-hygiene checks that run in this repository's own CI.
+# The OPA structural-conformance check is separate: ci.yml calls the reusable
+# conformance workflow hosted in kellerai-oss-template. This workflow adds the
+# agentic gates that need no centralised policy.
+name: Agentic gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  agentic-gates:
+    name: Agentic gates (IC-1..IC-7)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # IC-1 — output directories must exist before any phase work begins.
+      - name: IC-1 preflight directories
+        run: bash scripts/preflight.sh
+
+      # IC-2 — the declared artifact directory must exist at its declared path.
+      - name: IC-2 artifact path present
+        run: |
+          dir="$(jq -r '.artifact_dir // empty' .kellerai-oss.json)"
+          if [ -z "$dir" ]; then
+            echo "::error::artifact_dir is not declared in .kellerai-oss.json"
+            exit 1
+          fi
+          if [ ! -d "$dir" ]; then
+            echo "::error::declared artifact directory is missing: $dir"
+            exit 1
+          fi
+          echo "artifact directory present: $dir"
+
+      # IC-4 — warn (never fail) if a local .claude/settings.json has drifted
+      # from the tracked docs/claude-settings.template.json allowlist.
+      - name: IC-4 settings allowlist drift (warn-only)
+        run: |
+          template="docs/claude-settings.template.json"
+          local_settings=".claude/settings.json"
+          if [ ! -f "$local_settings" ]; then
+            echo "no $local_settings — adopters copy $template to enable the allowlist"
+            exit 0
+          fi
+          if cmp -s "$template" "$local_settings"; then
+            echo "$local_settings matches $template"
+          else
+            echo "::warning::$local_settings differs from $template — review the allowlist"
+          fi
+
+      # IC-6 — the working tree must carry no staged-but-uncommitted state.
+      - name: IC-6 clean working tree
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::working tree is dirty:"
+            git status --porcelain
+            exit 1
+          fi
+          echo "working tree is clean"
+
+      # IC-7 — publication readiness: commit hooks configured and tree clean.
+      - name: IC-7 publication readiness
+        run: |
+          status=0
+          if [ ! -f lefthook.yml ]; then
+            echo "::error::lefthook.yml missing — commit hooks are not configured"
+            status=1
+          fi
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::working tree not clean — not publication-ready"
+            status=1
+          fi
+          if [ "$status" -ne 0 ]; then
+            exit 1
+          fi
+          echo "publication readiness: OK"
+
+      # D6 — every decision record must carry at least one file:line citation.
+      - name: D6 ADR citation check
+        run: |
+          status=0
+          shopt -s nullglob
+          # shellcheck disable=SC2016
+          # The backticks in the regex are literal: an ADR citation is a
+          # backtick-delimited file:line reference. No shell expansion intended.
+          for adr in docs/adr/ADR-*.md; do
+            if [ "$adr" = "docs/adr/ADR-000-template.md" ]; then
+              continue
+            fi
+            if ! grep -Eq '`[^`]+:[0-9]+`' "$adr"; then
+              echo "::error file=$adr::ADR has no file:line citation"
+              status=1
+            fi
+          done
+          if [ "$status" -ne 0 ]; then
+            exit 1
+          fi
+          echo "ADR citation check: OK"

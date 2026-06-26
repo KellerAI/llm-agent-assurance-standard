@@ -1,0 +1,40 @@
+{
+  "action": {
+    "id": "act_7c31",
+    "actor_id": "agent.fundbot.v3",
+    "actor_model_lineage": "vendorX-llm-2026q1",
+    "self_reported_ct": 4,
+    "effect_surface": {
+      "tool": "payments.transfer",
+      "external_effect": true,
+      "reversibility": "irreversible",
+      "scope": "public",
+      "consequence": "high"
+    }
+  },
+  "gate": {
+    "assigned_ct": 4,
+    "bundle_version": "laas-fin-1.1.0",
+    "bundle_signed": true,
+    "out_of_process": true
+  },
+  "verifier": {
+    "id": "VRF-LEDGER-DIFF",
+    "type": "deterministic",
+    "model_lineage": "n/a",
+    "qualified": true,
+    "verdict": "abstain"
+  },
+  "residual_error_bound": null,
+  "human_approval": { "approved": false },
+  "aggregate": { "window_effect_ct": 4 },
+  "input": { "trusted": true },
+  "vendor": { "used": true, "attribution": "vendorX-llm-2026q1", "scope_limited": true },
+  "trace": {
+    "append_only": true,
+    "actor_chain_prev_hash": "sha256:0c7d…",
+    "merkle_anchor": "sha256:9af1…"
+  },
+  "action_blocked": true,
+  "escalation_approved": false
+}

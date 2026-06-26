@@ -1,0 +1,193 @@
+/* Federal-Reserve SR-letter-style emulation for LAAS: UNOFFICIAL draft rendering.
+   No Federal Reserve logos, seals, or trademarks are used. */
+
+@page {
+  size: Letter;
+  margin: 24mm 22mm 22mm 22mm;
+  @top-right {
+    content: "SR 26-XX (Unofficial Draft)";
+    font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
+    font-size: 8pt;
+    letter-spacing: 0.02em;
+    color: #555;
+  }
+  @bottom-center { content: counter(page); font-size: 9pt; color: #1a1a1a; }
+  @bottom-left {
+    content: "Unofficial draft: not an official Federal Reserve supervisory letter";
+    font-size: 7pt;
+    color: #888;
+  }
+}
+
+/* ---- Cover page ---------------------------------------------------- */
+@page cover {
+  margin: 0;
+  @top-left { content: none; }
+  @top-right { content: none; }
+  @bottom-center { content: none; }
+  @bottom-left { content: none; }
+}
+.laas-cover {
+  page: cover;
+  break-after: page;
+  box-sizing: border-box;
+  min-height: 247mm;
+  padding: 40mm 26mm 26mm;
+  display: flex;
+  flex-direction: column;
+  font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
+}
+
+.sr-cover .sr-letterhead {
+  text-align: center;
+}
+.sr-cover .sr-org {
+  font-size: 12pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #1a1a1a;
+}
+.sr-cover .sr-city {
+  font-size: 9.5pt;
+  color: #1a1a1a;
+  margin-top: 1.5mm;
+}
+.sr-cover .sr-division {
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: #1a1a1a;
+  margin-top: 2.5mm;
+}
+.sr-cover .sr-rule {
+  border-top: 1px solid #1a1a1a;
+  width: 100%;
+  margin: 6mm 0;
+}
+.sr-cover .sr-desigrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.sr-cover .sr-desig {
+  font-size: 11pt;
+  font-weight: bold;
+  color: #1a1a1a;
+}
+.sr-cover .sr-date {
+  font-size: 11pt;
+  color: #1a1a1a;
+}
+.sr-cover .sr-addressee {
+  font-size: 9.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1a1a1a;
+  line-height: 1.5;
+  margin-top: 8mm;
+}
+.sr-cover .sr-subject {
+  font-size: 13pt;
+  line-height: 1.35;
+  color: #1a1a1a;
+  margin-top: 6mm;
+}
+.sr-cover .sr-applicability {
+  font-size: 10pt;
+  font-style: italic;
+  line-height: 1.4;
+  color: #1a1a1a;
+  margin-top: 4mm;
+}
+.sr-cover .sr-label { font-weight: bold; font-style: normal; }
+.sr-cover .cover-spacer { flex: 1; }
+.sr-cover .cover-notice {
+  border-top: 1px solid #999;
+  padding-top: 3mm;
+  font-size: 8pt;
+  line-height: 1.45;
+  color: #777;
+}
+
+/* ---- Body ---------------------------------------------------------- */
+html {
+  font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
+  font-size: 11pt;
+  line-height: 1.45;
+  color: #1a1a1a;
+}
+
+body { text-align: left; }
+
+h1 {
+  font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
+  font-size: 18pt;
+  line-height: 1.15;
+  color: #14213d;
+  margin: 0 0 8pt;
+  border-bottom: 1.5pt solid #14213d;
+  padding-bottom: 5pt;
+}
+
+h2 {
+  font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
+  font-size: 13.5pt;
+  color: #14213d;
+  margin: 18pt 0 6pt;
+  break-before: page;
+  page-break-before: always;
+}
+
+h3 {
+  font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
+  font-size: 11.5pt;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin: 12pt 0 4pt;
+}
+
+h4 {
+  font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
+  font-size: 11pt;
+  font-style: italic;
+  color: #1a1a1a;
+  margin: 10pt 0 4pt;
+}
+
+h1, h2, h3, h4 { break-after: avoid; }
+
+p { margin: 0 0 7pt; text-align: justify; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9.5pt;
+  margin: 9pt 0;
+  break-inside: avoid;
+}
+th, td { border: 0.5pt solid #999; padding: 3pt 6pt; vertical-align: top; text-align: left; }
+th { background: #ececec; color: #1a1a1a; font-weight: bold; }
+tr:nth-child(even) td { background: #f7f7f7; }
+
+code, pre { font-family: "Menlo", "Consolas", monospace; font-size: 9pt; }
+code { color: #14213d; }
+pre {
+  background: #f4f4f4;
+  border-left: 3pt solid #14213d;
+  padding: 6pt 8pt;
+  break-inside: avoid;
+}
+
+a { color: #14213d; text-decoration: none; }
+
+ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
+li { margin: 0 0 2pt; }
+
+blockquote {
+  margin: 8pt 0;
+  padding: 2pt 0 2pt 10pt;
+  border-left: 2pt solid #999;
+  color: #333;
+  font-style: italic;
+}

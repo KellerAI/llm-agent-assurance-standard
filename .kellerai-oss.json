@@ -1,0 +1,6 @@
+{
+  "artifact_type": "rego-policy",
+  "artifact_dir": "conformance",
+  "primary_validator": "opa",
+  "owner": "KellerAI"
+}

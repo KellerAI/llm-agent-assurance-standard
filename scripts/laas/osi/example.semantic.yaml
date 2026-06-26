@@ -1,0 +1,36 @@
+# Minimal OSI (Open Semantic Interchange) model demonstrating KELLERAI_LAAS
+# custom_extensions. The converter (scripts/laas/osi_to_surface.py) reads the
+# KELLERAI_LAAS axes off each object to build a LaaS EffectSurface.
+#
+# A JSON twin (example.semantic.json) carries identical content so the
+# stdlib-only core converter never needs a YAML parser. PyYAML is a CLI-only
+# optional dependency.
+osi_version: "0.1.0"
+name: example_settlement_model
+datasets:
+  - name: orders
+    custom_extensions:
+      - vendor_name: KELLERAI_LAAS
+        data:
+          reversibility: hard
+          scope: multi
+          consequence: material
+  - name: customers
+    custom_extensions:
+      - vendor_name: KELLERAI_LAAS
+        data:
+          reversibility: reversible
+          scope: single
+          consequence: none
+          access_sensitive: false
+metrics:
+  - name: net_settlement_amount
+    custom_extensions:
+      - vendor_name: KELLERAI_LAAS
+        data:
+          reversibility: irreversible
+          scope: org
+          consequence: high
+relationships:
+  - from: orders
+    to: customers

@@ -1,0 +1,34 @@
+{
+  "laas": {
+    "version": "1.1.0",
+    "bundle_id": "laas-fin-1.1.0",
+    "description": "LAAS runtime-action conformance bundle. Single source of truth for package kellerai.laas.actions. Prose: standard/LAAS.md. Rationale: docs/laas/proposal-v1.1.md.",
+    "tier_lattice": {
+      "reversibility": { "reversible": 1, "hard": 3, "irreversible": 4, "none": 4 },
+      "scope": { "single": 1, "multi": 2, "org": 3, "public": 4 },
+      "consequence": { "none": 0, "low": 1, "material": 3, "high": 4 }
+    },
+    "default_ct_when_undetermined": 4,
+    "independent_verification_floor_ct": 3,
+    "human_approval_floor_ct": 4,
+    "max_error_correlation": 0.2,
+    "escape_rate_tolerance_by_ct": { "2": 0.02, "3": 0.005, "4": 0 },
+    "require_bundle_signed": true,
+    "require_out_of_process_gate": true,
+    "untrusted_input_min_ct": 3,
+    "obligations": [
+      { "id": "LAAS-OBL-TIER-001", "title": "Consequence Tier is gate-derived from the observed effect surface", "severity": "error", "ct_floor": 0, "reference": "v1.1 \u00a76.1", "status": "active", "precedence": 100 },
+      { "id": "LAAS-OBL-SELF-001", "title": "A self-reported tier may not lower the gate-derived tier", "severity": "warning", "ct_floor": 0, "reference": "v1.1 \u00a76.1", "status": "active", "precedence": 90 },
+      { "id": "LAAS-OBL-ENF-001", "title": "Enforcement-plane integrity (signed bundle, out-of-process gate)", "severity": "error", "ct_floor": 0, "reference": "v1.1 \u00a77.7", "status": "active", "precedence": 99 },
+      { "id": "LAAS-OBL-TRC-001", "title": "Append-only, chained decision trace", "severity": "error", "ct_floor": 0, "reference": "v1.1 \u00a77.4", "status": "active", "precedence": 50 },
+      { "id": "LAAS-OBL-AGG-001", "title": "Cumulative blast-radius aggregation / re-tiering", "severity": "error", "ct_floor": 0, "reference": "v1.1 \u00a76.4", "status": "active", "precedence": 85 },
+      { "id": "LAAS-OBL-INP-001", "title": "Untrusted input raises the tier or blocks", "severity": "error", "ct_floor": 0, "reference": "v1.1 \u00a78.3", "status": "active", "precedence": 75 },
+      { "id": "LAAS-OBL-VEN-001", "title": "Third-party / vendor attribution and scope limits", "severity": "error", "ct_floor": 0, "reference": "v1.1 \u00a78.2", "status": "active", "precedence": 60 },
+      { "id": "LAAS-OBL-IRR-001", "title": "Independent pre-commit verification for CT>=3", "severity": "error", "ct_floor": 3, "reference": "v1.1 \u00a77.1", "status": "active", "precedence": 80 },
+      { "id": "LAAS-OBL-IND-001", "title": "Verifier independence and low error-correlation", "severity": "error", "ct_floor": 3, "reference": "v1.1 \u00a77.3", "status": "active", "precedence": 80 },
+      { "id": "LAAS-OBL-VQ-001", "title": "Verifier qualification (DO-330 analogue)", "severity": "error", "ct_floor": 3, "reference": "v1.1 \u00a77.5", "status": "active", "precedence": 80 },
+      { "id": "LAAS-OBL-RES-001", "title": "Bounded residual escape rate (Bucket B)", "severity": "error", "ct_floor": 2, "reference": "v1.1 \u00a75", "status": "active", "precedence": 70 },
+      { "id": "LAAS-OBL-HUM-001", "title": "Human approval required at CT4", "severity": "error", "ct_floor": 4, "reference": "v1.1 \u00a76.3", "status": "active", "precedence": 95 }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+name: "action defect"
+description: "Report something that is wrong in the action or contradicts the docs."
+title: "[bug] "
+labels: ["bug", "action"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for a concrete defect in the `conformance/` artifact, or a
+        contradiction between the artifact and its supporting docs.
+        For an ambiguity rather than an outright error, use the clarification form instead.
+  - type: textarea
+    id: location
+    attributes:
+      label: Where is the defect?
+      description: "File and section — e.g. `conformance/example.rego-policy` §3."
+    validations:
+      required: true
+  - type: textarea
+    id: defect
+    attributes:
+      label: What is wrong?
+      description: Quote the offending text and explain the defect.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should it say instead?
+      description: Optional — a proposed correction.
+    validations:
+      required: false

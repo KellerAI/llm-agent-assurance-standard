@@ -1,0 +1,41 @@
+name: "action amendment proposal"
+description: "Propose a new or changed action element."
+title: "[amendment] "
+labels: ["amendment", "action"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to propose a new or changed element in the `conformance/` artifact.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What do you propose?
+      description: The new or changed element, stated precisely.
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: "Why is this needed? Cite evidence — empirical, or a concrete gap."
+    validations:
+      required: true
+  - type: dropdown
+    id: semver
+    attributes:
+      label: Semver impact
+      description: How would this change affect consumers?
+      options:
+        - "major — breaking change to a load-bearing contract element"
+        - "minor — additive, backward-compatible"
+        - "patch — clarification or editorial, no contract change"
+    validations:
+      required: true
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions touched
+      description: Optional — list any open questions this proposal resolves or affects.
+    validations:
+      required: false

@@ -1,0 +1,8 @@
+# Lefthook git hooks. Install locally with: lefthook install
+# The pre-commit hook runs the same gate CI runs (sanitization check).
+# Add your primary validator command to the 'validate' entry below.
+pre-commit:
+  parallel: true
+  commands:
+    sanitization:
+      run: bash scripts/check-sanitization.sh

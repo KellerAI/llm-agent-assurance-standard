@@ -1,0 +1,4 @@
+# Generated artifacts — the pipeline is source; PDFs are built on demand.
+# Generated HTML/PDF live only under out/, which is ignored wholesale.
+out/
+*.pdf

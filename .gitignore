@@ -1,0 +1,26 @@
+# Claude Code session data — never publish
+.claude/
+.claude-tmp/
+
+# macOS
+.DS_Store
+
+# Node tooling (commitlint, markdownlint)
+node_modules/
+
+# Python tooling
+.venv/
+__pycache__/
+.ruff_cache/
+
+# Editor
+.idea/
+.vscode/
+
+# Build artifacts
+dist/
+*.bak
+*.bak.md
+
+# Generated scan artifact (repo-structure.json from scripts/scan-repo-structure.sh) — never shipped
+repo-structure.json

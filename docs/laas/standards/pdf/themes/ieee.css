@@ -1,0 +1,140 @@
+/* IEEE-Std-style emulation for LAAS: UNOFFICIAL draft rendering.
+   No IEEE logos, seals, or trademarks are used. */
+
+@page {
+  size: Letter;
+  margin: 22mm 20mm 20mm 20mm;
+  @top-right {
+    content: "IEEE P-XXXX/D1 (Unofficial Draft)";
+    font-family: "STIX Two Text", "Tinos", "Times New Roman", serif;
+    font-size: 8pt;
+    color: #555;
+  }
+  @bottom-center {
+    content: counter(page);
+    font-family: "STIX Two Text", "Times New Roman", serif;
+    font-size: 9pt;
+    color: #111;
+  }
+  @bottom-left {
+    content: "Unofficial draft: not an approved IEEE standard";
+    font-size: 7pt;
+    color: #888;
+  }
+}
+
+/* ---- Cover page ---------------------------------------------------- */
+@page cover {
+  margin: 0;
+  @top-right { content: none; }
+  @bottom-center { content: none; }
+  @bottom-left { content: none; }
+}
+.laas-cover {
+  page: cover;
+  break-after: page;
+  box-sizing: border-box;
+  min-height: 247mm;
+  padding: 45mm 24mm 26mm;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  hyphens: none;
+}
+.ieee-cover .cover-top {
+  font-size: 9pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #555;
+}
+.ieee-cover .cover-desig {
+  margin-top: 6mm;
+  font-size: 13pt;
+  font-weight: bold;
+  color: #00385f;
+}
+.ieee-cover .cover-title {
+  margin-top: 6mm;
+  font-size: 26pt;
+  line-height: 1.16;
+  color: #00385f;
+}
+.ieee-cover .cover-sub {
+  margin-top: 5mm;
+  font-size: 12pt;
+  font-style: italic;
+  color: #333;
+}
+.ieee-cover .cover-meta {
+  margin-top: auto;
+  font-size: 10.5pt;
+  color: #222;
+}
+.ieee-cover .cover-meta div { margin: 1mm 0; }
+.ieee-cover .cover-notice {
+  margin-top: 9mm;
+  border-top: 1px solid #00385f;
+  padding-top: 3mm;
+  font-size: 8pt;
+  color: #777;
+}
+
+html {
+  font-family: "STIX Two Text", "Tinos", "Times New Roman", serif;
+  font-size: 10pt;
+  line-height: 1.33;
+  color: #111;
+}
+
+body { text-align: justify; hyphens: auto; }
+
+h1 {
+  font-size: 19pt;
+  line-height: 1.15;
+  text-align: center;
+  color: #00385f;
+  margin: 0 0 6pt;
+}
+
+h2 {
+  font-size: 12pt;
+  color: #00385f;
+  border-bottom: 1px solid #00385f;
+  padding-bottom: 2pt;
+  margin: 16pt 0 6pt;
+}
+
+h3 { font-size: 11pt; margin: 12pt 0 4pt; }
+h4 { font-size: 10pt; font-style: italic; margin: 10pt 0 4pt; }
+
+h1, h2, h3, h4 { break-after: avoid; }
+
+/* Each major section (h2) starts on a new page. Both properties for WeasyPrint. */
+h2 {
+  break-before: page;
+  page-break-before: always;
+}
+
+p { margin: 0 0 6pt; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9pt;
+  margin: 8pt 0;
+  break-inside: avoid;
+}
+th, td { border: 0.5pt solid #888; padding: 3pt 5pt; vertical-align: top; text-align: left; }
+th { background: #e8eef3; }
+
+code, pre {
+  font-family: "Menlo", "Consolas", monospace;
+  font-size: 8.5pt;
+}
+code { background: #f3f3f3; padding: 0 2pt; }
+pre { background: #f5f5f5; border: 0.5pt solid #ddd; padding: 6pt; break-inside: avoid; }
+
+a { color: inherit; text-decoration: none; }
+
+ul, ol { margin: 0 0 6pt; padding-left: 18pt; }
+li { margin: 0 0 2pt; }

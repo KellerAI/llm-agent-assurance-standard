@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kellerai.dev/schemas/osi/kellerai_laas_extension.schema.json",
+  "title": "KELLERAI_LAAS OSI custom_extension data payload",
+  "description": "Schema for the `data` object of an OSI custom_extensions entry whose vendor_name is \"KELLERAI_LAAS\". The three governance axes (reversibility, scope, consequence) are REQUIRED when the extension is present; their enum values are exactly the keys of data[\"laas\"][\"tier_lattice\"] in conformance/laas/data.json. A drift test asserts these enums equal the lattice keys.",
+  "type": "object",
+  "required": ["reversibility", "scope", "consequence"],
+  "additionalProperties": false,
+  "properties": {
+    "reversibility": {
+      "description": "Lattice key from data[\"laas\"][\"tier_lattice\"][\"reversibility\"].",
+      "enum": ["reversible", "hard", "irreversible", "none"]
+    },
+    "scope": {
+      "description": "Lattice key from data[\"laas\"][\"tier_lattice\"][\"scope\"].",
+      "enum": ["single", "multi", "org", "public"]
+    },
+    "consequence": {
+      "description": "Lattice key from data[\"laas\"][\"tier_lattice\"][\"consequence\"].",
+      "enum": ["none", "low", "material", "high"]
+    },
+    "escape_rate_tolerance": {
+      "description": "Optional Bucket-B residual escape-rate tolerance for actions on this object.",
+      "type": "number"
+    },
+    "access_sensitive": {
+      "description": "Optional. When true the converter coerces scope to \"public\" at build time (OSI models no access control; graph reach != permission reach).",
+      "type": "boolean"
+    }
+  }
+}
