@@ -34,7 +34,7 @@ jobs:
         run: bash scripts/check-sanitization.sh
 
   conformance:
-    uses: jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml@beaa1ffe080944b46d2f48c563e241809e35ee17
+    uses: jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml@8c0f533df8d19f1ebbb560b31021436c05ff537d
     with:
       artifact_type: "rego-policy"
 
