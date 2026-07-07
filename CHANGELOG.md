@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Change-surface veto for the trust-dial bot-PR auto-merge policy (`conformance/trust_dial.rego` + `trust_dial_data.json`): a base `auto-merge` verdict now requires every changed file to be within an allowlist (`.github/workflows/**`, `.github/dependabot.yml`) and outside a frozen deny-list (`conformance/**`, `docs/**`, `standard/**`, `scripts/**`, root governance docs); otherwise the verdict is vetoed to `block`. Missing `changed_files` input fail-safes to `hold-for-review`. New `changed_files` input is supplied by `.github/workflows/trust-dial-gate.yml`.
+- Guarded codeowner auto-merge: PRs authored by a codeowner (new `codeowner_actors` list in `conformance/trust_dial_data.json`) receive a base `auto-merge` verdict from `conformance/trust_dial.rego` subject to the same change-surface veto, fail-safe (`hold-for-review` on missing `changed_files`), and per-cycle merge budget as Dependabot PRs. `.github/workflows/trust-dial-gate.yml` now also runs for codeowner-authored PRs (Dependabot metadata step skipped) and supplies the new `pr_author` OPA input.
+
 ## [0.1.0] - 2026-06-25
 
 ### Added
