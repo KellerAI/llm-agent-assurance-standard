@@ -31,6 +31,14 @@ The authoritative definition for any term is the artifact file that introduces i
 - **Semver** — Semantic Versioning applied to the artifact.
   `major` = breaking; `minor` = additive; `patch` = editorial.
 
+## Interpretability and internal-state terms
+
+- **Global workspace** — the paper's account of a workspace shared across the model's residual stream through which verbalizable representations are broadcast for report, reasoning, and behavioral modulation, addressing access consciousness only.
+- **J-space** — this repository's shorthand for the global-workspace content identified in the paper: verbalizable internal representations broadcast for report and reasoning, with no claim about phenomenal experience.
+- **J-lens** — the paper's interpretability probe that reads J-space content from a model's activations, requiring weights and activation access and functioning as an incomplete, single-token-limited detector.
+- **Internal-state (assurance sense)** — model-internal signals (e.g. J-space content) that a white-box probe can surface but that may be absent from a model's verbalized output, relevant to assurance because a model's self-report cannot be assumed to reflect them.
+- **Access consciousness** — functional reportability, directed modulation, and a representation's causal role in reasoning, as distinct from and silent on phenomenal consciousness or subjective experience.
+
 ## Add terms here
 
 As the artifact grows, add load-bearing vocabulary to this file.
