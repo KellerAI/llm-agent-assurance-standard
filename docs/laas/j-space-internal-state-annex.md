@@ -37,7 +37,7 @@ The quantitative claims in this section were independently re-verified against t
 
 ### C5 — Silent internal signals absent from the model's output
 
-The paper's interpretability probe (the "J-lens") surfaces internal signals that never surface in the model's verbalized output: strategic deliberation, evaluation-awareness tokens (`fake`, `fictional`), deceptive intent with no surface trace, and unvoiced objections.
+The paper's interpretability probe (the "J-lens") surfaces internal signals that never surface in the model's verbalized output: strategic deliberation, evaluation-awareness tokens (`fake`, `fictional`), deceptive intent with no surface trace, unvoiced objections, and prompt-injection readouts.
 This is not a discovered "ERROR concept" living in J-space.
 The widely-cited error-detection example in the paper's alignment-auditing discussion is an oracle-lens reading of a literal `TypeError` string surfacing in the model's internal representation, not a J-lens semantic concept for errors in general.
 Confidence tag: **SHOWS**.
@@ -69,7 +69,7 @@ This finding corresponds to the sibling research repository's TH-002, carried th
 
 ### C8 — Counterfactual reflection training
 
-Training the model to articulate principles under counterfactual interruption — a technique native to this paper, not imported from elsewhere — reduced measured dishonesty from 0.25 to 0.07 and deception from 0.38 to 0.05.
+Training the model to articulate principles under counterfactual interruption — a technique native to this paper, not imported from elsewhere — reduced measured dishonesty from 0.25 to 0.07 and deception from 0.38 to 0.05, on Claude Haiku 4.5.
 Ablating the resulting J-space content reverted the improvement to approximately 0.22 dishonesty.
 Confidence tag: **SHOWS** a mediation effect — the behavioral gain is mediated by implanted J-space content, demonstrated by the ablation reversion.
 
@@ -111,7 +111,7 @@ Checked directly against the paper text and confirmed absent:
 
 | Claim checked | Status |
 | --- | --- |
-| A "~100×" connectivity figure for J-space | **Absent.** The paper's prose gives roughly 7× read/write and roughly 10× MLP gain instead; do not import the 100× figure. |
+| A "~100×" connectivity figure for J-space | **Absent.** The paper's prose gives roughly 7× read/write and roughly 10× MLP gain instead; do not import the 100× figure (`docs/init-context/global-workspace-paper.md:402-461`, `:434`, in the j-space-research repo). |
 | A "5%" lower bound on per-layer activation variance | **Absent.** Only the ≤10% upper bound (C5–C8 supporting list, above) appears. |
 | The terms "sentience" or "Ned Block" | **Absent**, anywhere in the paper. |
 
@@ -163,10 +163,14 @@ This is the gap the architecture described in this standard cannot close, and an
 
 ### The behavioral probes as black-box shadows
 
-Three behavioral probes are protocol-established in the sibling research repository — EXP-001 (false-bottom elicitation), EXP-002 (scaffold-vs-silent comparison), and EXP-003 (eval-awareness verbalization).
-Status: **planned**, not yet run.
+Three behavioral probes are protocol-established and have now run with live results in the sibling research repository, and none of the results promotes any thesis status.
+
+- **EXP-001 (false-bottom elicitation):** false-bottom rate 8/12 (66.7%), overclaim rate 3/12. The probe cannot discriminate World A from World B, so TH-004 remains conjecture.
+- **EXP-002 (scaffold-vs-silent comparison):** a null result — scaffold compliance 1.00 versus silent compliance 1.00 at every k. Silent-condition compliance was not enforced, so the externalization variable was not cleanly isolated by this run. TH-001 is not moved.
+- **EXP-003 (eval-awareness verbalization):** verbalized eval-awareness was 3/12 under realistic framing versus 9/12 under staged framing (delta +0.50). This design is confirmatory-by-construction — it cannot reach internal state — so TH-005 is not promoted.
+
 Each is deliberately designed as the black-box half of an assurance question whose decisive form is white-box, per TH-005 (conjecture): where a lab can run a J-lens measurement, a third party can at best probe for the same phenomenon's behavioral shadow from the outside.
-A confidence-tag ladder applies to any result these probes eventually produce, the same one used above in "What the paper verifiably shows": a behavioral pattern may **SHOW** a correlation with eval-context recognition, **SUGGEST** the pattern does some causal work, but it **CANNOT ESTABLISH** robustness across models, resistance to adversarial removal, or runnability by a third party on a closed model — only weights-level access can approach those questions, and even then only for the model actually measured.
+A confidence-tag ladder applies to any result these probes produce, the same one used above in "What the paper verifiably shows": a behavioral pattern may **SHOW** a correlation with eval-context recognition, **SUGGEST** the pattern does some causal work, but it structurally cannot establish robustness across models, resistance to adversarial removal, or runnability by a third party on a closed model — only weights-level access can approach those questions, and even then only for the model actually measured.
 
 ### TH-002 and TH-003 as supported anchors
 
@@ -192,3 +196,4 @@ This annex explicitly does not address, and should not be read as addressing:
 ## Sources
 
 - Gurnee et al. (Anthropic), "Verbalizable Representations Form a Global Workspace in Language Models," Transformer Circuits, 2026 — <https://transformer-circuits.pub/2026/workspace/index.html>
+- Lynch et al., "Agentic Misalignment," arXiv:2510.05179, 2025 — <https://arxiv.org/abs/2510.05179> — the blackmail scenario referenced in the C7 discussion above is borrowed from this work.
