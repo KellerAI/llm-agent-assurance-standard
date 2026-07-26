@@ -45,6 +45,7 @@ jobs:
             <h2>Docs</h2>
             <ul>
               <li><a href="laas/proposal-v1.1.md">Design proposal v1.1</a></li>
+              <li><a href="laas/profiles/README.md">Controlled-language profiles (STE)</a></li>
               <li><a href="agents/glossary.md">Glossary</a></li>
               <li><a href="articles/index.md">Article bibliography</a></li>
             </ul>

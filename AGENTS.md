@@ -48,6 +48,7 @@ Load the file that answers your question. Do not load the whole tree.
 | Decision-record tooling | `scripts/laas/` |
 | Design rationale / proposal | `docs/laas/proposal-v1.1.md` |
 | LAAS design docs (steelman, backtest, emitter) | `docs/laas/` |
+| Controlled-language (STE) profiles for decision traces | `docs/laas/profiles/` |
 | Architecture decision records | `docs/adr/` |
 | Article bibliography | `docs/articles/index.md` |
 | Repo-structure conformance rules | `conformance/` |
