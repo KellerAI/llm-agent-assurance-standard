@@ -41,8 +41,9 @@ It is a **standard of care**, not a correctness guarantee.
   steelman analysis, and emitter reference.
 - [`docs/laas/profiles/`](docs/laas/profiles/) — controlled-language profiles that constrain
   the free-text fields of a decision trace, adapted from ASD-STE100 Simplified Technical
-  English. A shared rule base plus banking, healthcare, and SEO/advertising profiles, each
-  with a derived machine-readable dictionary. Informative: no new obligation or threshold.
+  English. A shared rule base plus five industry profiles — banking, healthcare,
+  SEO/advertising, real estate, and building contracting (HVAC, solar) — each with a derived
+  machine-readable dictionary. Informative: no new obligation or threshold.
 - [`conformance/`](conformance/) — structural conformance policies: blast-radius pulse and
   trust-dial verdict, enforced on every push via `.github/workflows/`.
 
@@ -55,7 +56,7 @@ It is a **standard of care**, not a correctness guarantee.
 | [`docs/laas/standards/`](docs/laas/standards/) | IEEE, NIST, ISO, SR renderings + PDF pipeline |
 | [`scripts/laas/`](scripts/laas/) | Emitter, backtest harness, OSI adapter, proof scripts |
 | [`docs/laas/`](docs/laas/) | Design docs: v1.1 proposal, backtest spec, steelman |
-| [`docs/laas/profiles/`](docs/laas/profiles/) | Controlled-language (STE) profiles: core rule base + banking, healthcare, SEO |
+| [`docs/laas/profiles/`](docs/laas/profiles/) | Controlled-language (STE) profiles: core rule base + 5 industry profiles |
 | [`conformance/`](conformance/) | Structural policies: blast-radius, trust-dial |
 | [`docs/agents/`](docs/agents/) | Tier-2 agent guides: conventions, enforcement, glossary |
 | [`docs/adr/`](docs/adr/) | Architecture decision records |
