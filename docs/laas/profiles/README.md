@@ -31,6 +31,8 @@ an existing obligation be satisfied in form and missed in fact.
 | [`banking.md`](banking.md) | Banking and financial services (`LAAS-STE-BANK-DRAFT-1.0`) |
 | [`healthcare.md`](healthcare.md) | Healthcare, clinical and patient-related systems (`LAAS-STE-HLTH-DRAFT-1.0`) |
 | [`seo-adsense.md`](seo-adsense.md) | SEO, AdSense and digital advertising (`LAAS-STE-ADV-DRAFT-1.0`) |
+| [`real-estate.md`](real-estate.md) | Real estate (`LAAS-STE-RE-DRAFT-1.0`) |
+| [`contracting.md`](contracting.md) | Building contracting, HVAC and solar (`LAAS-STE-CON-DRAFT-1.0`) |
 | [`glossary/`](glossary/) | Machine-readable dictionaries derived from each profile's section 3 |
 
 Read `ste-core.md` first. Each industry profile adopts it in full and adds only the rules,
@@ -49,8 +51,16 @@ Where a profile and `conformance/laas/data.json` conflict on a threshold value, 
 is the machine source of truth.
 Where an industry profile and `ste-core.md` conflict, the industry profile takes precedence
 within its domain and must state the deviation explicitly.
-The healthcare profile is currently the only one that deviates
-([`healthcare.md`](healthcare.md) §5.2).
+
+Three profiles currently deviate, and all three deviate in the same direction — a class of
+defect that is blocking at **every** tier, including CT0, because its harm is caused by the
+notation itself and does not scale with the Consequence Tier:
+
+| Profile | Blocking at every tier | Deviation |
+|---------|------------------------|-----------|
+| [`healthcare.md`](healthcare.md) §5.2 | Dose and abbreviation notation | Also requires `LC-3` at CT3 rather than `LC-2` |
+| [`real-estate.md`](real-estate.md) §5.2 | Occupant-description language | — |
+| [`contracting.md`](contracting.md) §5.2 | Unit and quantity notation | — |
 
 ## Recommended gate policy
 
@@ -96,8 +106,11 @@ Field notes:
 - `enum` appears only on a noun whose approved meaning is a closed value set.
 - `variants` appears on a forbidden entry that covers more than one surface form. It is
   optional; `banking.json` has none.
-- `class` appears only in `healthcare.json`, which separates `notation` entries from
-  `vocabulary` entries. Notation entries are blocking at every tier, including CT0.
+- `class` groups forbidden entries where a profile treats two groups differently:
+  `notation` and `vocabulary` in `healthcare.json` and `contracting.json`,
+  `occupant-description` and `ambiguity` in `real-estate.json`. The first group in each of
+  those files is blocking at every tier, including CT0. `banking.json` and
+  `seo-adsense.json` have a single group and omit the field.
 - No term appears in both `nouns` and `verbs` in any profile. `STE-C-04` allows a term
   exactly one part of speech, so a domain concept with both forms gets two distinct surface
   forms — `post` and `posting date`, `bid` and `bid amount`.

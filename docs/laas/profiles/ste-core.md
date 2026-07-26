@@ -215,6 +215,8 @@ relationship that `conformance/laas/data.json` holds to `standard/LAAS.md`.
 | Banking and financial services | `LAAS-STE-BANK-DRAFT-1.0` | [`banking.md`](banking.md) | [`glossary/banking.json`](glossary/banking.json) |
 | Healthcare and clinical systems | `LAAS-STE-HLTH-DRAFT-1.0` | [`healthcare.md`](healthcare.md) | [`glossary/healthcare.json`](glossary/healthcare.json) |
 | SEO, AdSense, and digital advertising | `LAAS-STE-ADV-DRAFT-1.0` | [`seo-adsense.md`](seo-adsense.md) | [`glossary/seo-adsense.json`](glossary/seo-adsense.json) |
+| Real estate | `LAAS-STE-RE-DRAFT-1.0` | [`real-estate.md`](real-estate.md) | [`glossary/real-estate.json`](glossary/real-estate.json) |
+| Building contracting, HVAC, and solar | `LAAS-STE-CON-DRAFT-1.0` | [`contracting.md`](contracting.md) | [`glossary/contracting.json`](glossary/contracting.json) |
 
 ## Annex A (informative): Bibliography
 
