@@ -33,6 +33,10 @@ an existing obligation be satisfied in form and missed in fact.
 | [`seo-adsense.md`](seo-adsense.md) | SEO, AdSense and digital advertising (`LAAS-STE-ADV-DRAFT-1.0`) |
 | [`real-estate.md`](real-estate.md) | Real estate (`LAAS-STE-RE-DRAFT-1.0`) |
 | [`contracting.md`](contracting.md) | Building contracting, HVAC and solar (`LAAS-STE-CON-DRAFT-1.0`) |
+| [`legal.md`](legal.md) | Legal and contracts (`LAAS-STE-LEGAL-DRAFT-1.0`) |
+| [`insurance.md`](insurance.md) | Insurance (claims and policy administration) (`LAAS-STE-INS-DRAFT-1.0`) |
+| [`software-docs.md`](software-docs.md) | Software and SaaS documentation (runbooks, API docs, incident comms) (`LAAS-STE-SWD-DRAFT-1.0`) |
+| [`education.md`](education.md) | Education and academic (syllabi, assignment briefs, student-facing instructions) (`LAAS-STE-EDU-DRAFT-1.0`) |
 | [`glossary/`](glossary/) | Machine-readable dictionaries derived from each profile's section 3 |
 
 Read `ste-core.md` first. Each industry profile adopts it in full and adds only the rules,
@@ -120,15 +124,20 @@ also a plain object validated by use rather than by schema.
 
 ## Adding a profile
 
-1. Copy the section order from [`ste-core.md`](ste-core.md) §7. It is fixed so the profiles
-   stay interchangeable.
+A new profile registers in five places: the profile `.md` file, its `glossary/*.json` file,
+the Contents table above, `CHANGELOG.md`, and the Pages index (`.github/workflows/pages.yml`).
+
+1. Create `docs/laas/profiles/<name>.md`, copying the section order from
+   [`ste-core.md`](ste-core.md) §7. It is fixed so the profiles stay interchangeable.
 2. Adopt `STE-C-01` through `STE-C-12` in full. Add domain rules with a `STE-<PREFIX>-NN` ID
    and a one-sentence justification tied to a named obligation.
-3. Write section 3 as markdown tables first, then derive the JSON glossary from them.
+3. Write section 3 as markdown tables first, then derive `glossary/<name>.json` from them.
 4. State any deviation from the core gate policy explicitly, with its justification.
 5. Add a row to the table in [`ste-core.md`](ste-core.md) §8 and to the Contents table above.
 6. Add any new load-bearing vocabulary to `docs/agents/glossary.md` in the same pull request
    (`docs/agents/glossary.md:55`).
+7. Record the profile in `CHANGELOG.md` and in the Pages index
+   (`.github/workflows/pages.yml`).
 
 ## Reference
 
