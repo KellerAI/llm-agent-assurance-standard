@@ -1,5 +1,6 @@
-# Trust-dial gate — evaluates a Dependabot PR against conformance/trust_dial.rego
-# and acts on the verdict.
+# Trust-dial gate — evaluates a Dependabot PR, or a PR authored by the
+# repository codeowner, against conformance/trust_dial.rego and acts on the
+# verdict. Both PR classes are subject to the same change-surface veto.
 #
 # Three verdicts:
 #   auto-merge      -> gh pr merge --auto --squash
@@ -11,6 +12,9 @@
 # the trusted workflow_run context. This split keeps the gate from needing
 # contents:write — and respects GitHub's hardened Dependabot rules (PRs opened
 # by dependabot[bot] run with a read-only GITHUB_TOKEN and no secrets access).
+# Codeowner-authored PRs are gated on the PR author (pull_request.user.login),
+# not github.actor, so that a codeowner merely reopening/syncing another
+# contributor's PR does not enable the codeowner auto-merge path.
 name: Trust-dial gate
 
 on:
@@ -24,21 +28,36 @@ permissions:
 jobs:
   gate:
     name: Trust-dial verdict
-    if: ${{ github.actor == 'dependabot[bot]' }}
+    if: ${{ github.actor == 'dependabot[bot]' || github.event.pull_request.user.login == 'jonathan-kellerai' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0  # full history needed so git diff against base branch works
 
       - name: Fetch Dependabot metadata
         id: meta
+        if: ${{ github.actor == 'dependabot[bot]' }}
         uses: dependabot/fetch-metadata@v2.4.0  # pin to SHA before release
 
       - name: Install OPA
         uses: open-policy-agent/setup-opa@v2.4.0  # pin to SHA before release
         with:
           version: "1.14.1"
+
+      - name: Compute changed files
+        id: changed
+        run: |
+          # actions/checkout on pull_request checks out refs/pull/<N>/merge (a merge
+          # commit), so HEAD is not the PR head. Use the PR head SHA explicitly to
+          # get only the files introduced by this PR, not by the merge itself.
+          base="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}"
+          files=$(git diff --name-only "$base...${{ github.event.pull_request.head.sha }}" \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "files=$files" >> "$GITHUB_OUTPUT"
 
       - name: Build OPA input
         id: build
@@ -50,6 +69,7 @@ jobs:
           TO_VERSION: ${{ steps.meta.outputs.new-version }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_ACTOR: ${{ github.actor }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           set -euo pipefail
           state="audit/trust-dial-state.json"
@@ -66,6 +86,8 @@ jobs:
             --argjson cycle "$cycle_count" \
             --argjson pr "$PR_NUMBER" \
             --arg actor "$PR_ACTOR" \
+            --arg author "$PR_AUTHOR" \
+            --argjson changed_files '${{ steps.changed.outputs.files }}' \
             '{
               tier: $tier,
               ecosystem: $eco,
@@ -75,7 +97,9 @@ jobs:
               to_version: $tv,
               cycle_merge_count: $cycle,
               pr_number: $pr,
-              pr_actor: $actor
+              pr_actor: $actor,
+              pr_author: $author,
+              changed_files: $changed_files
             }' > opa-input.json
 
           echo "tier=$tier" >> "$GITHUB_OUTPUT"
