@@ -70,6 +70,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_ACTOR: ${{ github.actor }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
         run: |
           set -euo pipefail
           state="audit/trust-dial-state.json"
@@ -87,7 +88,7 @@ jobs:
             --argjson pr "$PR_NUMBER" \
             --arg actor "$PR_ACTOR" \
             --arg author "$PR_AUTHOR" \
-            --argjson changed_files '${{ steps.changed.outputs.files }}' \
+            --argjson changed_files "$CHANGED_FILES" \
             '{
               tier: $tier,
               ecosystem: $eco,
