@@ -14,6 +14,10 @@ and this project adheres to
 - Guarded codeowner auto-merge: PRs authored by a codeowner (new `codeowner_actors` list in `conformance/trust_dial_data.json`) receive a base `auto-merge` verdict from `conformance/trust_dial.rego` subject to the same change-surface veto, fail-safe (`hold-for-review` on missing `changed_files`), and per-cycle merge budget as Dependabot PRs. `.github/workflows/trust-dial-gate.yml` now also runs for codeowner-authored PRs (Dependabot metadata step skipped) and supplies the new `pr_author` OPA input.
 - Advisory annex `docs/laas/j-space-internal-state-annex.md`: maps externally verified J-space / global-workspace interpretability findings (Gurnee et al., Anthropic — Transformer Circuits, 2026) to LAAS internal-state assurance concepts; access-consciousness-scoped (no sentience or phenomenal-consciousness claim), explicitly non-conformant/advisory per the sibling j-space-research repo's ADR-001, and conjecture-flagged for forward-looking theses (TH-004–TH-006) while treating C5–C8 and TH-002/TH-003 as supported.
 
+### Fixed
+
+- `conformance/trust_dial.rego`'s `_first_offending_file` is now single-valued: it is built from a set comprehension (`_offending_files`) over the same selection criteria as before (a changed file is either denied via `_file_is_denied` or not allowlisted via `not _file_is_allowed`), with a deterministic `sort(...)[0]` pick of the lexicographically-first offending path. The selection criteria are unchanged; only the case of two or more offending files in a single PR changes — it now resolves deterministically instead of erroring with `eval_conflict_error`.
+
 ## [0.1.0] - 2026-06-25
 
 ### Added
