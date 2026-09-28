@@ -47,6 +47,22 @@
     },
     "bake": {
       "consecutive_clean_cycles_required": 3
-    }
+    },
+    "change_surface": {
+      "auto_merge_allowed_globs": [
+        ".github/workflows/**",
+        ".github/dependabot.yml"
+      ],
+      "deny_globs": [
+        "conformance/**",
+        "docs/**",
+        "standard/**",
+        "scripts/**",
+        "README.md",
+        "AGENTS.md",
+        "CLAUDE.md"
+      ]
+    },
+    "codeowner_actors": ["jonathan-kellerai"]
   }
 }
