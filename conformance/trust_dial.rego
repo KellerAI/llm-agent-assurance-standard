@@ -115,17 +115,22 @@ _file_is_allowed(file) if {
 }
 
 # First offending file (for rationale) — either denied or outside allowlist.
-_first_offending_file := file if {
+# Collected as a set (not a complete rule keyed by multiple bodies) so that
+# more than one offending file never produces an eval_conflict_error; the
+# lexicographically-first path is picked deterministically via sort().
+_offending_files contains file if {
 	_has_changed_files
 	file := input.changed_files[_]
 	_file_is_denied(file)
 }
 
-_first_offending_file := file if {
+_offending_files contains file if {
 	_has_changed_files
 	file := input.changed_files[_]
 	not _file_is_allowed(file)
 }
+
+_first_offending_file := sort([f | f := _offending_files[_]])[0]
 
 # ---------------------------------------------------------------------------
 # verdict — exactly one of: "auto-merge" | "hold-for-review" | "block".
