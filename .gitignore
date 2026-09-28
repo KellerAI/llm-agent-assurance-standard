@@ -2,9 +2,6 @@
 .claude/
 .claude-tmp/
 
-# Local git worktrees
-.worktrees/
-
 # macOS
 .DS_Store
 
