@@ -23,6 +23,24 @@ The authoritative definition for any term is the artifact file that introduces i
 - **Staging file** — any file matched by `.gitignore`.
   Staging files may be edited directly, without a PR.
 
+## Controlled-language terms
+
+- **Controlled language** — a natural language restricted to a fixed set of writing rules
+  and a fixed dictionary, so that a sentence admits one reading.
+  In this repository it constrains the free-text fields of a decision-trace record.
+  See [`../laas/profiles/ste-core.md`](../laas/profiles/ste-core.md).
+- **STE profile** — an industry-specific controlled-language module under
+  [`../laas/profiles/`](../laas/profiles/), adapted from ASD-STE100 principles.
+  A profile is informative: it defines no obligation, no Consequence Tier, and no threshold.
+- **Approved term** — a noun or verb listed in a profile's section 3 with exactly one
+  meaning and one part of speech. The markdown table is authoritative; the JSON file under
+  `docs/laas/profiles/glossary/` is derived from it.
+- **Forbidden term** — a word a profile excludes because it is ambiguous in that domain.
+  Every forbidden term carries a required replacement.
+- **Language conformance level** — how thoroughly a record was checked against its profile:
+  `LC-0` unchecked, `LC-1` self-declared, `LC-2` tool-checked, `LC-3` tool-checked plus
+  independent review of the free-text fields.
+
 ## Contribution terms
 
 - **Conventional Commits** — the commit message convention enforced by `commitlint`.
