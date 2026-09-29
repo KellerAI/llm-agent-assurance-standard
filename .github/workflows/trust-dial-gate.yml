@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # full history needed so git diff against base branch works
 
@@ -70,6 +70,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_ACTOR: ${{ github.actor }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
         run: |
           set -euo pipefail
           state="audit/trust-dial-state.json"
@@ -87,7 +88,7 @@ jobs:
             --argjson pr "$PR_NUMBER" \
             --arg actor "$PR_ACTOR" \
             --arg author "$PR_AUTHOR" \
-            --argjson changed_files '${{ steps.changed.outputs.files }}' \
+            --argjson changed_files "$CHANGED_FILES" \
             '{
               tier: $tier,
               ecosystem: $eco,
