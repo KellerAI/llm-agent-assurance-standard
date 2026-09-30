@@ -29,14 +29,14 @@ cfg := data.laas
 
 default expected_ct := 4
 
-# read-only / sandboxed -> CT0
+# read-only / sandboxed -> CT0 only on explicit boolean false (SD-1; LAAS.md:43-44)
 expected_ct := 0 if {
-	not input.action.effect_surface.external_effect
+	input.action.effect_surface.external_effect == false
 }
 
 # external effect with a fully-known surface -> lattice max of the three axes
 expected_ct := m if {
-	input.action.effect_surface.external_effect
+	input.action.effect_surface.external_effect == true
 	s := input.action.effect_surface
 	rev := cfg.tier_lattice.reversibility[s.reversibility]
 	scp := cfg.tier_lattice.scope[s.scope]
@@ -186,9 +186,9 @@ violations contains obl(
 	"LAAS-OBL-RES-001",
 	sprintf("residual escape rate %v exceeds tolerance %v for ct %d", [input.residual_error_bound, residual_tolerance, effective_ct]),
 ) if {
-	# both sides are undefined-safe: if no tolerance exists for this tier, or no
-	# residual bound was supplied (pure Bucket A), the comparison is undefined and
-	# this violation simply does not fire.
+	# compares residual_error_bound to the tolerance; undefined when the bound is
+	# null/absent or the tier has no tolerance. Missing-bound and missing-evidence
+	# cases are handled by the spec-alignment rules at :248-260.
 	input.residual_error_bound > residual_tolerance
 }
 
@@ -219,4 +219,42 @@ summary := {
 	"errors": count(error_violations),
 	"warnings": count(warning_violations),
 	"compliant": compliant,
+}
+
+# ---- Spec-alignment rules (LAAS.md §4.1, §4.3) ----
+violations contains obl("LAAS-OBL-IND-001", "model-lineage verifier is not independent at CT4; a deterministic or human verifier is required") if {
+	effective_ct >= cfg.human_approval_floor_ct
+	not blocked
+	verifier_passed
+	input.verifier.type == "model"
+}
+
+_bound_present if is_number(input.residual_error_bound)
+
+_evidence_present if {
+	is_array(input.evidence_refs)
+	count(input.evidence_refs) > 0
+	every r in input.evidence_refs {
+		is_string(r)
+		r != ""
+	}
+}
+
+_bucket_a if {
+	input.verifier.type == "deterministic"
+	verifier_passed
+}
+
+violations contains obl("LAAS-OBL-RES-001", sprintf("residual_error_bound supplied at ct %d without evidence_refs in the trace", [effective_ct])) if {
+	is_number(residual_tolerance)
+	not blocked
+	_bound_present
+	not _evidence_present
+}
+
+violations contains obl("LAAS-OBL-RES-001", sprintf("Bucket-B action at ct %d lacks a numeric residual_error_bound", [effective_ct])) if {
+	is_number(residual_tolerance)
+	not blocked
+	not _bucket_a
+	not _bound_present
 }

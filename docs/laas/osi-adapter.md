@@ -178,9 +178,9 @@ with these fields:
 A `None` on any axis means no determinable value was found.
 For `write` and `delete`, `emitter.derive_ct` then returns
 `default_ct_when_undetermined` from the bundle, which is 4 (CT4) in
-`conformance/laas/data.json:11` (`scripts/laas/emitter.py:192-205`).
+`conformance/laas/data.json:11` (`scripts/laas/emitter.py:200-213`).
 For `read`, `external_effect` is `False`, so `derive_ct` returns CT0 whatever the
-axis values are (`scripts/laas/emitter.py:185-186`;
+axis values are (`scripts/laas/emitter.py:193-194`;
 `scripts/laas/osi_to_surface.py:185`); only the unsigned-model floor below can raise it.
 
 ### Axis derivation rules
@@ -211,7 +211,7 @@ The CLI wraps the surface in `osi_emit_decision_record`, which calls the canonic
 `emitter.emit_decision_record`. The resulting JSON is written to stdout or `--out`.
 The record carries `input.trusted`, `gate.assigned_ct`, and
 `aggregate.window_effect_ct` (`scripts/laas/test_osi_to_surface.py:166-188`).
-The emitter always writes `aggregate.window_effect_ct` (`scripts/laas/emitter.py:279`):
+The emitter always writes `aggregate.window_effect_ct` (`scripts/laas/emitter.py:287`):
 it is 0 for a signed model and `untrusted_input_min_ct` for an unsigned one.
 The CLI also supplies a deterministic, qualified, passing verifier (`VRF-OSI-DET`), so
 the proof script can show a compliant CT4 write
@@ -224,7 +224,7 @@ When `--unsigned` is passed, the adapter sets `aggregate.window_effect_ct` to
 (default `conformance/laas/data.json`) (`scripts/laas/osi_to_surface.py:239-241`,
 `:314`).
 The emitter then assigns `CT = max(derived_ct, window_effect_ct)`, flooring the
-assigned CT to at least that value (`scripts/laas/emitter.py:249`).
+assigned CT to at least that value (`scripts/laas/emitter.py:257`).
 
 ---
 
@@ -311,7 +311,7 @@ step 3:
 == 3. opa eval: assert compliant == true ==
 compliant = true
 {
-  "bundle": "laas-fin-1.1.0",
+  "bundle": "laas-fin-1.1.1",
   "compliant": true,
   "effective_ct": 4,
   "errors": 0,
