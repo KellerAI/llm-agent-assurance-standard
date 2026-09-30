@@ -56,19 +56,26 @@ is the machine source of truth.
 Where an industry profile and `ste-core.md` conflict, the industry profile takes precedence
 within its domain and must state the deviation explicitly.
 
-Three profiles currently deviate, and all three deviate in the same direction — a class of
-defect that is blocking at **every** tier, including CT0, because its harm is caused by the
-notation itself and does not scale with the Consequence Tier:
+Four profiles currently deviate from the core gate policy ([`ste-core.md`](ste-core.md) §5),
+and all four deviate in the same direction — a class of defect that is blocking at **every**
+tier, including CT0, because its harm is caused by the text itself and does not scale with
+the Consequence Tier:
 
 | Profile | Blocking at every tier | Deviation |
 |---------|------------------------|-----------|
 | [`healthcare.md`](healthcare.md) §5.2 | Dose and abbreviation notation | Also requires `LC-3` at CT3 rather than `LC-2` |
 | [`real-estate.md`](real-estate.md) §5.2 | Occupant-description language | — |
 | [`contracting.md`](contracting.md) §5.2 | Unit and quantity notation | — |
+| [`software-docs.md`](software-docs.md) §5.2 | Identifier notation, version notation, and credential redaction (`STE-SWD-01`, `STE-SWD-02`, `STE-SWD-10`) | — |
+
+A deviation from the core **rule base** is a separate matter and is not listed here.
+[`legal.md`](legal.md) §2.1, for example, states two rule-base deviations and adopts the gate
+policy without deviation (`docs/laas/profiles/legal.md:454-455`).
 
 ## Recommended gate policy
 
-Defined in [`ste-core.md`](ste-core.md) §5 and adopted by all three profiles.
+Defined in [`ste-core.md`](ste-core.md) §5 and adopted by all nine industry profiles, four of
+them with the deviation in the table above.
 
 | Effective CT | Required level | Gate response to language non-conformance |
 |--------------|----------------|-------------------------------------------|
@@ -108,13 +115,17 @@ The markdown is authoritative; the JSON is derived, in the same relationship
 Field notes:
 
 - `enum` appears only on a noun whose approved meaning is a closed value set.
-- `variants` appears on a forbidden entry that covers more than one surface form. It is
-  optional; `banking.json` has none.
+- `variants` lists the other surface forms a forbidden entry covers. It is optional, and an
+  entry can carry it as an empty array. `banking.json` omits it on every entry.
+  `education.json`, `insurance.json`, and `legal.json` carry it only on entries with other
+  surface forms, never empty. `contracting.json` carries it on every entry, always empty;
+  the other four files carry it on every entry, sometimes empty.
 - `class` groups forbidden entries where a profile treats two groups differently:
-  `notation` and `vocabulary` in `healthcare.json` and `contracting.json`,
-  `occupant-description` and `ambiguity` in `real-estate.json`. The first group in each of
-  those files is blocking at every tier, including CT0. `banking.json` and
-  `seo-adsense.json` have a single group and omit the field.
+  `notation` and `vocabulary` in `healthcare.json`, `contracting.json`, and
+  `software-docs.json`; `occupant-description` and `ambiguity` in `real-estate.json`.
+  Entries in the `notation` and `occupant-description` classes are blocking at every tier,
+  including CT0. `banking.json`, `seo-adsense.json`, `legal.json`, `insurance.json`, and
+  `education.json` have a single group and omit the field.
 - No term appears in both `nouns` and `verbs` in any profile. `STE-C-04` allows a term
   exactly one part of speech, so a domain concept with both forms gets two distinct surface
   forms — `post` and `posting date`, `bid` and `bid amount`.
@@ -125,7 +136,13 @@ also a plain object validated by use rather than by schema.
 ## Adding a profile
 
 A new profile registers in five places: the profile `.md` file, its `glossary/*.json` file,
-the Contents table above, `CHANGELOG.md`, and the Pages index (`.github/workflows/pages.yml`).
+the Contents table above, the Adopted profiles table in [`ste-core.md`](ste-core.md) §8, and
+`CHANGELOG.md`.
+A profile that introduces new load-bearing vocabulary also adds it to
+`docs/agents/glossary.md` (step 6).
+The Pages index needs no change: it links this README, not individual profiles
+(`.github/workflows/pages.yml:48`), so a new profile reaches Pages through the Contents
+table.
 
 1. Create `docs/laas/profiles/<name>.md`, copying the section order from
    [`ste-core.md`](ste-core.md) §7. It is fixed so the profiles stay interchangeable.
@@ -135,9 +152,8 @@ the Contents table above, `CHANGELOG.md`, and the Pages index (`.github/workflow
 4. State any deviation from the core gate policy explicitly, with its justification.
 5. Add a row to the table in [`ste-core.md`](ste-core.md) §8 and to the Contents table above.
 6. Add any new load-bearing vocabulary to `docs/agents/glossary.md` in the same pull request
-   (`docs/agents/glossary.md:55`).
-7. Record the profile in `CHANGELOG.md` and in the Pages index
-   (`.github/workflows/pages.yml`).
+   (`docs/agents/glossary.md:142`).
+7. Record the profile in `CHANGELOG.md`.
 
 ## Reference
 

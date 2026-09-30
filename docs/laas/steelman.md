@@ -23,7 +23,7 @@ This is LAAS's foundational claim, vindicated by precedent.
 LAAS's governance unit is the **(action, consequence-tier)** pair, and the tier is gate-derived, never self-asserted (`LAAS-OBL-TIER-001`; the gate computes CT0–CT4 from the observed effect surface).
 The article proves that "is this agent trusted?" is the wrong question — aviation already discarded its equivalent.
 The right question is the one LAAS asks: what has this action, on this task-class, earned?
-The objection that tiering is bureaucratic overhead dies here: ETOPS' staircase *expanded* twin-engine routes, and the envelope is revocable (`effective_ct = max(gate_ct, cumulative_ct)`), exactly as ETOPS authority contracts when reliability regresses.
+The objection that tiering is bureaucratic overhead dies here: ETOPS' staircase *expanded* twin-engine routes, and the envelope is revocable (`effective_ct := max([input.gate.assigned_ct, _agg_ct])`, where `_agg_ct` is the cumulative-window tier `aggregate.window_effect_ct`; `conformance/laas/laas.rego:48–50`), exactly as ETOPS authority contracts when reliability regresses.
 
 ## Pillar 2 — *Reliability You Can Bank*: the range is priced in measured failure data
 
@@ -78,9 +78,9 @@ Each industry doctrine, followed to its conclusion, reconstructs a face of LAAS.
 | Industry doctrine | Source precedent | LAAS mechanism it derives |
 |---|---|---|
 | Graduated, revocable, evidence-earned envelope per unit/task | ETOPS tiers (Earned Range); SAE J3016 levels + ODD | Gate-derived CT0–CT4 per (action, tier); revocable `effective_ct` |
-| Authority priced in measured failure data | ETOPS IFSD rate (Reliability You Can Bank); banking backtesting; AV disengagement rate | Backtested residual escape rate + per-tier tolerance (`OBL-RES-001`, `OBL-AGG-001`) |
-| Range derived from an always-reachable fallback | ETOPS diversion runway (Always a Runway); AV Minimal Risk Condition | Abstain/block + independent verify + human approval (`OBL-IRR/HUM/INP/TRC-001`) |
-| Govern integrity (undetected error), not accuracy | DO-178C + SR 26-2 (Aviation & Banking); SOTIF / UL 4600 | Out-of-process signed gate + verification + traceability (`OBL-ENF/IND/VQ-001`) |
+| Authority priced in measured failure data | ETOPS IFSD rate (Reliability You Can Bank); banking backtesting; AV disengagement rate | Backtested residual escape rate + per-tier tolerance (`LAAS-OBL-RES-001`, `LAAS-OBL-AGG-001`) |
+| Range derived from an always-reachable fallback | ETOPS diversion runway (Always a Runway); AV Minimal Risk Condition | Abstain/block + independent verify + human approval (`LAAS-OBL-IRR-001`, `LAAS-OBL-HUM-001`, `LAAS-OBL-INP-001`, `LAAS-OBL-TRC-001`) |
+| Govern integrity (undetected error), not accuracy | DO-178C + SR 26-2 (Aviation & Banking); SOTIF / UL 4600 | Out-of-process signed gate + verification + traceability (`LAAS-OBL-ENF-001`, `LAAS-OBL-IND-001`, `LAAS-OBL-VQ-001`) |
 
 ## The closing case
 

@@ -7,11 +7,21 @@ How the conventions in **llm-agent-assurance-standard** are enforced — what is
 
 | Gate | Where it runs | What it checks |
 |------|--------------|----------------|
-| `scripts/check-sanitization.sh` | CI and the pre-commit hook | No internal term from the denylist appears in the publishable tree. The denylist is base64-encoded inside the script so the script does not itself republish those terms. |
-| Markdown lint | CI | `markdownlint-cli2` over every Markdown file. |
-| Link check | CI | `lychee` resolves every link. |
-| `commitlint` | CI, on every pull request | Every commit message is a valid Conventional Commit. |
-| Conformance policy | CI | `kellerai.oss.conformance` OPA policy via the reusable workflow. |
+| JSON well-formedness | CI (`.github/workflows/ci.yml:18`) | `jq empty` parses every `*.json` file in the tree. |
+| `scripts/check-sanitization.sh` | CI (`.github/workflows/ci.yml:34`) and the pre-commit hook (`lefthook.yml:7–8`) | No internal term from the denylist appears in the publishable tree. The denylist is base64-encoded inside the script so the script does not itself republish those terms. |
+| Markdown lint | CI (`.github/workflows/ci.yml:31`) | `markdownlint-cli2` over every Markdown file. |
+| Link check | CI (`.github/workflows/ci.yml:48`) | `lychee` resolves every link. |
+| `commitlint` | CI, on every pull request (`.github/workflows/commitlint.yml:18`) | Every commit message is a valid Conventional Commit. |
+| Conformance workflow | CI (`.github/workflows/ci.yml:37`) | The external reusable workflow `jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml`; what it evaluates cannot be inspected from this repository. |
+| Agentic gates | CI (`.github/workflows/conformance.yml:7`) | Repo-hygiene checks IC-1..IC-7 (`.github/workflows/conformance.yml:19`) and the D6 ADR citation check (`.github/workflows/conformance.yml:88`). |
+| Branch tier | CI, on every pull request (`.github/workflows/validate-branch-tier.yml:24`) | The pull request follows the tiered merge model (`.github/workflows/validate-branch-tier.yml:10–13`). |
+| External branch name | CI, on pull requests from `external/*` branches only (`.github/workflows/validate-branch-name.yml:14`) | The branch name matches the `external/` naming pattern. |
+| Linked issue | CI, on pull requests from `external/*` branches only (`.github/workflows/validate-linked-issue.yml:19`) | The issue named in the branch is open and carries the `codeowner-approved` label (`.github/workflows/validate-linked-issue.yml:12–13`, `:23`). |
+| Trust-dial gate | CI, on pull requests only (`.github/workflows/trust-dial-gate.yml:113`) | `opa eval` of `data.kellerai.oss.trust_dial.decision` against `conformance/`. |
+| Blast-radius pulse | CI, on pull requests only (`.github/workflows/blast-radius-pulse.yml:60`) | `scripts/pulse.sh` runs `opa eval` of `data.kellerai.oss.blast_radius.result` (`scripts/pulse.sh:242`). |
+
+The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
+Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`, `conformance/blast_radius.rego:15`.
 
 The pre-commit hook is managed by `lefthook`.
 Install it once with `lefthook install`; it then runs the sanitization gate before every commit.
@@ -61,27 +71,32 @@ opa test conformance/laas/
 The test suite lives at `conformance/laas/laas_test.rego`.
 `opa test` must exit zero before any change to `conformance/laas/laas.rego`
 or `conformance/laas/data.json` is committed.
+This is a local contributor gate, not a CI gate.
+In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
+Sources: `.github/workflows/ci.yml:33–34`, `.github/workflows/ci.yml:37`, `.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`, `scripts/pulse.sh:242`.
 
 ## The LaaS action-conformance policy
 
 `conformance/laas/laas.rego` is the primary OPA policy for this repository
-(package `kellerai.laas.actions`, declared at `laas.rego:18`).
+(package `kellerai.laas.actions`, declared at `laas.rego:19`).
 It gates individual LLM-agent *actions* by consequence tier — not the model
 itself — and applies wherever an agent can take an action with an effect
 outside its sandbox.
 The gate, not the agent, supplies the observed effect surface; this policy
 checks that the tier assignment, verification, and enforcement are correct.
 
-- **Package:** `kellerai.laas.actions` (`laas.rego:18`).
+- **Package:** `kellerai.laas.actions` (`laas.rego:19`).
 - **Sibling data:** `conformance/laas/data.json` carries the obligation registry,
   the CT lattice, and enforcement thresholds (`conformance/laas/data.json:1–34`).
 - **Entry points:** `violations` (set of `{obligation, severity, msg}`),
-  `summary` (`expected_ct`, `effective_ct`, `errors`, `warnings`, `compliant`),
-  and `compliant` (bool — true when no error-severity violations exist)
-  (`laas.rego:11–13`).
+  `summary` (`bundle`, `expected_ct`, `effective_ct`, `errors`, `warnings`, `compliant`;
+  `bundle` at `laas.rego:216`),
+  `compliant` (bool — true when no error-severity violations exist),
+  and `error_ids` (set of obligation IDs with error-severity violations; rule at `laas.rego:209`)
+  (`laas.rego:11–14`).
 - **CT classification** — tier is the lattice max of three axes; an unknown or
-  undetermined surface defaults to CT4 (`laas.rego:29`; `data.json:11`):
-  - **CT0** — no external effect; read-only or fully sandboxed (`laas.rego:32–34`).
+  undetermined surface defaults to CT4 (`laas.rego:30`; `data.json:11`):
+  - **CT0** — no external effect; read-only or fully sandboxed (`laas.rego:33–35`).
   - **CT1** — reversible, single-system internal write
     (reversibility rank 1, scope rank 1; `data.json:7–9`).
   - **CT2** — reversible or low-consequence external effect.
@@ -91,8 +106,8 @@ checks that the tier assignment, verification, and enforcement are correct.
     verification **plus** human approval; default when surface is undetermined
     (`data.json:13`).
 - **Effective tier:** max of the gate-assigned CT and the cumulative window CT,
-  preventing structuring attacks (`laas.rego:47–49`).
-- **Fail-safe default:** `default expected_ct := 4` (`laas.rego:29`).
+  preventing structuring attacks (`laas.rego:48`).
+- **Fail-safe default:** `default expected_ct := 4` (`laas.rego:30`).
 
 ### LaaS obligation families
 
@@ -101,35 +116,35 @@ recorded in `conformance/laas/data.json:19–32`.
 
 - **`LAAS-OBL-TIER-001`** — CT is gate-derived from the observed effect surface;
   a gate-assigned tier below the lattice-derived tier is an error
-  (`laas.rego:97–103`; `data.json:20`).
+  (`laas.rego:99–104`; `data.json:20`).
 - **`LAAS-OBL-SELF-001`** — a self-reported tier may not lower the gate-derived
-  tier; the gate always prevails (warning, `laas.rego:105–111`; `data.json:21`).
+  tier; the gate always prevails (warning, `laas.rego:107–112`; `data.json:21`).
 - **`LAAS-OBL-ENF-001`** — enforcement-plane integrity: the policy bundle must
-  be signed and the gate must run out-of-process (`laas.rego:113–122`; `data.json:22`).
+  be signed and the gate must run out-of-process (`laas.rego:115–123`; `data.json:22`).
 - **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained
-  (`laas.rego:124–127`; `data.json:23`).
+  (`laas.rego:126–128`; `data.json:23`).
 - **`LAAS-OBL-AGG-001`** — the assigned tier must not be below the cumulative
-  window CT; guards against structuring (`laas.rego:129–135`; `data.json:24`).
+  window CT; guards against structuring (`laas.rego:131–136`; `data.json:24`).
 - **`LAAS-OBL-INP-001`** — untrusted input must raise the tier to the configured
   floor (CT≥3 by default) or the action must be blocked
-  (`laas.rego:137–145`; `data.json:18,25`).
+  (`laas.rego:139–146`; `data.json:18,25`).
 - **`LAAS-OBL-VEN-001`** — third-party or vendor dependencies require attribution
-  and scope limits (`laas.rego:147–151`; `data.json:26`).
+  and scope limits (`laas.rego:149–152`; `data.json:26`).
 - **`LAAS-OBL-IRR-001`** — CT≥3 actions require a passing independent pre-commit
-  verifier unless the action is blocked (`laas.rego:153–158`; `data.json:27`).
+  verifier unless the action is blocked (`laas.rego:155–159`; `data.json:27`).
 - **`LAAS-OBL-IND-001`** — the pre-commit verifier must be independent: a distinct
   checker type, different model lineage, and error-correlation ≤ 0.2
-  (`laas.rego:160–166`; `data.json:14,28`).
+  (`laas.rego:162–167`; `data.json:14,28`).
 - **`LAAS-OBL-VQ-001`** — the verifier must be qualified (DO-330 analogue)
-  (`laas.rego:168–174`; `data.json:29`).
+  (`laas.rego:170–175`; `data.json:29`).
 - **`LAAS-OBL-RES-001`** — the Bucket-B residual escape rate must be within
-  tolerance for the effective tier (`laas.rego:183–192`; `data.json:15,30`).
+  tolerance for the effective tier (`laas.rego:185–193`; `data.json:15,30`).
 - **`LAAS-OBL-HUM-001`** — CT4 actions require human approval unless the action
-  is blocked (`laas.rego:176–181`; `data.json:13,31`).
+  is blocked (`laas.rego:178–182`; `data.json:13,31`).
 
 ### Audit trail — `violations` and `summary`
 
-Every evaluation produces a `summary` record (`laas.rego:214–221`) containing
+Every evaluation produces a `summary` record (`laas.rego:215–222`) containing
 `bundle`, `expected_ct`, `effective_ct`, `errors`, `warnings`, and `compliant`.
 The `violations` set carries the full obligation ID, severity, and a diagnostic
 message for each firing rule.
@@ -140,7 +155,8 @@ append-only trace required by `LAAS-OBL-TRC-001`.
 
 The LaaS action-conformance policy ships a decision-record emitter, backtest
 harness, OSI adapter, and runnable proofs under `scripts/laas/`.
-Each is invoked directly with `python3` or `bash`; none are wired into a git hook,
+Each is invoked directly with `python3` or `bash`; none are wired into a git hook
+(`lefthook.yml:7–8` runs only the sanitization gate) or into any workflow in `.github/workflows/`,
 so contributors run them on demand.
 
 | Script | Invocation | Purpose |

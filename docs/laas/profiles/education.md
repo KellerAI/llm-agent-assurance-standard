@@ -6,7 +6,7 @@
 **Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
-**Derived glossary:** `glossary/education.json` (derived from §3; not yet published)
+**Derived glossary:** [`glossary/education.json`](glossary/education.json)
 **Status:** Draft, not approved
 
 > **Disclaimer:** This document is not an ASD publication and is not endorsed by the
@@ -279,6 +279,8 @@ Each row states the replacement.
 | *properly cited* | Asserts conformance to an unnamed rule set. | The named citation style edition and the citation checker verdict |
 | *flagged for review* | Hides whether a person was already told. | `refer`, with the named office and the notification timestamp |
 | *the system* (as actor) | Unattributed actor. | The `actor_id` or the named component |
+| *citation style* (bare) | Names the published rule set without its edition. The edition is the scope limit that the `STE-C-07` exemption for a citation style designation depends on (§2.2, Deviation 2). | The style name and its edition, such as `APA 7th edition` |
+| *APA*, *MLA*, *Chicago* (bare style name) | A bare style name with no edition cannot be checked against a scoped rule set (§2.2, Deviation 2). | The style name and its edition, such as `APA 7th edition`, `MLA 9th edition`, or `Chicago 17th edition` |
 
 ## 4. Decision-trace field templates
 

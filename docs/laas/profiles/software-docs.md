@@ -6,7 +6,7 @@
 **Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
-**Derived glossary:** `glossary/software-docs.json` (not yet published)
+**Derived glossary:** [`glossary/software-docs.json`](glossary/software-docs.json)
 **Status:** Draft, not approved
 
 > **Disclaimer:** This document is not an ASD publication and is not endorsed by the
@@ -158,7 +158,7 @@ Both are more restrictive than the core rules they refine.
 ## 3. Approved technical nouns and technical verbs
 
 The tables below are authoritative.
-`glossary/software-docs.json` is derived from them when it is published.
+[`glossary/software-docs.json`](glossary/software-docs.json) is derived from them.
 
 No term appears in both tables.
 Where a domain concept has both a noun form and a verb form, the tables give them distinct
@@ -241,14 +241,14 @@ Each row states the replacement.
 |-----------|--------------------|---------------|
 | *revert* (as "undo a publication") | A revert restores a file. It does not recall a published page. See `STE-SWD-03`. | `revert` only for the repository; `withdraw` for the page; state page reversibility separately |
 | *deploy*, *ship*, *push live* | No named target and no stated reach, so the `scope` axis is unassessable. | `publish to the <staging\|internal\|public> site` |
-| *latest*, *current*, *recent* (as a version) | Resolves to a different value on a different day. | The version string and its named scheme |
+| *latest*, *current*, *recent*, *newer* (as a version) | Resolves to a different value on a different day. | The version string and its named scheme |
 | *minor* (informal) | Collides with the semver level and with the `consequence` enum at `data.json:9`. | The semver level, or the enum value, or the stated number |
 | *just*, *simply*, *only* (before an instruction) | Asserts the step is easy and suppresses the failure case. | The step, and its expected observable result |
 | *should work*, *should be safe* | States a hope, not an executed result (`ste-core.md` §3.2). | The exit status, the runtime, and the date of execution, or `not executed` |
 | *fast*, *scalable*, *highly available* | Self-assessed performance with no measurement basis (`STE-SWD-11`). | The number, the unit, the measurement basis, and the date |
 | *supported* (bare) | Reads as a contractual promise of unbounded scope. | `supported by <component> from version <string>` |
 | *deprecated* (bare) | Gives the reader no date and no version to plan against. | `deprecated in <version>, removed in <version or date>` |
-| *cleanup*, *tidy-up*, *small change* | Hides a breaking change behind a size adjective. | `breaking change`, the affected interface, and the required reader action |
+| *cleanup*, *tidy-up*, *small change*, *minor update* | Hides a breaking change behind a size adjective. | `breaking change`, the affected interface, and the required reader action |
 | *the docs*, *the system* (as actor) | Unattributed actor. | The `actor_id` or the named component |
 | *example key*, *dummy token* | Claims a value is synthetic without evidence. A real key has shipped this way. | `redacted credential`, with the redaction stated |
 | *rollback* (for a published page) | Implies restoration of reader state, which no publication control provides. | `withdraw the published page`, then state what readers already ran |

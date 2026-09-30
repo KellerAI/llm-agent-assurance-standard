@@ -217,6 +217,10 @@ relationship that `conformance/laas/data.json` holds to `standard/LAAS.md`.
 | SEO, AdSense, and digital advertising | `LAAS-STE-ADV-DRAFT-1.0` | [`seo-adsense.md`](seo-adsense.md) | [`glossary/seo-adsense.json`](glossary/seo-adsense.json) |
 | Real estate | `LAAS-STE-RE-DRAFT-1.0` | [`real-estate.md`](real-estate.md) | [`glossary/real-estate.json`](glossary/real-estate.json) |
 | Building contracting, HVAC, and solar | `LAAS-STE-CON-DRAFT-1.0` | [`contracting.md`](contracting.md) | [`glossary/contracting.json`](glossary/contracting.json) |
+| Legal and contracts | `LAAS-STE-LEGAL-DRAFT-1.0` | [`legal.md`](legal.md) | [`glossary/legal.json`](glossary/legal.json) |
+| Insurance | `LAAS-STE-INS-DRAFT-1.0` | [`insurance.md`](insurance.md) | [`glossary/insurance.json`](glossary/insurance.json) |
+| Software and SaaS documentation | `LAAS-STE-SWD-DRAFT-1.0` | [`software-docs.md`](software-docs.md) | [`glossary/software-docs.json`](glossary/software-docs.json) |
+| Education and academic | `LAAS-STE-EDU-DRAFT-1.0` | [`education.md`](education.md) | [`glossary/education.json`](glossary/education.json) |
 
 ## Annex A (informative): Bibliography
 

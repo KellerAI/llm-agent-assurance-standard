@@ -8,6 +8,10 @@
 > to any standards body, and carries no endorsement from ISO, IEC, or any national body.
 > All rights reserved by the authors. © KellerAI / contributors (placeholder copyright,
 > draft only).
+>
+> This document is a rendering of `standard/LAAS.md` (LAAS Draft v1.1,
+> `standard/LAAS.md:3`), the canonical prose specification from which
+> `conformance/laas/data.json` is derived (`standard/LAAS.md:8–9`).
 
 ---
 
@@ -346,7 +350,7 @@ respectively.
 When any input to the tier-lattice formula is undetermined, the gate shall assign CT4.
 This default shall be recorded in the decision trace.
 
-*Requirement source: `conformance/laas/laas.rego:29–44`.*
+*Requirement source: `conformance/laas/laas.rego:30–45`.*
 
 **Example:** An agent calls `payments.transfer(amount=250000, dest=external)` with
 `reversibility=irreversible`, `scope=public`, `consequence=high`. The gate computes
@@ -375,7 +379,7 @@ The effective consequence tier for any action is:
 effective_ct = max( gate_assigned_ct, cumulative_window_ct )
 ```
 
-*Requirement source: `conformance/laas/laas.rego:47–49`.*
+*Requirement source: `conformance/laas/laas.rego:48–50`.*
 
 ### 4.5 Untrusted-input tier raising (LAAS-OBL-INP-001)
 
@@ -433,7 +437,7 @@ A verifier that is under the control of, or whose verdict can be modified by, th
 verified shall not satisfy the independence requirement. Any control path that allows the
 constrained party to tier, grade, or gate itself is non-conforming.
 
-*Requirement source: `conformance/laas/laas.rego:75–83`.*
+*Requirement source: `conformance/laas/laas.rego:76–84`.*
 
 ### 5.3 Verifier qualification (LAAS-OBL-VQ-001)
 
@@ -513,7 +517,7 @@ The gate (3.5) shall operate as an out-of-process component that the agent canno
 modify, or circumvent, including in elevated-permission or override modes.
 
 *Requirement source: `conformance/laas/data.json:17` (`require_out_of_process_gate: true`);
-`conformance/laas/laas.rego:119–121`.*
+`conformance/laas/laas.rego:120–123`.*
 
 #### 6.1.2 Signed policy bundle
 
@@ -522,7 +526,7 @@ The gate's policy bundle shall be cryptographically signed and version-pinned. T
 unsigned or in-process gate is non-conforming regardless of other verdict fields.
 
 *Requirement source: `conformance/laas/data.json:16` (`require_bundle_signed: true`);
-`conformance/laas/laas.rego:114–117`.*
+`conformance/laas/laas.rego:115–118`.*
 
 ### 6.2 Decision trace (LAAS-OBL-TRC-001)
 
@@ -577,7 +581,7 @@ Each decision-trace record shall contain, at minimum, the following fields:
 | `actor_chain_prev_hash` | Hash of the actor's preceding trace entry |
 | `merkle_anchor` | Shared Merkle root hash at the time of anchoring |
 
-*Field set verified against `docs/laas/proposal-v1.1.md:225–256` (emit_decision_trace).*
+*Field set verified against `docs/laas/proposal-v1.1.md:226–257` (emit_decision_trace).*
 
 #### 6.2.4 Bidirectional traceability
 
@@ -652,7 +656,7 @@ Untrusted or unattributed third-party dependencies shall fail closed. A componen
 provenance or scope limits cannot be established shall cause the gate to block and escalate
 the action.
 
-*Requirement source: `conformance/laas/laas.rego:148–151`.*
+*Requirement source: `conformance/laas/laas.rego:149–152`.*
 
 ---
 
@@ -683,8 +687,8 @@ trigger_matched == true  IMPLIES
   ( verdict IN {"fail", "abstain", "indeterminate"}  AND  action_blocked == true )
 ```
 
-*Predicate source: `docs/laas/proposal-v1.1.md:257–264` (conformance_predicate field);
-evaluated by `conformance/laas/laas.rego:154–191`.*
+*Predicate source: `docs/laas/proposal-v1.1.md:258–265` (conformance_predicate field);
+evaluated by `conformance/laas/laas.rego:155–193`.*
 
 ### 8.2 Deployer conformance attestation
 

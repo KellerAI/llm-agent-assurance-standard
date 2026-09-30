@@ -1,8 +1,14 @@
 # LAAS conformance policy — quick reference
 
-Machine-checkable conformance for **LLM-agent actions**. Companion to the repo's
-`conformance/` policy (which checks repo *structure*); this one checks agent *actions* at
-runtime. Normative prose: [`standard/LAAS.md`](../../standard/LAAS.md).
+Machine-checkable conformance for **LLM-agent actions**: this policy checks agent *actions* at
+runtime. It is distinct from the two verdict policies in [`conformance/`](../README.md), which
+govern this repository's own automation. Normative prose: [`standard/LAAS.md`](../../standard/LAAS.md).
+
+The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
+
+Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`,
+`conformance/blast_radius.rego:15`. The external workflow call is `.github/workflows/ci.yml:37`
+(see `.github/workflows/conformance.yml:4-5`).
 
 ## Files
 
@@ -71,20 +77,32 @@ obligation or rule in `laas.rego` that consumes it.
 | `input.trusted` | `LAAS-OBL-INP-001` | Untrusted input must raise the effective CT to ≥3 or the action must be blocked |
 | `vendor.used` / `vendor.attribution` / `vendor.scope_limited` | `LAAS-OBL-VEN-001` | Third-party dependencies require attribution and a scope limit |
 | `residual_error_bound` | `LAAS-OBL-RES-001` | Bucket-B residual escape rate; `null` means pure Bucket-A — the violation does not fire |
-| `action_blocked` | bypass condition for `IRR-001`, `HUM-001` | Gate block signal; satisfies verification and human-approval obligations via the block path |
+| `action_blocked` | bypass condition for `IRR-001`, `IND-001`, `VQ-001`, `HUM-001`, `INP-001` | Gate block signal (`blocked`, `laas.rego:61`); each of these rules requires `not blocked` (`laas.rego:157`, `:164`, `:172`, `:180`, `:145`), so a blocked action satisfies them via the block path |
 
-**Fields present in the example that are not evaluated by any violation rule** (informational
-only): `action.id`, `action.actor_id`, `action.actor_model_lineage` (used for IND-001 lineage
-comparison only when `verifier.type == "model"`), `gate.bundle_version`, `verifier.id`,
-`verifier.model_lineage` (same conditional use), `trace.actor_chain_prev_hash`,
-`trace.merkle_anchor`, and `escalation_approved`. These fields are part of the record schema
-but `laas.rego` does not reference them in any `violations` rule.
+`action.actor_model_lineage` and `verifier.model_lineage` feed `LAAS-OBL-IND-001` only when
+`verifier.type == "model"`: `independence_ok` requires the two lineages to differ
+(`laas.rego:82`), and the IND-001 rule fires on `not independence_ok` (`laas.rego:162-167`).
+
+**Fields present in the example that `laas.rego` does not reference** (informational only):
+`action.id`, `action.actor_id`, `action.effect_surface.tool`, `gate.bundle_version`,
+`verifier.id`, `trace.actor_chain_prev_hash`, `trace.merkle_anchor`, and `escalation_approved`.
+These fields are part of the record schema, but no rule in `laas.rego` reads them.
 
 ## CI wiring (proposed)
 
-A reusable workflow mirroring `.github/workflows/conformance.yml` runs `opa test` on this
-directory and `opa eval` against a stream/sample of decision records. `error`-severity
-violations block; `warning`-severity are reported. Pin to a commit SHA, not a branch.
+Not implemented: no workflow in this repository evaluates this policy. A future reusable
+workflow could run `opa test` on this directory and `opa eval` against a stream or sample of
+decision records, blocking on `error`-severity violations and reporting `warning`-severity ones.
+Pin such a workflow to a commit SHA, not a branch.
 
-> Verified on OPA 1.17.1. The conformance predicate references only declared trace fields, so it
-> is mechanically evaluable — see `standard/LAAS.md` §5.
+In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
+
+Supporting lines: `.github/workflows/ci.yml:33-34` (sanitization gate),
+`.github/workflows/ci.yml:37` (external conformance workflow),
+`.github/workflows/trust-dial-gate.yml:113` (`opa eval`), and
+`.github/workflows/blast-radius-pulse.yml:60` (`bash scripts/pulse.sh`, which runs `opa eval` at
+`scripts/pulse.sh:242`).
+
+> Re-verified on OPA 1.18.2 (2026-09-29): `opa check` and `opa test` (19/19 PASS). The
+> conformance predicate references only declared trace fields, so it is mechanically evaluable —
+> see `standard/LAAS.md` §5.
