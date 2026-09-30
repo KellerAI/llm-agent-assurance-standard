@@ -3,8 +3,9 @@
 ## Claude-specific notes
 
 - **No runtime, no build.** This repo is a rego-policy artifact.
-  Do not run build or test commands — there is no implementation here.
-  The only verification command is `opa`.
+  It has no application runtime and no build step; do not invent build or run commands.
+  To verify a change, run the gate commands under `## Key commands` in `AGENTS.md`
+  (imported at `CLAUDE.md:1`): `opa check`, `opa test`, and the script checks listed there.
   See `docs/agents/conventions.md`.
 
 - **No in-repo issue tracker.** There is no beads database and no `.beads/`

@@ -111,8 +111,8 @@ Checked directly against the paper text and confirmed absent:
 
 | Claim checked | Status |
 | --- | --- |
-| A "~100×" connectivity figure for J-space | **Absent.** The paper's prose gives roughly 7× read/write and roughly 10× MLP gain instead; do not import the 100× figure (`docs/init-context/global-workspace-paper.md:402-461`, `:434`, in the j-space-research repo). |
-| A "5%" lower bound on per-layer activation variance | **Absent.** Only the ≤10% upper bound (C5–C8 supporting list, above) appears. |
+| A "~100×" connectivity figure for J-space | **Absent.** The paper's prose gives roughly 7× read/write and roughly 10× MLP gain instead; do not import the 100× figure (lines 402–461, and line 434, of `docs/init-context/global-workspace-paper.md` in the external j-space-research repository). |
+| A "5%" lower bound on per-layer activation variance | **Absent.** Only the ≤10% upper bound (Supporting characterization, above) appears. |
 | The terms "sentience" or "Ned Block" | **Absent**, anywhere in the paper. |
 
 ### Access-consciousness-only scope (C9)

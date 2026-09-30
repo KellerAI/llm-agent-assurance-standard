@@ -4,6 +4,33 @@ status: Proposed
 date: 2026-05-22
 ---
 
+> **Erratum (2026-09-29).** This ADR was written for the `kellerai-oss-template`
+> repository and carried into this one, which is why several references below name
+> files that do not exist here. This repository still calls that template's reusable
+> conformance workflow (`.github/workflows/ci.yml:37`). The decision text below is
+> unchanged; this note only records where each reference now points.
+>
+> - `the-trust-dial.md`: the external KellerAI whitepaper *The Trust Dial: Earned
+>   Autonomy for Self-Improving AI Primitives* (2026-05-21). It is in neither this
+>   repository nor `kellerai-oss-template`; its line cites refer to that document.
+> - `scripts/bootstrap.sh` and `template/**`: external; they exist in
+>   `kellerai-oss-template`, not here.
+> - `conformance/conformance.rego` (including its self-tamper line cite) and
+>   `conformance/data.json` (including its digest line cite): external; the template's
+>   conformance policy and data manifest. Neither has an in-repo successor;
+>   `conformance/trust_dial.rego` is the new policy this decision adds, not a
+>   replacement for `conformance/conformance.rego`.
+> - `trust_dial_wired`: a deny family in the template's `conformance/conformance.rego`;
+>   not defined in this repository.
+> - Gap IDs G-02, G-08, G-10, G-11, G-12, "checklist step 9", and open questions
+>   OQ-1..OQ-6: not defined in this repository.
+> - Present in this repository: the artifacts the decision names exist at
+>   `conformance/trust_dial.rego` (package `kellerai.oss.trust_dial`,
+>   `conformance/trust_dial.rego:21`), `audit/decision-trace.jsonl`,
+>   `audit/trust-dial-state.json`, `.github/workflows/trust-dial-gate.yml` (which
+>   evaluates the verdict with `opa eval` at `.github/workflows/trust-dial-gate.yml:113`),
+>   and `.github/workflows/trust-dial-outcome.yml`.
+
 ## Context
 
 `kellerai-oss-template` ships a Dependabot configuration that *proposes* dependency

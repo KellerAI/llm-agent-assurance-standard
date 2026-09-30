@@ -5,14 +5,14 @@ Open Semantic Interchange (OSI) semantic model plus
 an action reference into a LAAS `EffectSurface`, then emits a full decision record
 through the canonical emitter. The pipeline is:
 
-```
+```text
 OSI model (.json|.yaml)
   + action_ref (kind / name / operation)
   → osi_to_surface.py  (mapping only — no tier math)
   → EffectSurface
-  → emitter.emit_decision_record  (CT assignment, obligation set)
+  → emitter.emit_decision_record  (CT assignment, record assembly)
   → decision record JSON
-  → opa eval  (conformance verdict)
+  → opa eval  (obligation evaluation, conformance verdict)
 ```
 
 No consequence-tier math lives in the adapter. CT assignment is owned by
@@ -33,18 +33,19 @@ The adapter accepts an OSI model with three top-level collections:
 | `metrics` | Named metric objects, each optionally annotated |
 | `relationships` | Directed edges `{from, to}` used for blast-radius traversal |
 
-Model files may be JSON or YAML. The JSON twin is preferred for the CLI because it
-requires no external dependency; YAML requires PyYAML, which is a CLI-only optional
-dependency (`scripts/laas/osi_to_surface.py:256-268`).
+Model files may be JSON or YAML (`.yaml` or `.yml`). The JSON twin is preferred for
+the CLI because it requires no external dependency; YAML requires PyYAML, which is a
+CLI-only optional dependency (`scripts/laas/osi_to_surface.py:256-268`).
 
 ### KELLERAI_LAAS `custom_extension`
 
 Each OSI object carries governance axes inside its `custom_extensions` list.
-The adapter reads extensions whose `vendor_name` equals `"KELLERAI_LAAS"`
-(`scripts/laas/osi_to_surface.py:62-67`).
+The adapter reads the `data` payload of the first extension whose `vendor_name` equals
+`"KELLERAI_LAAS"` (`scripts/laas/osi_to_surface.py:62-67`).
 
-The `data` payload is validated against
-`scripts/laas/osi/kellerai_laas_extension.schema.json`:
+`scripts/laas/osi/kellerai_laas_extension.schema.json` describes the `data` payload.
+The adapter does not load that schema or check payloads against it at runtime; the
+only code link between the two is the enum drift test described below:
 
 | Field | Type | Required | Allowed values |
 |-------|------|----------|---------------|
@@ -54,9 +55,20 @@ The `data` payload is validated against
 | `escape_rate_tolerance` | number | no | Bucket-B residual escape-rate tolerance |
 | `access_sensitive` | boolean | no | When `true`, adapter coerces scope to `"public"` |
 
+The schema sets `"additionalProperties": false`
+(`scripts/laas/osi/kellerai_laas_extension.schema.json:8`), so a payload with any key
+outside these five is invalid under the schema.
+Because nothing enforces the schema at runtime, the adapter reads only
+`reversibility`, `scope`, `consequence`, and `access_sensitive`, and ignores any
+other key (`scripts/laas/osi_to_surface.py:180-189`).
+It does not read `escape_rate_tolerance`; neither `osi_to_surface.py` nor
+`emitter.py` contains the string `escape_rate`.
+For `write` and `delete`, it treats a missing or unrecognised axis value as
+undetermined (`scripts/laas/osi_to_surface.py:126-138`).
+
 The three required axis values must be keys of the corresponding lattice entries in
 `conformance/laas/data.json`. A drift test (`scripts/laas/test_osi_to_surface.py:191-203`)
-asserts the schema enums equal the lattice keys at all times.
+asserts the schema enums equal the lattice keys whenever the unit tests run.
 
 ### Action reference
 
@@ -111,7 +123,10 @@ Internally it is the dict `{"kind": ..., "name": ..., "operation": ...}`.
 All four of `--model`, `--kind`, `--name`, and `--operation` are required.
 The remainder are optional with the defaults shown.
 
-```bash
+This is a synopsis, not a runnable command: `|` separates alternatives and `#`
+starts a note.
+
+```text
 python3 scripts/laas/osi_to_surface.py \
   -m  | --model     <path.json|.yaml>          # OSI model file (required)
         --kind       dataset | metric           # object type (required)
@@ -140,7 +155,8 @@ python3 scripts/laas/osi_to_surface.py \
   -o /tmp/record.json
 ```
 
-This is the same invocation used in step 1 of `scripts/laas/osi_check.sh:26-27`.
+Step 1 of `scripts/laas/osi_check.sh:26-27` passes the same flags, with absolute
+paths and a temporary output file.
 
 ---
 
@@ -154,17 +170,23 @@ with these fields:
 | Field | Value |
 |-------|-------|
 | `external_effect` | `True` for `write` or `delete`; `False` for `read` |
-| `reversibility` | Most-severe lattice key across blast radius, or `None` |
-| `scope` | Most-severe lattice key across blast radius, or `None` |
-| `consequence` | Most-severe lattice key across blast radius, or `None` |
+| `reversibility` | `write`/`delete`: most-severe lattice key across blast radius, after the operation floor, or `None`; `read`: the target's own value |
+| `scope` | `write`/`delete`: most-severe lattice key across blast radius, or `None`; `read`: the target's own value; `"public"` when `access_sensitive` applies |
+| `consequence` | `write`/`delete`: most-severe lattice key across blast radius, or `None`; `read`: the target's own value |
 | `tool` | `"osi.{kind}.{operation}:{name}"` |
 
-A `None` on any axis means no determinable value was found; the emitter defaults
-such cases to the highest CT (CT4).
+A `None` on any axis means no determinable value was found.
+For `write` and `delete`, `emitter.derive_ct` then returns
+`default_ct_when_undetermined` from the bundle, which is 4 (CT4) in
+`conformance/laas/data.json:11` (`scripts/laas/emitter.py:192-205`).
+For `read`, `external_effect` is `False`, so `derive_ct` returns CT0 whatever the
+axis values are (`scripts/laas/emitter.py:185-186`;
+`scripts/laas/osi_to_surface.py:185`); only the unsigned-model floor below can raise it.
 
 ### Axis derivation rules
 
-The adapter applies three rules when building the surface for write/delete operations:
+The adapter applies rules 1 and 2 only to `write` and `delete`; rule 3 applies to
+every operation:
 
 1. **Blast radius.** The adapter traverses `relationships` edges from the target
    object (cycle-safe, bounded to depth 64) and takes the most-severe value on each
@@ -174,9 +196,10 @@ The adapter applies three rules when building the surface for write/delete opera
    to `"hard"` and `delete` floors it to `"irreversible"`, taking whichever is more
    severe (`scripts/laas/osi_to_surface.py:193-195`).
 
-3. **`access_sensitive` coercion.** If any reachable object sets `access_sensitive: true`,
-   scope is overridden to `"public"` because OSI graph reach does not equal permission
-   reach (`scripts/laas/osi_to_surface.py:198-199`).
+3. **`access_sensitive` coercion.** If any reachable object (for `read`, the target
+   itself) sets `access_sensitive: true`, scope is overridden to `"public"` because
+   OSI graph reach does not equal permission reach
+   (`scripts/laas/osi_to_surface.py:183`, `:189`, `:198-199`).
 
 For `read` operations there is no external effect; axis values are taken directly from
 the target object's annotation with no blast-radius traversal or floors applied
@@ -186,16 +209,22 @@ the target object's annotation with no blast-radius traversal or floors applied
 
 The CLI wraps the surface in `osi_emit_decision_record`, which calls the canonical
 `emitter.emit_decision_record`. The resulting JSON is written to stdout or `--out`.
-The record carries at minimum `input.trusted`, `gate.assigned_ct`, and (when the
-model is unsigned) `aggregate.window_effect_ct`, as verified by
-`scripts/laas/test_osi_to_surface.py:166-188`.
+The record carries `input.trusted`, `gate.assigned_ct`, and
+`aggregate.window_effect_ct` (`scripts/laas/test_osi_to_surface.py:166-188`).
+The emitter always writes `aggregate.window_effect_ct` (`scripts/laas/emitter.py:279`):
+it is 0 for a signed model and `untrusted_input_min_ct` for an unsigned one.
+The CLI also supplies a deterministic, qualified, passing verifier (`VRF-OSI-DET`), so
+the proof script can show a compliant CT4 write
+(`scripts/laas/osi_to_surface.py:296-306`).
 
 #### Unsigned-model trust floor
 
 When `--unsigned` is passed, the adapter sets `aggregate.window_effect_ct` to
-`data["laas"]["untrusted_input_min_ct"]` (loaded from `conformance/laas/data.json`).
+`data["laas"]["untrusted_input_min_ct"]`, read from the `--bundle` file
+(default `conformance/laas/data.json`) (`scripts/laas/osi_to_surface.py:239-241`,
+`:314`).
 The emitter then assigns `CT = max(derived_ct, window_effect_ct)`, flooring the
-assigned CT to at least that value (`scripts/laas/osi_to_surface.py:239-241`).
+assigned CT to at least that value (`scripts/laas/emitter.py:249`).
 
 ---
 
@@ -203,20 +232,22 @@ assigned CT to at least that value (`scripts/laas/osi_to_surface.py:239-241`).
 
 The `custom_extension` schema is **informally versioned**. No formal change-control
 process has been established for it yet. This is a documented open question
-(`AGENTS.md:117-118`).
+(`AGENTS.md:155-156`, "Open questions" item 1).
 
 The schema identifier is:
 
-```
+```text
 $id: https://kellerai.dev/schemas/osi/kellerai_laas_extension.schema.json
 ```
 
-Source: `scripts/laas/osi/kellerai_laas_extension.schema.json:4`.
+Source: `scripts/laas/osi/kellerai_laas_extension.schema.json:3`.
 
-The schema's per-axis `enum` values are not maintained independently — they are
-derived from `conformance/laas/data.json` tier lattice keys. Any change to the
+The schema's per-axis `enum` lists are hand-written copies of the
+`conformance/laas/data.json` tier lattice keys; nothing generates them. Any change to the
 lattice must also update the schema enums; the drift test at
 `scripts/laas/test_osi_to_surface.py:191-203` catches divergence at test time.
+Run it with `python3 -m unittest discover scripts/laas`
+(`scripts/laas/test_osi_to_surface.py:4`).
 
 Anyone extending the schema or adding axes should surface the change as a proposal
 before merging, since no versioning mechanism is in place to signal breaking changes
@@ -241,15 +272,15 @@ if ! command -v opa >/dev/null 2>&1; then
 fi
 ```
 
-This differs from `scripts/laas/check.sh`, which skips the OPA step when `opa` is
-absent.
+This differs from `scripts/laas/check.sh`, which skips the OPA step and exits 0
+when `opa` is absent (`scripts/laas/check.sh:23-25`).
 
 ### Scenario
 
 The script exercises a `write` on the `net_settlement_amount` metric from
 `scripts/laas/osi/example.semantic.json` — the highest-consequence object in the
 example model (`irreversible` / `org` / `high`), which maps to CT4
-(`scripts/laas/osi_check.sh:26-27`).
+(`scripts/laas/osi_check.sh:26-27`; `scripts/laas/test_osi_to_surface.py:166-175`).
 
 ### Steps
 
@@ -258,7 +289,8 @@ bash scripts/laas/osi_check.sh
 ```
 
 1. **Adapter.** Calls `osi_to_surface.py` with `--kind metric --name net_settlement_amount
-   --operation write --signed` and writes the raw decision record to a temp file.
+   --operation write --signed`, writes the raw decision record to a temp file, and
+   prints it (`scripts/laas/osi_check.sh:26-28`).
 
 2. **Enforcement-plane controls.** A Python inline script patches the record with
    `human_approval.approved = true` and an append-only trace block
@@ -272,8 +304,20 @@ bash scripts/laas/osi_check.sh
 
 ### Expected result
 
-```
+Steps 1 and 2 print their headings and the raw record first; the output ends with
+step 3:
+
+```text
+== 3. opa eval: assert compliant == true ==
 compliant = true
+{
+  "bundle": "laas-fin-1.1.0",
+  "compliant": true,
+  "effective_ct": 4,
+  "errors": 0,
+  "expected_ct": 4,
+  "warnings": 0
+}
 PASS: CT4 net_settlement_amount write is compliant under full controls.
 ```
 
