@@ -2,7 +2,7 @@
 
 **Standard:** LLM-Agent Assurance Standard (LAAS) v1.1
 **Component:** Bucket-B residual escape-rate measurement + tolerance validation
-**Conformance bundle:** `laas-fin-1.1.0` (`conformance/laas/data.json`, `conformance/laas/laas.rego`)
+**Conformance bundle:** `laas-fin-1.1.1` (`conformance/laas/data.json`, `conformance/laas/laas.rego`)
 
 - **Obligation served:** `LAAS-OBL-RES-001` — "Bounded residual escape rate (Bucket B)" (`ct_floor: 2`, severity `error`, reference `v1.1 §5`).
 - **Spec anchors:** changelog item 1.2 (metric rename), §5 (two buckets + escape-rate metric), §7.2 (`LAAS-OBL-IRR-001` `residual_error` and `conformance_predicate`), §7.4 (decision-trace `evidence_refs`).
@@ -106,7 +106,7 @@ The harness uses the identical convention: `key = str(int(ct))`, then `tol_map[k
 … AND (residual_error_bound == null OR residual_error_bound <= residual_tolerance) …
 ```
 
-and `laas.rego LAAS-OBL-RES-001` fires when `input.residual_error_bound > residual_tolerance` (`conformance/laas/laas.rego:185-193`). The policy compares the **bound**. So the harness:
+and `laas.rego LAAS-OBL-RES-001` fires when `input.residual_error_bound > residual_tolerance` (`conformance/laas/laas.rego:185-193`). It also fires at CT>=2 when a numeric bound lacks non-empty `evidence_refs` (`:248-253`) or a non-Bucket-A action has no bound (`:255-260`). The policy compares the **bound**. So the harness:
 
 - **PASS** iff `upper_ci_bound ≤ tolerance`
 - **FAIL** iff `upper_ci_bound > tolerance`
@@ -134,7 +134,7 @@ The harness emits one JSON **evidence artifact** per measurement (`schema: "laas
 
 ### Trace-consumable contract
 
-- `evidence_id` — content-addressed (`ev_backtest_<sha256[:16]>` over every field except `evidence_id` and `measured_at`, `scripts/laas/backtest.py:436-444`), stable, and **goes verbatim into the trace's `evidence_refs`** (mirrors §7.4's `["ev_ledger_diff_001"]` opaque-id convention).
+- `evidence_id` — content-addressed (`ev_backtest_<sha256[:16]>` over every field except `evidence_id` and `measured_at`, `scripts/laas/backtest.py:436-444`), stable, and **goes verbatim into the trace's `evidence_refs`** (mirrors §7.4's `["ev_ledger_diff_001"]` opaque-id convention). The policy requires it there whenever the bound is numeric at CT>=2 (`conformance/laas/laas.rego:248-253`).
 - `residual_error_bound` — the **upper CI bound**; the trace copies this into its own `residual_error_bound` field, which `laas.rego LAAS-OBL-RES-001` reads.
 - `residual_tolerance` — the value looked up from `data.json`, so the artifact is self-describing and the trace's `residual_tolerance` can be cross-checked against the bundle.
 - Identification fields: `schema` (`laas.bucketB.backtest_evidence/v1`), `ct` (the measured tier), and `tolerance_source` (the `--data-json` path the tolerance was read from).

@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-ADV-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.0`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/seo-adsense.json`](glossary/seo-adsense.json)

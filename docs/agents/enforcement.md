@@ -96,7 +96,9 @@ checks that the tier assignment, verification, and enforcement are correct.
   (`laas.rego:11–14`).
 - **CT classification** — tier is the lattice max of three axes; an unknown or
   undetermined surface defaults to CT4 (`laas.rego:30`; `data.json:11`):
-  - **CT0** — no external effect; read-only or fully sandboxed (`laas.rego:33–35`).
+  - **CT0** — no external effect; read-only or fully sandboxed. Assigned only when
+    `external_effect` is boolean `false` (`laas.rego:33–35`); an absent, `null`, or
+    non-boolean value gives CT4 (`laas.rego:30`).
   - **CT1** — reversible, single-system internal write
     (reversibility rank 1, scope rank 1; `data.json:7–9`).
   - **CT2** — reversible or low-consequence external effect.
@@ -132,13 +134,17 @@ recorded in `conformance/laas/data.json:19–32`.
   and scope limits (`laas.rego:149–152`; `data.json:26`).
 - **`LAAS-OBL-IRR-001`** — CT≥3 actions require a passing independent pre-commit
   verifier unless the action is blocked (`laas.rego:155–159`; `data.json:27`).
-- **`LAAS-OBL-IND-001`** — the pre-commit verifier must be independent: a distinct
-  checker type, different model lineage, and error-correlation ≤ 0.2
-  (`laas.rego:162–167`; `data.json:14,28`).
+- **`LAAS-OBL-IND-001`** — the pre-commit verifier must be independent: deterministic,
+  human, or a model of a different lineage with error-correlation ≤ 0.2
+  (`laas.rego:76–84`, `:162–167`). At CT4 a passed model verifier always violates it;
+  a deterministic or human verifier is required (`laas.rego:225–230`; `data.json:13,14,28`).
 - **`LAAS-OBL-VQ-001`** — the verifier must be qualified (DO-330 analogue)
   (`laas.rego:170–175`; `data.json:29`).
 - **`LAAS-OBL-RES-001`** — the Bucket-B residual escape rate must be within
-  tolerance for the effective tier (`laas.rego:185–193`; `data.json:15,30`).
+  tolerance for the effective tier (`laas.rego:185–193`). At CT≥2 on a non-blocked
+  action, a numeric bound also needs non-empty `evidence_refs` (`laas.rego:248–253`),
+  and a Bucket-B action (no passed deterministic verifier) must supply a bound
+  (`laas.rego:255–260`; `data.json:15,30`).
 - **`LAAS-OBL-HUM-001`** — CT4 actions require human approval unless the action
   is blocked (`laas.rego:178–182`; `data.json:13,31`).
 

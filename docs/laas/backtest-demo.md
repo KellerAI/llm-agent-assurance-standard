@@ -100,4 +100,4 @@ opa eval -d "$LAAS_DIR/laas.rego" -d "$DATA" -i "$TRACE_CT2" \
 
 It prints `[]`, **zero** RES violations, and `summary` reports `"compliant": true`.
 
-The policy consumes only the artifact's `residual_error_bound`: `LAAS-OBL-RES-001` fires when `input.residual_error_bound` exceeds the tolerance for the effective tier (`conformance/laas/laas.rego:185-193`). The `evidence_id` goes into the trace's `evidence_refs` (`scripts/laas/backtest.py:337-338`), a field `laas.rego` does not evaluate. On both sides of the tolerance, the harness's PASS/FAIL agrees with `LAAS-OBL-RES-001`.
+The policy consumes the artifact's `residual_error_bound`: `LAAS-OBL-RES-001` fires when `input.residual_error_bound` exceeds the tolerance for the effective tier (`conformance/laas/laas.rego:185-193`). The `evidence_id` goes into the trace's `evidence_refs` (`scripts/laas/backtest.py:337-338`), which the policy requires to be non-empty whenever the bound is numeric at CT>=2 (`conformance/laas/laas.rego:248-253`). `build_trace` sets both, so only the tolerance rule fires. On both sides of the tolerance, the harness's PASS/FAIL agrees with `LAAS-OBL-RES-001`.

@@ -6,7 +6,7 @@
 ---
 
 - **Prepared by:** KellerAI Open-Source Working Group
-- **Machine source of truth:** `conformance/laas/data.json` (machine-readable bundle `laas-fin-1.1.0`)
+- **Machine source of truth:** `conformance/laas/data.json` (machine-readable bundle `laas-fin-1.1.1`)
 - **Enforcing policy:** `conformance/laas/laas.rego` (OPA package `kellerai.laas.actions`)
 - **Rationale and design record:** `docs/laas/proposal-v1.1.md`
 - **Supersedes:** LAAS v1.0 (draft)
@@ -137,7 +137,7 @@ its application.
 
 - `standard/LAAS.md`: LAAS prose normative reference, v1.1 (canonical; `data.json` is derived
   from it).
-- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.0`; the machine
+- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.1`; the machine
   source of truth for tier-lattice values, escape-rate tolerances, and obligation metadata.
 - `conformance/laas/laas.rego`: OPA policy implementing the conformance predicate, package
   `kellerai.laas.actions`.
@@ -356,7 +356,7 @@ tool qualification under RTCA DO-330.
 ### 4.1 Conformance predicate
 
 A conforming system shall satisfy, for every gated action, the following predicate
-(stated normatively; implemented in `conformance/laas/laas.rego:155–193`):
+(stated normatively; implemented in `conformance/laas/laas.rego:155–193`, `:225–260`):
 
 > If any obligation's trigger condition matched the action, then the action either
 > (a) passed an independent, qualified pre-commit verifier (plus human approval when
@@ -595,7 +595,7 @@ and verdict shall be recorded in the decision trace for every CT≥3 action.
 ### 6.2 Verifier independence (IND-001)
 
 **6.2.1** A verifier satisfies the independence requirement if exactly one of the following
-conditions holds (`conformance/laas/laas.rego:76–84`, `docs/laas/proposal-v1.1.md:§7.3`):
+conditions holds (`conformance/laas/laas.rego:76–84`, `:225–230`, `docs/laas/proposal-v1.1.md:§7.3`):
 
 1. The verifier is a **deterministic or exact checker**: a different kind of checker from the
    actor (e.g., a schema validator, ledger reconciliation engine, hash comparison, or allowlist
@@ -603,7 +603,8 @@ conditions holds (`conformance/laas/laas.rego:76–84`, `docs/laas/proposal-v1.1
 2. The verifier is a **distinct model lineage** from the actor and its measured error correlation
    with the actor does not exceed 0.2 (`conformance/laas/data.json:14`). A shared-substrate
    verifier (same base model or fine-tune family) is presumed non-independent. This form of
-   independence is permitted at CT3 but not at CT4 in isolation.
+   independence is permitted up to CT3. At CT4 a model verifier does not satisfy independence,
+   even with human approval (`conformance/laas/laas.rego:225–230`).
 3. The verifier is a **human**. Human review satisfies independence at any CT and is required in
    addition to automated verification at CT4.
 
@@ -613,7 +614,7 @@ empirically, the gate shall fall back to a deterministic or human verifier at CT
 **6.2.3** A verifier that does not satisfy any condition in Requirement 6.2.1 is non-independent.
 Using a non-independent verifier for a CT≥3 action, when the action was not blocked,
 constitutes an IND-001 (`LAAS-OBL-IND-001`) error-severity violation
-(`conformance/laas/laas.rego:162–167`).
+(`conformance/laas/laas.rego:162–167`; CT4 model verifiers: `:225–230`).
 
 **6.2.4** The independence basis shall be recorded as one of the string values
 `deterministic`, `distinct_lineage_low_correlation`, or `human` in the decision trace.
@@ -647,7 +648,7 @@ shall be referenced by `verifier_qualification_ref` in the decision trace.
 
 **6.4.1** For Bucket B claims at CT≥2, the deployer shall declare a maximum acceptable escape
 rate for each applicable CT
-(`conformance/laas/data.json:15`, `conformance/laas/laas.rego:185–193`).
+(`conformance/laas/data.json:15`, `conformance/laas/laas.rego:185–193`, `:248–260`).
 
 **6.4.2** The declared tolerances shall not exceed the following maximum values:
 
@@ -670,12 +671,14 @@ tool set, or policy.
 exceeds the tolerance for its effective CT, the gate shall record an RES-001
 (`LAAS-OBL-RES-001`) error-severity violation.
 
-**6.4.6** For pure Bucket A claims where an exact verifier eliminates undetected error,
-`residual_error_bound` may be null; in that case, the RES-001 check does not apply to that
-action (`conformance/laas/laas.rego:185–193`).
+**6.4.6** At CT≥2, on a non-blocked action, `residual_error_bound` may be null only for Bucket A actions, where a deterministic
+verifier returned `pass` (`conformance/laas/laas.rego:243–246`). A non-blocked CT≥2 action
+that is not Bucket A and supplies no bound constitutes an RES-001 violation
+(`conformance/laas/laas.rego:255–260`).
 
 **6.4.7** Evidence of the escape-rate measurement, including the backtest report reference,
-shall be recorded in the decision trace under `evidence_refs`.
+shall be recorded in the decision trace under `evidence_refs`
+(`conformance/laas/laas.rego:234–241`, `:248–253`).
 
 ---
 
@@ -1033,7 +1036,7 @@ Readers should confirm current versions before relying on specific document deta
 ### LAAS internal sources (normative)
 
 - `standard/LAAS.md`: canonical prose specification, LAAS v1.1.
-- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.0`.
+- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.1`.
 - `conformance/laas/laas.rego`: OPA policy, package `kellerai.laas.actions`.
 - `docs/laas/proposal-v1.1.md`: rationale and design record, LAAS v1.1.
 

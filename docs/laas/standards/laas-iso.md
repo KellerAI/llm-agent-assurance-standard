@@ -422,8 +422,9 @@ b) **Distinct-lineage-and-low-correlation criterion:** The verifier uses a disti
    from the actor **and** demonstrates measured error-correlation ≤ 0.2 on the evaluation set.
    This criterion is sufficient for independence up to and including CT3.
 
-c) **Human criterion:** The verifier is a human reviewer. Human verification is required in
-   addition to criteria (a) or (b) at CT4.
+c) **Human criterion:** The verifier is a human reviewer. At CT4, independence is satisfied by
+   criterion (a) or by a human verifier; criterion (b) does not satisfy independence at CT4.
+   Human approval (LAAS-OBL-HUM-001) is required at CT4 in addition to the verifier.
 
 A verifier sharing the actor's model lineage shall be presumed non-independent. Where the
 error-correlation between a model verifier and the actor cannot be bounded below 0.2, the
@@ -437,7 +438,7 @@ A verifier that is under the control of, or whose verdict can be modified by, th
 verified shall not satisfy the independence requirement. Any control path that allows the
 constrained party to tier, grade, or gate itself is non-conforming.
 
-*Requirement source: `conformance/laas/laas.rego:76–84`.*
+*Requirement source: `conformance/laas/laas.rego:76–84`, `:225–230`.*
 
 ### 5.3 Verifier qualification (LAAS-OBL-VQ-001)
 
@@ -688,7 +689,13 @@ trigger_matched == true  IMPLIES
 ```
 
 *Predicate source: `docs/laas/proposal-v1.1.md:258–265` (conformance_predicate field);
-evaluated by `conformance/laas/laas.rego:155–193`.*
+evaluated by `conformance/laas/laas.rego:155–193`, `:225–260`.*
+
+The policy is stricter than this predicate on the residual clause. At CT≥2, on a non-blocked action, a null
+`residual_error_bound` conforms only when a deterministic verifier passed
+(`conformance/laas/laas.rego:243–246`, `:255–260`), and a numeric bound requires non-empty
+`evidence_refs` (`conformance/laas/laas.rego:248–253`). At CT4 a model verifier is not
+independent (`conformance/laas/laas.rego:225–230`).
 
 ### 8.2 Deployer conformance attestation
 
@@ -735,7 +742,7 @@ justified exception in the conformance evidence.
 | A.6 | Untrusted input raises the tier | When an action is driven by untrusted input, the gate shall raise the effective tier to at least CT3 or block the action (4.5). | LAAS-OBL-INP-001 | CT0 |
 | A.7 | Third-party attribution and scope limits | Vendor and third-party components shall be attributed in the decision trace with declared scope limits; residual errors shall be charged to the deployer's escape-rate budget (7.2). | LAAS-OBL-VEN-001 | CT0 |
 | A.8 | Independent pre-commit verification | CT3 and CT4 actions shall pass an independent, qualified pre-commit verifier before commitment; failing verdicts shall result in a block and escalation (5.4). | LAAS-OBL-IRR-001 | CT3 |
-| A.9 | Verifier independence and low error-correlation | The verifier shall satisfy at least one independence criterion in 5.2; model verifiers shall demonstrate error-correlation ≤ 0.2; at CT4, a human verifier is required in addition (5.2). | LAAS-OBL-IND-001 | CT3 |
+| A.9 | Verifier independence and low error-correlation | The verifier shall satisfy at least one independence criterion in 5.2; model verifiers shall demonstrate error-correlation ≤ 0.2 and are not accepted at CT4; at CT4, a deterministic or human verifier and human approval are required (5.2). | LAAS-OBL-IND-001 | CT3 |
 | A.10 | Verifier qualification | Verifiers gating CT3 or above shall be qualified with documented claim-class coverage, a negative-test suite, and a change-controlled version identifier in the decision trace (5.3). | LAAS-OBL-VQ-001 | CT3 |
 | A.11 | Bounded residual escape rate | The measured Bucket B escape rate shall not exceed the declared tolerance for the effective tier: CT2 ≤ 2 %, CT3 ≤ 0.5 %, CT4 = 0 %; evidence shall be referenced in the decision trace (5.5). | LAAS-OBL-RES-001 | CT2 |
 | A.12 | Human approval at CT4 | CT4 actions shall not be committed without human approval or a documented block and escalation; the abstention default applies in the absence of approval (7.1). | LAAS-OBL-HUM-001 | CT4 |
@@ -829,6 +836,6 @@ The following documents are cited for informative purposes.
 - Five Eyes Intelligence Partnership, *Careful Adoption of Agentic AI Services*, April–May 2026.
 - KellerAI, **LAAS v1.1 proposal**, `docs/laas/proposal-v1.1.md`, 2026-06-18.
 - KellerAI, **LAAS machine-evaluable obligation bundle**, `conformance/laas/data.json`,
-  version 1.1.0, bundle ID `laas-fin-1.1.0`.
+  version 1.1.1, bundle ID `laas-fin-1.1.1`.
 - KellerAI, **LAAS conformance policy**, `conformance/laas/laas.rego`,
   package `kellerai.laas.actions`.

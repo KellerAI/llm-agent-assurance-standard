@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-HLTH-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.0`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/healthcare.json`](glossary/healthcare.json)
@@ -507,7 +507,7 @@ Required independent checks at CT4:
 | Obligation | What it requires here |
 |------------|----------------------|
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-DOSE-RANGE` runs before the order is signed. |
-| `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic dose-range checker is a different *kind* of checker (`standard/LAAS.md:87`). A second LLM reading the same order would not qualify unless its measured error correlation is at or below `0.2` (`data.json:14`). |
+| `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic dose-range checker is a different *kind* of checker (`standard/LAAS.md:87`). A second LLM reading the same order would not qualify at CT4 at any measured error correlation: model-lineage independence is valid only up to CT3 (`standard/LAAS.md:88`; `conformance/laas/laas.rego:225-230`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for dose-range checks, a negative-test suite of known tenfold and route errors it must catch, and a change-controlled version in the trace. |
 | `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0.0` (`data.json:15`). |
 | `LAAS-OBL-HUM-001` | Dr Okonkwo approves the transcribed order before it becomes active. `standard/LAAS.md:89` makes the human required *in addition* to the deterministic verifier, not instead of it. |

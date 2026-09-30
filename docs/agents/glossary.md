@@ -43,13 +43,15 @@ Cites into `conformance/laas/` show where the policy implements a term; they add
 - **Verifier independence** — "A verifier is independent of the actor iff one holds, by tier" (`standard/LAAS.md:85`): a different kind of checker (deterministic/exact), valid at any CT for the deterministic class; a distinct model lineage with measured error-correlation ≤ `max_error_correlation`, valid up to CT3; or a human, required in addition at CT4 (`standard/LAAS.md:87-89`).
   "A verifier sharing the actor's model lineage is presumed non-independent" (`standard/LAAS.md:91`).
   The policy rule is `independence_ok` (`conformance/laas/laas.rego:76-84`).
+  At CT4 a separate rule rejects any passed model verifier (`conformance/laas/laas.rego:225-230`).
 - **Verifier qualification** — "A verifier gating CT≥3 MUST be qualified: documented coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a change-controlled version recorded in the trace" (`standard/LAAS.md:95-96`).
 - **Escape rate** — the residual undetected-error rate of the open-world ("Bucket B") class (`standard/LAAS.md:100-101`).
   The operator declares a maximum escape rate per CT, estimates it by backtesting on a held-out adversarial set, and re-measures it on any model, prompt, tool, or policy change; conformance requires measured escape rate ≤ tolerance, with evidence referenced in the trace (`standard/LAAS.md:100-103`).
   The tolerances are `escape_rate_tolerance_by_ct` (`conformance/laas/data.json:15`).
 - **Bucket B / Bucket A** — Bucket B is the open-world class whose escape rate is bounded (`standard/LAAS.md:100`).
   `standard/LAAS.md` does not define Bucket A.
-  The policy treats a record with no residual bound supplied as "pure Bucket A", for which the escape-rate check does not fire (`conformance/laas/laas.rego:189-191`).
+  The policy treats an action whose deterministic verifier passed as Bucket A (`conformance/laas/laas.rego:243-246`).
+  At CT≥2 a non-blocked action that is not Bucket A and has no numeric `residual_error_bound` violates RES-001 (`conformance/laas/laas.rego:255-260`); on a non-blocked CT≥2 action, a numeric bound without non-empty `evidence_refs` also violates it (`conformance/laas/laas.rego:248-253`).
 - **Decision trace** — each gated action emits one decision-trace record, written to an append-only, content-addressed store the actor cannot rewrite (`standard/LAAS.md:107-110`).
 - **Decision record** — the policy's `input`: one gate-produced decision record, evaluated against the obligation bundle (`conformance/laas/laas.rego:5-6`).
 - **Conformance predicate** — "If an obligation's trigger matched, then either the action **passed** an independent, qualified verifier (plus human approval at CT4, plus residual ≤ tolerance) **or** the action was **blocked** and escalated. Nothing else conforms." (`standard/LAAS.md:115-117`).

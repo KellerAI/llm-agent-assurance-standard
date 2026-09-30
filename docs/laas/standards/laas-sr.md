@@ -29,7 +29,7 @@ commit an irreversible high-consequence action before any human is aware it was 
 LAAS addresses this gap by gating each action at a Consequence Tier derived from its observed
 effect surface and by requiring independent pre-commit verification, proportionate to that tier,
 before commitment. The machine source of truth for all thresholds referenced below is the LAAS
-conformance bundle `laas-fin-1.1.0` (`conformance/laas/data.json`), enforced by the OPA policy
+conformance bundle `laas-fin-1.1.1` (`conformance/laas/data.json`), enforced by the OPA policy
 `conformance/laas/laas.rego`, package `kellerai.laas.actions`.
 
 ## Supervisory Expectations
@@ -69,9 +69,11 @@ evaluate against a single machine-readable bundle.
 
 6. **Verifier independence.** The verifier shall not share the actor's model substrate. Independence
    is satisfied by a deterministic/exact checker, by a distinct model lineage whose measured
-   error-correlation with the actor does not exceed the bundle threshold, or by a human. A verifier
-   that fails the same way as the actor is not a check. (LAAS-OBL-IND-001; correlation ceiling in
-   `conformance/laas/data.json`.)
+   error-correlation with the actor does not exceed the bundle threshold, or by a human. The
+   distinct-lineage option applies only below the human-approval floor tier; at that tier a model
+   verifier does not satisfy independence, and a deterministic or human verifier is required. A
+   verifier that fails the same way as the actor is not a check. (LAAS-OBL-IND-001; correlation
+   ceiling in `conformance/laas/data.json`; `conformance/laas/laas.rego:225-230`.)
 
 7. **Verifier qualification.** A verifier gating high-tier actions shall be qualified: documented
    coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a
@@ -123,7 +125,7 @@ following evidence:
   highest tier).
 - **Verifier independence and qualification.** For high-tier actions, evidence that the verifier is
   independent of the actor (deterministic, distinct lineage with bounded error-correlation, or
-  human) and qualified, with a current qualification record referenced in the trace and a negative-
+  human; distinct lineage is accepted only below the highest tier) and qualified, with a current qualification record referenced in the trace and a negative-
   test suite the verifier demonstrably catches.
 - **Trace bundles.** A signed, content-addressed, sampled decision-trace bundle sufficient to
   support statistical inference about the escape rate at each tier, accompanied by an independent

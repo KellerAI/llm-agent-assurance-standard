@@ -5,7 +5,7 @@
 **Designation:** LAAS-NIST-PROFILE-DRAFT-1.1
 **Document type:** Control profile (NIST AI RMF crosswalk and SP 800-style control catalog)
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.0`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Status:** Draft, not approved; all thresholds cite `conformance/laas/data.json`
 
@@ -691,6 +691,9 @@ independence_ok if {
 }
 ```
 
+At CT4 a separate rule fires IND-001 for any passed model verifier on a non-blocked action
+(`conformance/laas/laas.rego:225-230`).
+
 #### Assessment / Verification Objectives
 
 1. Verify that every decision-trace record with `effective_ct >= 3`, `action_blocked == false`,
@@ -703,6 +706,8 @@ independence_ok if {
 4. Verify the IND-001 violation fires when a passing verifier has the same lineage as the
    actor or has `error_correlation > 0.2`.
 5. Confirm that at CT4, a human verifier is present in addition to any automated verifier.
+6. Verify the IND-001 violation fires at CT4 for any passing model verifier on a non-blocked
+   action (`conformance/laas/laas.rego:225-230`).
 
 ---
 
@@ -790,13 +795,16 @@ The escape rate is the rate at which a wrong output passes every applicable chec
 upon.
 Conformance asserts `measured_escape_rate ≤ tolerance`, not correctness
 (`standard/LAAS.md §4.3`, `docs/laas/proposal-v1.1.md §5`).
-The Rego check fires when `input.residual_error_bound > residual_tolerance`
-(`conformance/laas/laas.rego:185-193`); for pure Bucket-A actions
-(`residual_error_bound == null`), the comparison is undefined and the violation does not fire.
+RES-001 fires when the bound exceeds the tolerance (`conformance/laas/laas.rego:185-193`);
+when a numeric bound at CT ≥ 2 lacks non-empty `evidence_refs` (`conformance/laas/laas.rego:248-253`);
+and when a non-blocked CT ≥ 2 action that is not Bucket A, meaning no passed deterministic
+verifier (`conformance/laas/laas.rego:243-246`), supplies no bound (`conformance/laas/laas.rego:255-260`).
 
 If a higher-is-better figure is needed, `integrity = 1 - escape_rate`:
 at CT3, `integrity ≥ 0.995`; at CT4, `integrity = 1.0` (Bucket B contributes zero
-undetected escapes; all CT4 actions are either deterministically verified or blocked).
+undetected escapes). At CT4 a non-blocked action requires a deterministic or human verifier,
+since a passing model verifier fires IND-001 (`conformance/laas/laas.rego:225-230`), and human
+approval under HUM-001 (`conformance/laas/laas.rego:178-182`).
 
 Backtesting methodology requirements (`docs/laas/proposal-v1.1.md §5`):
 the held-out set must be representative of the operational action distribution and
@@ -814,7 +822,10 @@ model training and fine-tuning; the evaluation set is independently audited
    where `residual_error_bound` is non-null.
 4. Confirm the evaluation set was adversarially stressed and independently audited.
 5. Verify that the RES-001 violation fires when `residual_error_bound > residual_tolerance`.
-6. Confirm re-measurement is triggered (and evidence is refreshed in the trace) upon any
+6. Verify that every non-blocked CT ≥ 2 record with a non-null `residual_error_bound` carries
+   non-empty `evidence_refs`, and every non-blocked CT ≥ 2 record without a passed deterministic
+   verifier carries a bound; RES-001 fires otherwise (`conformance/laas/laas.rego:248-260`).
+7. Confirm re-measurement is triggered (and evidence is refreshed in the trace) upon any
    model, prompt, tool, or policy change.
 
 ---
@@ -883,18 +894,18 @@ violations contains obl("LAAS-OBL-HUM-001", ...) if {
 The gate derives the Consequence Tier using the lattice defined in
 `conformance/laas/data.json → tier_lattice`.
 The derivation function (`docs/laas/proposal-v1.1.md §6.1`,
-`conformance/laas/laas.rego:33-45`):
+`conformance/laas/laas.rego:30-45`):
 
 ```text
-# Read-only or fully sandboxed: CT0
-if not external_effect:
+# Read-only or fully sandboxed: CT0 only on explicit boolean false
+if external_effect is boolean false:
     ct = 0
 
-# All three axes known: take the max
-elif reversibility and scope and consequence are all known:
+# External effect with all three axes known: take the max
+elif external_effect is true and reversibility, scope, consequence are all known:
     ct = max(rev_ct[reversibility], scope_ct[scope], cons_ct[consequence])
 
-# Any axis unknown: default to CT4
+# external_effect absent, null or non-boolean, or any axis unknown: default to CT4
 else:
     ct = 4
 ```
@@ -1064,7 +1075,7 @@ checks ran by the right party with evidence, not that no error can occur
 ### Normative References
 
 - `standard/LAAS.md`: LLM-Agent Assurance Standard v1.1 (normative prose)
-- `conformance/laas/data.json`: LAAS bundle `laas-fin-1.1.0` (machine source of truth for
+- `conformance/laas/data.json`: LAAS bundle `laas-fin-1.1.1` (machine source of truth for
   thresholds and obligation registry)
 - `conformance/laas/laas.rego`: OPA policy, package `kellerai.laas.actions` (enforcing policy)
 
