@@ -1,15 +1,27 @@
+# Action-Level Assurance for Autonomous AI Agents (LAAS): Supervisory Expectations for Governing Agent Actions in Regulated Institutions
+
+*SR-letter-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
+
+- **Publisher:** Published by KellerAI.
+- **Designation:** KellerAI LAAS 1.1 · SR-letter-format rendering · Draft 1 (2026)
+- **Attribution:** Formatted after the drafting conventions of the Board of Governors of the
+  Federal Reserve System. Not issued, approved, or endorsed by the Board of Governors of the
+  Federal Reserve System.
+- **Copyright:** © 2026 KellerAI contributors. Licensed under Apache-2.0.
+
 ## Purpose
 
-This guidance establishes supervisory expectations for the governance of individual actions
-taken by large-language-model (LLM) based autonomous agents at supervised institutions.
-It applies to any supervised banking organization that deploys an autonomous agent capable of
+This document sets out model supervisory expectations, written by KellerAI in supervisory-letter
+format, for the governance of individual actions taken by large-language-model (LLM) based
+autonomous agents at supervised institutions.
+It addresses any supervised banking organization that deploys an autonomous agent capable of
 committing an action with an effect outside the agent's own sandbox, including record writes,
 fund transfers, access-permission changes, and external communications.
-The guidance adopts the LLM-Agent Assurance Standard (LAAS) v1.1 (`standard/LAAS.md`) as the
+The document adopts the LLM-Agent Assurance Standard (LAAS) v1.1 (`standard/LAAS.md`) as the
 reference technical control set and frames its obligations as supervisory expectations consistent
 with the model-risk-management principles of SR 11-7 and its successor SR 26-2.
 
-This guidance does not certify a model, a model provider, or a management system.
+This document does not certify a model, a model provider, or a management system.
 It addresses what an agent may commit, and the evidence an institution must produce that the
 right checks ran, by the right party, before the action took effect.
 
@@ -34,8 +46,8 @@ conformance bundle `laas-fin-1.1.1` (`conformance/laas/data.json`), enforced by 
 
 ## Supervisory Expectations
 
-Supervised institutions deploying in-scope agents are expected to implement the following
-controls. Each expectation derives from a normative LAAS obligation; threshold values are not
+KellerAI suggests that supervised institutions deploying in-scope agents implement the following
+model controls. Each expectation derives from a normative LAAS obligation; threshold values are not
 restated here but are sourced from `conformance/laas/data.json` so that examiners and institutions
 evaluate against a single machine-readable bundle.
 
@@ -116,8 +128,8 @@ evaluate against a single machine-readable bundle.
 
 ## Examiner Guidance
 
-In assessing an institution's governance of in-scope agents, examiners should evaluate the
-following evidence:
+This section offers suggested examiner guidance. In assessing an institution's governance of
+in-scope agents, examiners should evaluate the following evidence:
 
 - **Tier classification in practice.** Decision-trace records demonstrating that the gate derives
   the Consequence Tier from the observed effect surface and that the gate-assigned tier is never
@@ -145,11 +157,11 @@ actions as material weaknesses in the institution's model-risk and operational-r
 
 ## Implementation
 
-Institutions are expected to implement these controls in accordance with the size, complexity, and
-risk profile of their agent deployments, on a phased basis:
+KellerAI suggests that institutions implement these controls in accordance with the size,
+complexity, and risk profile of their agent deployments, on a phased basis:
 
-- **Effective date:** [EFFECTIVE DATE PLACEHOLDER]. This guidance is a draft and carries no effective
-  date until issued.
+- **Effective date:** none. This document is a KellerAI draft and carries no regulatory effective
+  date.
 - **Phase 1, enforcement plane and trace.** Stand up the out-of-process gate and the append-only
   decision trace before adding obligation checks.
 - **Phase 2, tier derivation.** Implement effect-surface tier derivation, self-report recording, and
@@ -159,31 +171,25 @@ risk profile of their agent deployments, on a phased basis:
 - **Phase 5, escape rate and human approval.** Run initial backtests, declare per-tier tolerances,
   and implement the human-approval path with standing envelopes.
 
-Institutions should be prepared to discuss their implementation roadmap and current state with their
-supervisory teams.
+KellerAI suggests that institutions be prepared to discuss their implementation roadmap and current
+state with their supervisory teams.
 
 ## Supersession / Related Guidance
 
-This guidance supplements and does not supersede SR 11-7 (*Guidance on Model Risk Management*, 2011)
+This document supplements and does not supersede SR 11-7 (*Guidance on Model Risk Management*, 2011)
 or SR 26-2 (its AI/ML successor). It adopts LAAS v1.1 (`standard/LAAS.md`), which supersedes LAAS
-v1.0, as the reference technical control set. Where this letter and `conformance/laas/data.json`
+v1.0, as the reference technical control set. Where this document and `conformance/laas/data.json`
 differ on a threshold value, the data file is the machine source of truth. Related supervisory and
 technical references include SR 11-7, SR 26-2, the NIST AI Risk Management Framework (AI 100-1),
 and the LAAS design record (`docs/laas/proposal-v1.1.md`).
 
-## Distribution
+## Questions
 
-Reserve Banks should distribute this letter to the supervised organizations in their districts
-and to appropriate supervisory and examination staff. Direct questions regarding this guidance
-to the Division of Supervision and Regulation.
-
-*[Signed]*
-
-Director, Division of Supervision and Regulation
+Open an issue at https://github.com/KellerAI/llm-agent-assurance-standard/issues.
 
 ---
 
 **Attachment:** *LLM-Agent Assurance Standard (LAAS) v1.1*, the technical annex defining the
 consequence-tier framework, the twelve normative obligations, verifier independence and
 qualification criteria, residual escape-rate tolerances, enforcement-plane integrity requirements,
-and decision-trace evidence requirements referenced throughout this letter (`standard/LAAS.md`).
+and decision-trace evidence requirements referenced throughout this document (`standard/LAAS.md`).

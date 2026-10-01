@@ -1,13 +1,15 @@
-# ISO/IEC XXXXX:2026(E)
+# Information technology - Artificial intelligence - Action-level assurance for autonomous agents (LAAS)
 
-## Information technology - Artificial intelligence - Action-level assurance for autonomous agents (LAAS)
+*ISO-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
 
-> **NOTICE:** This document is a draft illustration in the ISO/IEC Directives Part 2 format,
-> aligned to the drafting style of ISO/IEC 42001:2023 with a normative Annex A modelled on
-> ISO/IEC 27001:2022. It is **not** an official ISO/IEC deliverable, has not been submitted
-> to any standards body, and carries no endorsement from ISO, IEC, or any national body.
-> All rights reserved by the authors. © KellerAI / contributors (placeholder copyright,
-> draft only).
+KellerAI LAAS 1.1 · ISO-format rendering · Draft 1 (2026)
+
+> **NOTICE:** Published by KellerAI.
+> Formatted after the drafting conventions of ISO and IEC. Not issued, approved, or endorsed by ISO and IEC.
+> This draft follows the ISO/IEC Directives Part 2 format and the drafting style of ISO/IEC 42001:2023,
+> with a normative Annex A modelled on ISO/IEC 27001:2022.
+> It has not been submitted to any standards body.
+> © 2026 KellerAI contributors. Licensed under Apache-2.0.
 >
 > This document is a rendering of `standard/LAAS.md` (LAAS Draft v1.1,
 > `standard/LAAS.md:3`), the canonical prose specification from which
@@ -17,18 +19,16 @@
 
 ## Foreword
 
-This document was prepared by an independent working group modelled on ISO/IEC JTC 1/SC 42
-drafting conventions. The structure follows ISO/IEC Directives, Part 2, 2021 and the
+KellerAI prepared this document following ISO/IEC JTC 1/SC 42 drafting conventions.
+The structure follows ISO/IEC Directives, Part 2, 2021 and the
 ISO Harmonized Structure (Annex SL).
 
-Attention is drawn to the possibility that some elements of this document may be the subject
-of patent rights. ISO and IEC shall not be held responsible for identifying any or all such
-patent rights.
+Some elements of this document may be the subject of patent rights.
+KellerAI is not responsible for identifying patent rights.
 
-This document will be reviewed at five-year intervals and, if necessary, revised.
+KellerAI intends to review this document and revise it as needed.
 
-Direct any feedback or questions on this document to your national standards body. These
-bodies are listed at [https://www.iso.org/members.html](https://www.iso.org/members.html).
+Questions: open an issue at https://github.com/KellerAI/llm-agent-assurance-standard/issues.
 
 ---
 
@@ -138,9 +138,9 @@ Informative alignment with DO-178C, SR 11-7/SR 26-2, and UL 4600 is given in Ann
 
 For the purposes of this document, the following terms and definitions apply.
 
-ISO and IEC maintain terminology databases for use in standardisation at the following
-addresses: ISO Online browsing platform at [https://www.iso.org/obp](https://www.iso.org/obp)
-and IEC Electropedia at [https://www.electropedia.org/](https://www.electropedia.org/).
+Related terminology databases: ISO Online browsing platform at
+[https://www.iso.org/obp](https://www.iso.org/obp) and IEC Electropedia at
+[https://www.electropedia.org/](https://www.electropedia.org/).
 
 ### 3.1 action
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Render the LAAS standards markdown into house-styled PDFs.
+# Render the LAAS standards markdown into KellerAI-published PDFs.
 #
 # Each source document is converted markdown -> HTML (pandoc) -> PDF
-# (WeasyPrint) using a per-body CSS theme that emulates the visual style
-# of the corresponding standards body. The themes carry NO official IEEE,
-# NIST, or ISO logos, seals, or trademarks; every output is a clearly
-# marked UNOFFICIAL draft rendering.
+# (WeasyPrint) using a per-format CSS theme formatted after the drafting
+# conventions of the IEEE, NIST, ISO and IEC, or the Federal Reserve (SR
+# letters). The themes carry NO official IEEE, NIST, ISO/IEC, or Federal
+# Reserve logos, seals, or trademarks; every output is an UNOFFICIAL draft.
 #
 # Requirements: pandoc, weasyprint (both on PATH).
 # Outputs land in ./out (git-ignored). Source markdown is one level up.

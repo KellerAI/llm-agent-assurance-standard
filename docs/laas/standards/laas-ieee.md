@@ -1,7 +1,13 @@
-# IEEE Draft Standard for Action-Level Assurance of Autonomous Software Agents (LAAS)
+# Draft Standard for Action-Level Assurance of Autonomous Software Agents (LAAS)
 
-**Designation:** IEEE P-XXXX/D1, 2026
-**Status:** Draft (not yet approved by IEEE)
+*IEEE-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
+
+Published by KellerAI.
+Formatted after the drafting conventions of the IEEE. Not issued, approved, or endorsed by the IEEE.
+
+**Designation:** KellerAI LAAS 1.1 · IEEE-format rendering · Draft 1 (2026)
+**Status:** Draft. Not issued, approved, or endorsed by the IEEE.
+**Copyright:** © 2026 KellerAI contributors. Licensed under Apache-2.0.
 
 ---
 
@@ -1042,4 +1048,4 @@ Readers should confirm current versions before relying on specific document deta
 
 ---
 
-End of IEEE P-XXXX/D1, LAAS Draft Standard
+End of KellerAI LAAS 1.1 · IEEE-format rendering · Draft 1

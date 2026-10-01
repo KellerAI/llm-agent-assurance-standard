@@ -1,16 +1,19 @@
-# Action-Level Assurance for Autonomous AI Agents: A NIST-Style Control Profile (LAAS)
+# Action-Level Assurance for Autonomous AI Agents: A NIST-Format Control Profile (LAAS)
 
-<!-- NIST-SP designation placeholder: NIST SP 800-XXX (not yet assigned) -->
+*NIST-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
 
-**Designation:** LAAS-NIST-PROFILE-DRAFT-1.1
+**Designation:** KellerAI LAAS 1.1 · NIST-format rendering · Draft 1 (2026)
 **Document type:** Control profile (NIST AI RMF crosswalk and SP 800-style control catalog)
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
 **Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Status:** Draft, not approved; all thresholds cite `conformance/laas/data.json`
+**Copyright:** © 2026 KellerAI contributors. Licensed under Apache-2.0.
 
 > **Disclaimer:** This is not an official NIST publication.
-> It is a community-produced control profile that maps the LLM-Agent Assurance Standard (LAAS)
+> Published by KellerAI.
+> Formatted after the drafting conventions of NIST. Not issued, approved, or endorsed by NIST.
+> It is a control profile, produced by KellerAI, that maps the LLM-Agent Assurance Standard (LAAS)
 > to the NIST AI Risk Management Framework (AI RMF 1.0) and adopts SP 800-series control-register
 > format to aid interoperability with existing federal and enterprise risk programs.
 > No endorsement by NIST or any other standards body is expressed or implied.
@@ -25,7 +28,7 @@ Existing frameworks govern model providers, management systems, or periodic audi
 a machine-checkable, per-action conformance standard that derives verification obligations directly
 from an action's observed blast radius.
 
-This profile presents LAAS v1.1 in NIST control-register format and maps it to the four functions
+This profile presents LAAS v1.1 as a NIST-format control register and maps it to the four functions
 of the NIST AI Risk Management Framework (AI RMF 1.0): GOVERN, MAP, MEASURE, and MANAGE.
 LAAS gates individual agent actions by **Consequence Tier (CT0–CT4)**, computed by an
 out-of-process gate from the observed effect surface (reversibility, scope, consequence).
