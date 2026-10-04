@@ -2,7 +2,7 @@
 
 **Standard:** LLM-Agent Assurance Standard (LAAS) v1.1
 **Component:** Bucket-B residual escape-rate measurement + tolerance validation
-**Conformance bundle:** `laas-fin-1.1.1` (`conformance/laas/data.json`, `conformance/laas/laas.rego`)
+**Conformance bundle:** `laas-fin-1.1.2` (`conformance/laas/data.json`, `conformance/laas/laas.rego`)
 
 - **Obligation served:** `LAAS-OBL-RES-001` — "Bounded residual escape rate (Bucket B)" (`ct_floor: 2`, severity `error`, reference `v1.1 §5`).
 - **Spec anchors:** changelog item 1.2 (metric rename), §5 (two buckets + escape-rate metric), §7.2 (`LAAS-OBL-IRR-001` `residual_error` and `conformance_predicate`), §7.4 (decision-trace `evidence_refs`).

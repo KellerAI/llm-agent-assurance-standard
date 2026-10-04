@@ -6,7 +6,7 @@
 ---
 
 - **Prepared by:** KellerAI Open-Source Working Group
-- **Machine source of truth:** `conformance/laas/data.json` (machine-readable bundle `laas-fin-1.1.1`)
+- **Machine source of truth:** `conformance/laas/data.json` (machine-readable bundle `laas-fin-1.1.2`)
 - **Enforcing policy:** `conformance/laas/laas.rego` (OPA package `kellerai.laas.actions`)
 - **Rationale and design record:** `docs/laas/proposal-v1.1.md`
 - **Supersedes:** LAAS v1.0 (draft)
@@ -137,7 +137,7 @@ its application.
 
 - `standard/LAAS.md`: LAAS prose normative reference, v1.1 (canonical; `data.json` is derived
   from it).
-- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.1`; the machine
+- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.2`; the machine
   source of truth for tier-lattice values, escape-rate tolerances, and obligation metadata.
 - `conformance/laas/laas.rego`: OPA policy implementing the conformance predicate, package
   `kellerai.laas.actions`.
@@ -1036,7 +1036,7 @@ Readers should confirm current versions before relying on specific document deta
 ### LAAS internal sources (normative)
 
 - `standard/LAAS.md`: canonical prose specification, LAAS v1.1.
-- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.1`.
+- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.2`.
 - `conformance/laas/laas.rego`: OPA policy, package `kellerai.laas.actions`.
 - `docs/laas/proposal-v1.1.md`: rationale and design record, LAAS v1.1.
 

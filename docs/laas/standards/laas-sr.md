@@ -29,7 +29,7 @@ commit an irreversible high-consequence action before any human is aware it was 
 LAAS addresses this gap by gating each action at a Consequence Tier derived from its observed
 effect surface and by requiring independent pre-commit verification, proportionate to that tier,
 before commitment. The machine source of truth for all thresholds referenced below is the LAAS
-conformance bundle `laas-fin-1.1.1` (`conformance/laas/data.json`), enforced by the OPA policy
+conformance bundle `laas-fin-1.1.2` (`conformance/laas/data.json`), enforced by the OPA policy
 `conformance/laas/laas.rego`, package `kellerai.laas.actions`.
 
 ## Supervisory Expectations

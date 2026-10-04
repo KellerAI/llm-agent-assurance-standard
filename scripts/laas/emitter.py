@@ -83,8 +83,8 @@ class GateContext:
     verified, and whether this gate runs out-of-process (§7.7).
     """
 
-    bundle_id: str = "laas-fin-1.1.1"
-    bundle_version: str = "laas-fin-1.1.1"
+    bundle_id: str = "laas-fin-1.1.2"
+    bundle_version: str = "laas-fin-1.1.2"
     bundle_signed: bool = True
     out_of_process: bool = True
     lattice: dict = field(default_factory=lambda: dict(_DEFAULT_LATTICE))
@@ -96,8 +96,8 @@ class GateContext:
         with open(data_json_path, encoding="utf-8") as fh:
             cfg = json.load(fh)["laas"]
         kwargs: dict[str, Any] = {
-            "bundle_id": cfg.get("bundle_id", "laas-fin-1.1.1"),
-            "bundle_version": cfg.get("bundle_id", "laas-fin-1.1.1"),
+            "bundle_id": cfg.get("bundle_id", "laas-fin-1.1.2"),
+            "bundle_version": cfg.get("bundle_id", "laas-fin-1.1.2"),
             "lattice": cfg["tier_lattice"],
             "ct_when_undetermined": cfg.get(
                 "default_ct_when_undetermined", _DEFAULT_CT_WHEN_UNDETERMINED

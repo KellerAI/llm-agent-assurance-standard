@@ -5,7 +5,7 @@
 **Designation:** LAAS-NIST-PROFILE-DRAFT-1.1
 **Document type:** Control profile (NIST AI RMF crosswalk and SP 800-style control catalog)
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Status:** Draft, not approved; all thresholds cite `conformance/laas/data.json`
 
@@ -1075,7 +1075,7 @@ checks ran by the right party with evidence, not that no error can occur
 ### Normative References
 
 - `standard/LAAS.md`: LLM-Agent Assurance Standard v1.1 (normative prose)
-- `conformance/laas/data.json`: LAAS bundle `laas-fin-1.1.1` (machine source of truth for
+- `conformance/laas/data.json`: LAAS bundle `laas-fin-1.1.2` (machine source of truth for
   thresholds and obligation registry)
 - `conformance/laas/laas.rego`: OPA policy, package `kellerai.laas.actions` (enforcing policy)
 

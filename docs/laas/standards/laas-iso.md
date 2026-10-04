@@ -836,6 +836,6 @@ The following documents are cited for informative purposes.
 - Five Eyes Intelligence Partnership, *Careful Adoption of Agentic AI Services*, April–May 2026.
 - KellerAI, **LAAS v1.1 proposal**, `docs/laas/proposal-v1.1.md`, 2026-06-18.
 - KellerAI, **LAAS machine-evaluable obligation bundle**, `conformance/laas/data.json`,
-  version 1.1.1, bundle ID `laas-fin-1.1.1`.
+  version 1.1.1, bundle ID `laas-fin-1.1.2`.
 - KellerAI, **LAAS conformance policy**, `conformance/laas/laas.rego`,
   package `kellerai.laas.actions`.

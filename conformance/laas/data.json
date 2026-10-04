@@ -1,7 +1,7 @@
 {
   "laas": {
     "version": "1.1.1",
-    "bundle_id": "laas-fin-1.1.1",
+    "bundle_id": "laas-fin-1.1.2",
     "description": "LAAS runtime-action conformance bundle. Single source of truth for package kellerai.laas.actions. Prose: standard/LAAS.md. Rationale: docs/laas/proposal-v1.1.md.",
     "tier_lattice": {
       "reversibility": { "reversible": 1, "hard": 3, "irreversible": 4, "none": 4 },

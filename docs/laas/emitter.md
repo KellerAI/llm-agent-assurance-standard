@@ -138,7 +138,7 @@ This is what the emitter's `derive_ct()` does, not the policy. `derive_ct()` mir
 `bash scripts/laas/check.sh`, run from the repository root, emits a record from `scripts/laas/fixtures/transfer.effect-surface.json` (the §6.1 worked example: `payments.transfer` to an external counterparty) with `-b conformance/laas/data.json`, then evaluates it with `opa eval` against the canonical in-repo policy + bundle (`conformance/laas/`) for `summary`, `error_ids` and `compliant` (`scripts/laas/check.sh:18`, `:31-40`). If `opa` is not on `PATH`, the script prints the emitted record, skips the evaluation, and exits 0 (`scripts/laas/check.sh:23-26`). **Result under opa 1.18.2:**
 
 ```json
-{ "bundle": "laas-fin-1.1.1", "compliant": true, "effective_ct": 4,
+{ "bundle": "laas-fin-1.1.2", "compliant": true, "effective_ct": 4,
   "errors": 0, "expected_ct": 4, "warnings": 0 }
 ```
 

@@ -268,7 +268,7 @@ _osi_ct4 := {
 			"consequence": "high",
 		},
 	},
-	"gate": {"assigned_ct": 4, "bundle_version": "laas-fin-1.1.1", "bundle_signed": true, "out_of_process": true},
+	"gate": {"assigned_ct": 4, "bundle_version": "laas-fin-1.1.2", "bundle_signed": true, "out_of_process": true},
 	"aggregate": {"window_effect_ct": 0},
 	"human_approval": {"approved": false},
 	"vendor": {"used": false, "attribution": null, "scope_limited": false},
@@ -318,7 +318,7 @@ _osi_untrusted_lowct := {
 		"self_reported_ct": 1,
 		"effect_surface": {"external_effect": true, "tool": "osi.dataset.write:customers", "reversibility": "reversible", "scope": "single", "consequence": "low"},
 	},
-	"gate": {"assigned_ct": 1, "bundle_version": "laas-fin-1.1.1", "bundle_signed": true, "out_of_process": true},
+	"gate": {"assigned_ct": 1, "bundle_version": "laas-fin-1.1.2", "bundle_signed": true, "out_of_process": true},
 	"aggregate": {"window_effect_ct": 1},
 	"human_approval": {"approved": true},
 	"vendor": {"used": false, "attribution": null, "scope_limited": false},
@@ -566,7 +566,7 @@ test_sd3_guard_blocked_bucket_b_no_3b if {
 # GATE-4 probe: CT4 surface, model verifier passed, no bound, no evidence, no assigned_ct.
 _szm_probe := {
 	"action": {"id": "act_7c31", "actor_model_lineage": "vendorX-llm-2026q1", "self_reported_ct": 4, "effect_surface": _surface_ct4},
-	"gate": {"bundle_version": "laas-fin-1.1.1", "bundle_signed": true, "out_of_process": true},
+	"gate": {"bundle_version": "laas-fin-1.1.2", "bundle_signed": true, "out_of_process": true},
 	"verifier": {"id": "VRF-MODEL-PROBE", "type": "model", "model_lineage": "vendorY-llm-2026q2", "error_correlation": 0.1, "qualified": true, "verdict": "pass"},
 	"human_approval": {"approved": false},
 	"aggregate": {"window_effect_ct": 4},

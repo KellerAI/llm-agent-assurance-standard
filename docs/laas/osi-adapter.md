@@ -311,7 +311,7 @@ step 3:
 == 3. opa eval: assert compliant == true ==
 compliant = true
 {
-  "bundle": "laas-fin-1.1.1",
+  "bundle": "laas-fin-1.1.2",
   "compliant": true,
   "effective_ct": 4,
   "errors": 0,
