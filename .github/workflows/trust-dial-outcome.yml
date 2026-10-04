@@ -11,8 +11,9 @@
 # Where the state lives: the `audit-trail` branch (same branch the
 # blast-radius outcome writes). main, qa and dev are ruleset-protected, and
 # github-actions is not a bypass actor, so a direct push there is rejected
-# with GH013 (runs 28883329409 and 28884412462, Jul 7). The first write seeds
-# audit-trail with audit/ from the merged commit; later writes fast-forward.
+# with GH013 (runs 28883329409 and 28884412462, Jul 7). audit-trail is created
+# once by hand; this workflow never creates it and fails with an error if it
+# is missing. Every write is a fast-forward push.
 #
 # Which pushes count: CI runs on push to dev and main (ci.yml). Dependabot
 # targets dev (.github/dependabot.yml), so dev is where its merges land.
@@ -57,22 +58,25 @@ jobs:
       - name: Open audit-trail worktree
         env:
           AUDIT_BRANCH: audit-trail
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           git config user.name "trust-dial-bot"
           git config user.email "trust-dial-bot@users.noreply.github.com"
-          if git fetch --no-tags origin "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/${AUDIT_BRANCH}" 2>/dev/null; then
-            base="origin/${AUDIT_BRANCH}"
-          else
-            # First write: seed the branch with audit/ as committed at the
-            # merged commit, so the existing trail and state carry over.
-            audit_tree="$(git rev-parse "${HEAD_SHA}:audit")"
-            root_tree="$(printf '040000 tree %s\taudit\n' "$audit_tree" | git mktree)"
-            base="$(git commit-tree "$root_tree" \
-              -m "chore(audit): seed ${AUDIT_BRANCH} from audit/ at ${HEAD_SHA} [skip ci]")"
+          # The writers never create the branch: two writers creating it from
+          # different commits would race. It is created once, by hand.
+          set +e
+          git ls-remote --exit-code --heads origin "${AUDIT_BRANCH}" >/dev/null
+          rc=$?
+          set -e
+          if [ "$rc" -eq 2 ]; then
+            echo "::error::branch '${AUDIT_BRANCH}' does not exist on origin. It must be created once by hand (a maintainer task) before this workflow can write trust-dial state."
+            exit 1
+          elif [ "$rc" -ne 0 ]; then
+            echo "::error::git ls-remote for '${AUDIT_BRANCH}' failed (exit ${rc})"
+            exit 1
           fi
-          git worktree add --detach .audit "$base"
+          git fetch --no-tags origin "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/${AUDIT_BRANCH}"
+          git worktree add --detach .audit "origin/${AUDIT_BRANCH}"
 
       - name: Resolve merged Dependabot PR for this commit
         id: pr
