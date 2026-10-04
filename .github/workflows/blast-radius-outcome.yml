@@ -5,6 +5,17 @@
 # write-back uses contents:write and commits with a [skip ci] marker; the
 # gate workflow itself never has contents:write (least-privilege gate).
 #
+# Where the trail lives: the `audit-trail` branch, file audit/blast-radius.jsonl.
+# main, qa and dev are ruleset-protected ("Changes must be made through a pull
+# request"), and github-actions is not a bypass actor, so a direct push there
+# is rejected with GH013. audit-trail is outside every ruleset. The first write
+# seeds it with audit/ from the default branch; every later write is a
+# fast-forward append. The audit/ copy on main/dev/qa is the frozen pre-split
+# history and is no longer appended to.
+#
+# workflow_run always runs the copy of this file on the default branch (main),
+# so a change here takes effect only once it reaches main.
+#
 # Recursion-break guards (ADR-002 §5):
 #   1. The gate workflow declares paths-ignore: ['audit/**'].
 #   2. Every commit this workflow writes ends with [skip ci].
@@ -53,35 +64,51 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Append trace line to audit/blast-radius.jsonl
+      - name: Append trace line on the audit-trail branch
+        env:
+          AUDIT_BRANCH: audit-trail
+          SEED_SHA: ${{ github.sha }}
+          PR_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
           if [ ! -f .pulse-in/trace-fragment.jsonl ]; then
             echo "no trace fragment in artifact — nothing to append"
             exit 0
           fi
-          mkdir -p audit
-          # Ensure newline termination on the existing trace before append.
-          if [ -s audit/blast-radius.jsonl ] && \
-             [ "$(tail -c1 audit/blast-radius.jsonl | od -An -c | tr -d ' ')" != "\\n" ]; then
-            printf '\n' >> audit/blast-radius.jsonl
-          fi
-          cat .pulse-in/trace-fragment.jsonl >> audit/blast-radius.jsonl
-
-      - name: Commit write-back (skip-ci marker, audit/** only)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- audit/blast-radius.jsonl; then
-            echo "no trace changes to commit"
-            exit 0
-          fi
           git config user.name "blast-radius-bot"
           git config user.email "blast-radius-bot@users.noreply.github.com"
-          git add audit/blast-radius.jsonl
-          git commit -m "chore(blast-radius): append pulse trace [skip ci]"
-          # GITHUB_TOKEN push: GitHub does not re-trigger push-keyed workflows
-          # from this push, and the gate workflow's paths-ignore guards
-          # pull_request retriggering.
-          git push origin "HEAD:${GITHUB_REF_NAME:-main}"
+          frag="$(pwd)/.pulse-in/trace-fragment.jsonl"
+          # Append-only writer. Fast-forward pushes only (never --force), so a
+          # race with the trust-dial writer is retried on a fresh base.
+          for attempt in 1 2 3 4 5; do
+            rm -rf .audit && git worktree prune
+            if git fetch --no-tags origin "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/${AUDIT_BRANCH}" 2>/dev/null; then
+              base="origin/${AUDIT_BRANCH}"
+            else
+              # First write: seed the branch with audit/ as committed on the
+              # default branch, so the existing trail carries over unchanged.
+              audit_tree="$(git rev-parse "${SEED_SHA}:audit")"
+              root_tree="$(printf '040000 tree %s\taudit\n' "$audit_tree" | git mktree)"
+              base="$(git commit-tree "$root_tree" \
+                -m "chore(audit): seed ${AUDIT_BRANCH} from audit/ at ${SEED_SHA} [skip ci]")"
+            fi
+            git worktree add --detach .audit "$base"
+            log=.audit/audit/blast-radius.jsonl
+            mkdir -p .audit/audit
+            # Ensure newline termination on the existing trace before append.
+            if [ -s "$log" ] && [ -n "$(tail -c1 "$log")" ]; then
+              printf '\n' >> "$log"
+            fi
+            cat "$frag" >> "$log"
+            git -C .audit add audit/blast-radius.jsonl
+            git -C .audit commit -q -m "chore(blast-radius): append pulse trace for run ${PR_RUN_ID} [skip ci]"
+            if git -C .audit push origin "HEAD:refs/heads/${AUDIT_BRANCH}"; then
+              echo "appended to ${AUDIT_BRANCH}: $(git -C .audit rev-parse HEAD)"
+              echo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/$(git -C .audit rev-parse HEAD)/audit/blast-radius.jsonl" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "push rejected (attempt ${attempt}); retrying on a fresh base"
+            sleep $((attempt * 3))
+          done
+          echo "::error::could not append to ${AUDIT_BRANCH} after 5 attempts"
+          exit 1
