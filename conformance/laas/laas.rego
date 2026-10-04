@@ -189,7 +189,7 @@ violations contains obl(
 	# compares residual_error_bound to the tolerance; undefined when the bound is
 	# null/absent or the tier has no tolerance. Missing-bound and missing-evidence
 	# cases are handled by the spec-alignment rules at :248-260.
-	input.residual_error_bound > residual_tolerance
+	_valid_bound > residual_tolerance
 }
 
 # ---------------------------------------------------------------------------
@@ -280,4 +280,21 @@ violations contains obl(
 	sprintf("gate did not record an integer assigned_ct in 0..4; enforcing lattice ct %d", [expected_ct]),
 ) if {
 	not _assigned_ct_valid
+}
+
+# ---- Residual bound validity (bead laas-szm, ruling R3) ----
+# A supplied residual_error_bound must be a number >= 0; null means absent (R3a).
+# Any other non-number or a negative bound fires
+# RES-001 and is never compared to the tolerance (guard at :192).
+_bound_valid if {
+	is_number(input.residual_error_bound)
+	input.residual_error_bound >= 0
+}
+
+_valid_bound := input.residual_error_bound if _bound_valid
+
+violations contains obl("LAAS-OBL-RES-001", "residual_error_bound must be a number >= 0") if {
+	"residual_error_bound" in object.keys(input)
+	input.residual_error_bound != null
+	not _bound_valid
 }
