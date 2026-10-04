@@ -1,3 +1,13 @@
+> **Disclaimer:** This is not an official Federal Reserve publication.
+> It is not an SR letter and was not issued, reviewed, or endorsed by the Board of Governors
+> of the Federal Reserve System, any Reserve Bank, or any other supervisory agency.
+> It is a community-produced rendering of the LLM-Agent Assurance Standard (LAAS) in the
+> format of a supervisory letter, to aid readers familiar with that format.
+> The "Distribution" section and the "*[Signed]*" line below are part of that format;
+> no one has signed this document and it carries no supervisory force.
+
+---
+
 ## Purpose
 
 This guidance establishes supervisory expectations for the governance of individual actions
