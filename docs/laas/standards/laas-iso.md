@@ -123,12 +123,15 @@ content constitutes requirements of this document. For dated references, only th
 cited applies. For undated references, the latest edition of the referenced document
 (including any amendments) applies.
 
-- **ISO/IEC 42001:2023**, *Information technology - Artificial intelligence - Management system*
-- **ISO/IEC 27001:2022**, *Information security, cybersecurity and privacy protection -
-  Information security management systems - Requirements*
-- **ISO/IEC 42006:2025**, *Information technology - Artificial intelligence - Requirements
-  for bodies providing audit and certification of AI management systems*
-- **ISO 21448:2022**, *Road vehicles - Safety of the intended functionality*
+- `standard/LAAS.md`, *LLM-Agent Assurance Standard (LAAS)*, v1.1 (normative prose; canonical).
+- `conformance/laas/data.json`, obligation bundle `laas-fin-1.1.1` (machine source of truth for
+  tier-lattice values, escape-rate tolerances, and obligation metadata).
+- `conformance/laas/laas.rego`, OPA policy implementing the conformance predicate, package
+  `kellerai.laas.actions`.
+
+No other document is normative for this document. ISO/IEC 42001:2023, ISO/IEC 27001:2022,
+ISO/IEC 42006:2025 and ISO 21448:2022 are cited for drafting style, scope boundaries and
+alignment only; they impose no requirement of this document and are listed in the Bibliography.
 
 Informative alignment with DO-178C, SR 11-7/SR 26-2, and UL 4600 is given in Annex B.
 
