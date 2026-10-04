@@ -547,3 +547,11 @@ test_sd3_guard_ct1_bound_no_evidence_no_3a if {
 	]))
 	not _has_msg_containing(inp, "LAAS-OBL-RES-001", "without evidence_refs")
 }
+
+test_sd3_guard_blocked_bucket_b_no_3b if {
+	inp := json.patch(_ct2_nobound, [
+		{"op": "replace", "path": "/verifier", "value": _verifier_model_indep},
+		{"op": "replace", "path": "/action_blocked", "value": true},
+	])
+	not _has_msg_containing(inp, "LAAS-OBL-RES-001", "Bucket-B")
+}
