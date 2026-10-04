@@ -8,6 +8,16 @@
 # This is the only writer of audit/trust-dial-state.json and
 # audit/decision-trace.jsonl. The gate workflow reads; it never writes.
 #
+# Where the state lives: the `audit-trail` branch (same branch the
+# blast-radius outcome writes). main, qa and dev are ruleset-protected, and
+# github-actions is not a bypass actor, so a direct push there is rejected
+# with GH013 (runs 28883329409 and 28884412462, Jul 7). The first write seeds
+# audit-trail with audit/ from the merged commit; later writes fast-forward.
+#
+# Which pushes count: CI runs on push to dev and main (ci.yml). Dependabot
+# targets dev (.github/dependabot.yml), so dev is where its merges land.
+# workflow_run always runs the copy of this file on the default branch (main).
+#
 # Recursion-break guards (spec §1.3):
 #   1. Every push-triggered workflow has paths-ignore: ['audit/**'].
 #   2. The write-back commit message ends with [skip ci].
@@ -37,11 +47,32 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout (default branch HEAD)
+      - name: Checkout (merged commit)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Open audit-trail worktree
+        env:
+          AUDIT_BRANCH: audit-trail
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "trust-dial-bot"
+          git config user.email "trust-dial-bot@users.noreply.github.com"
+          if git fetch --no-tags origin "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/${AUDIT_BRANCH}" 2>/dev/null; then
+            base="origin/${AUDIT_BRANCH}"
+          else
+            # First write: seed the branch with audit/ as committed at the
+            # merged commit, so the existing trail and state carry over.
+            audit_tree="$(git rev-parse "${HEAD_SHA}:audit")"
+            root_tree="$(printf '040000 tree %s\taudit\n' "$audit_tree" | git mktree)"
+            base="$(git commit-tree "$root_tree" \
+              -m "chore(audit): seed ${AUDIT_BRANCH} from audit/ at ${HEAD_SHA} [skip ci]")"
+          fi
+          git worktree add --detach .audit "$base"
 
       - name: Resolve merged Dependabot PR for this commit
         id: pr
@@ -67,7 +98,7 @@ jobs:
           PR_ACTOR: ${{ steps.pr.outputs.pr_actor }}
         run: |
           set -euo pipefail
-          state="audit/trust-dial-state.json"
+          state=".audit/audit/trust-dial-state.json"
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           cycle_id="$(date -u +%G-W%V)"
 
@@ -171,6 +202,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          BASE_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           set -euo pipefail
           revert_branch="trust-dial/auto-revert/${PR_NUMBER}"
@@ -183,7 +215,7 @@ jobs:
               --title "trust-dial: auto-revert #${PR_NUMBER}" \
               --body "Post-merge CI failed on commit ${HEAD_SHA}. trust-dial circuit breaker opened an auto-revert PR." \
               --label "trust-dial/auto-revert" \
-              --base "${GITHUB_REF_NAME:-main}" \
+              --base "$BASE_BRANCH" \
               --head "$revert_branch"
           else
             gh issue create \
@@ -191,8 +223,8 @@ jobs:
               --body "git revert --no-edit ${HEAD_SHA} could not apply cleanly. Manual intervention required." \
               --label "trust-dial/auto-revert-failed"
           fi
-          # Always reset the working tree so the state commit step is clean.
-          git checkout "${GITHUB_REF_NAME:-main}" -- audit/
+          # State and trace live in the .audit worktree, so the revert branch
+          # checkout above does not touch them.
 
       - name: Append outcome trace entry
         env:
@@ -245,30 +277,41 @@ jobs:
               rationale: ("ci=" + $ci + " tier_change=" + $tc),
               opa_policy_digest: $digest,
               run_url: $run_url
-            }' >> audit/decision-trace.jsonl
+            }' >> .audit/audit/decision-trace.jsonl
 
       - name: Upload outcome trace artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: trust-dial-outcome-${{ github.run_id }}
+          include-hidden-files: true   # .audit/ is the audit-trail worktree
           path: |
-            audit/trust-dial-state.json
-            audit/decision-trace.jsonl
+            .audit/audit/trust-dial-state.json
+            .audit/audit/decision-trace.jsonl
           retention-days: 90
 
-      - name: Commit state write-back (skip-ci marker, audit/** only)
+      - name: Commit state write-back (skip-ci marker, audit-trail branch)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUDIT_BRANCH: audit-trail
         run: |
           set -euo pipefail
-          if git diff --quiet -- audit/; then
+          if git -C .audit diff --quiet -- audit/; then
             echo "no state changes to commit"
             exit 0
           fi
-          git config user.name "trust-dial-bot"
-          git config user.email "trust-dial-bot@users.noreply.github.com"
-          git add audit/trust-dial-state.json audit/decision-trace.jsonl
-          git commit -m "chore(trust-dial): cycle state update [skip ci]"
-          # Push with the default GITHUB_TOKEN — GitHub will not re-trigger
-          # push-keyed workflows from this push.
-          git push origin "HEAD:${GITHUB_REF_NAME:-main}"
+          git -C .audit add audit/trust-dial-state.json audit/decision-trace.jsonl
+          git -C .audit commit -q -m "chore(trust-dial): cycle state update [skip ci]"
+          # Fast-forward only, never --force. This job's concurrency group
+          # serializes trust-dial writers; the blast-radius writer only appends
+          # audit/blast-radius.jsonl, so a rebase onto its commits is clean.
+          for attempt in 1 2 3 4 5; do
+            if git -C .audit push origin "HEAD:refs/heads/${AUDIT_BRANCH}"; then
+              echo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/$(git -C .audit rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "push rejected (attempt ${attempt}); rebasing on ${AUDIT_BRANCH}"
+            sleep $((attempt * 3))
+            git -C .audit fetch --no-tags origin "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/${AUDIT_BRANCH}"
+            git -C .audit rebase "origin/${AUDIT_BRANCH}"
+          done
+          echo "::error::could not push to ${AUDIT_BRANCH} after 5 attempts"
+          exit 1
