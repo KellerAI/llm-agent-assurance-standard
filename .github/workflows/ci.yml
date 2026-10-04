@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # dev: Dependabot PRs merge there (.github/dependabot.yml), and the
+    # trust-dial outcome workflow counts only push-triggered CI runs.
+    branches: [main, dev]
   pull_request:
 
 permissions:
