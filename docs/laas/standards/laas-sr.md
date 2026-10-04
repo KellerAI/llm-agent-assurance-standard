@@ -7,7 +7,10 @@ committing an action with an effect outside the agent's own sandbox, including r
 fund transfers, access-permission changes, and external communications.
 The guidance adopts the LLM-Agent Assurance Standard (LAAS) v1.1 (`standard/LAAS.md`) as the
 reference technical control set and frames its obligations as supervisory expectations consistent
-with the model-risk-management principles of SR 11-7 and its successor SR 26-2.
+with the model-risk-management principles first set out in SR 11-7 and now carried by SR 26-2,
+which superseded and replaced SR 11-7 on April 17, 2026. SR 26-2 states that generative and
+agentic AI models are not within its scope, so this guidance applies those principles to LLM
+agents by analogy, not as an extension of SR 26-2.
 
 This guidance does not certify a model, a model provider, or a management system.
 It addresses what an agent may commit, and the evidence an institution must produce that the
@@ -15,8 +18,8 @@ right checks ran, by the right party, before the action took effect.
 
 ## Background
 
-Supervisory guidance on model risk management (SR 11-7) was written for models that produce an
-estimate a human then acts upon. Autonomous agents collapse that separation: the agent both
+Supervisory guidance on model risk management (SR 11-7, since superseded by SR 26-2) was
+written for models that produce an estimate a human then acts upon. Autonomous agents collapse that separation: the agent both
 produces the output and commits the action, at machine speed and scale. Traditional governance
 checkpoints (periodic validation, human review of material decisions, and post-hoc outcome
 analysis) do not bound the rate at which an undetected error in an agent's output reaches and is
@@ -65,7 +68,7 @@ evaluate against a single machine-readable bundle.
    independent-verification floor tier, a passing independent verifier shall evaluate the action
    *before* commitment. A verdict of fail, abstain, or indeterminate shall block and escalate the
    action. Post-execution review does not satisfy this expectation. This is the agent-action
-   analogue of effective challenge under SR 11-7. (LAAS-OBL-IRR-001.)
+   analogue of effective challenge under SR 11-7 (superseded; now SR 26-2). (LAAS-OBL-IRR-001.)
 
 6. **Verifier independence.** The verifier shall not share the actor's model substrate. Independence
    is satisfied by a deterministic/exact checker, by a distinct model lineage whose measured
@@ -79,14 +82,14 @@ evaluate against a single machine-readable bundle.
    coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a
    change-controlled version recorded in the trace. A verifier modified after its last qualification
    is treated as unqualified until re-qualified. This is the validator-qualification analogue under
-   SR 11-7 and DO-330. (LAAS-OBL-VQ-001.)
+   SR 11-7 (superseded; now SR 26-2) and DO-330. (LAAS-OBL-VQ-001.)
 
 8. **Bounded residual escape rate.** For open-world (Bucket B) claims, the institution shall
    declare a maximum acceptable residual escape rate per tier, estimate it by backtesting on a
    held-out, adversarially-stressed evaluation set with a stated confidence interval, and re-measure
    on any change to model, prompt, tool, or policy. The measured rate shall not exceed the declared
    tolerance, which shall not exceed the LAAS minimums. This is the ongoing-monitoring and
-   outcome-analysis analogue under SR 11-7. (LAAS-OBL-RES-001; tolerances by tier in
+   outcome-analysis analogue under SR 11-7 (superseded; now SR 26-2). (LAAS-OBL-RES-001; tolerances by tier in
    `conformance/laas/data.json`, key `escape_rate_tolerance_by_ct`.)
 
 9. **Human approval at the highest tier.** Every action at the human-approval floor tier shall
@@ -164,22 +167,24 @@ supervisory teams.
 
 ## Supersession / Related Guidance
 
-This guidance supplements and does not supersede SR 11-7 (*Guidance on Model Risk Management*, 2011)
-or SR 26-2 (its AI/ML successor). It adopts LAAS v1.1 (`standard/LAAS.md`), which supersedes LAAS
+This guidance does not supersede or amend any supervisory guidance. SR 26-2 (*Revised Guidance on
+Model Risk Management*, April 17, 2026) supersedes and replaces SR 11-7 (*Guidance on Model Risk
+Management*, 2011) and SR 21-8. SR 26-2 places generative and agentic AI models outside its scope
+(attachment, footnote 3), so it does not itself govern the agents this guidance addresses. It adopts LAAS v1.1 (`standard/LAAS.md`), which supersedes LAAS
 v1.0, as the reference technical control set. Where this letter and `conformance/laas/data.json`
 differ on a threshold value, the data file is the machine source of truth. Related supervisory and
-technical references include SR 11-7, SR 26-2, the NIST AI Risk Management Framework (AI 100-1),
+technical references include SR 26-2, SR 11-7 (superseded), the NIST AI Risk Management Framework (AI 100-1),
 and the LAAS design record (`docs/laas/proposal-v1.1.md`).
 
 ## Distribution
 
 Reserve Banks should distribute this letter to the supervised organizations in their districts
 and to appropriate supervisory and examination staff. Direct questions regarding this guidance
-to the Division of Supervision and Regulation.
+to the LAAS maintainers.
 
 *[Signed]*
 
-Director, Division of Supervision and Regulation
+*[Placeholder signatory title; no official has signed this document]*
 
 ---
 

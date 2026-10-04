@@ -46,6 +46,8 @@ Existing assurance frameworks address complementary but distinct problems:
   deterministic software artefacts through structural coverage and bidirectional traceability.
 - **SR 11-7 / SR 26-2 (Federal Reserve / OCC model-risk guidance)** mandate independent
   effective challenge, backtesting against held-out data, and vendor-model risk attribution.
+  SR 26-2 superseded SR 11-7 in April 2026 and places generative and agentic AI models
+  outside its scope; this document borrows its principles by analogy.
 - **UL 4600** establishes a standard of care for autonomous vehicle safety cases bounded by
   an Operational Design Domain.
 - **ISO/IEC 42001:2023** provides an AI management system at the organisational lifecycle level
@@ -796,8 +798,8 @@ domain-specific scope restrictions of any antecedent framework:
 
 - **DO-178C** (RTCA/EUROCAE, 2011): independence requirements, bidirectional traceability,
   structural-coverage analogue (verifier claim-class coverage in 5.3).
-- **SR 11-7** (Federal Reserve SR Letter 11-7, 2011) and **SR 26-2** (Federal Reserve
-  SR Letter 26-2, 2026, expected): effective challenge, backtesting, vendor-risk attribution.
+- **SR 11-7** (Federal Reserve SR Letter 11-7, 2011, superseded) and **SR 26-2** (Federal
+  Reserve SR Letter 26-2, April 17, 2026; generative and agentic AI out of scope): effective challenge, backtesting, vendor-risk attribution.
 - **UL 4600** (UL, 2020 and subsequent): standard-of-care model, safety case with ODD,
   abstention outside the operational envelope.
 
@@ -813,9 +815,10 @@ The following documents are cited for informative purposes.
 - RTCA/EUROCAE, **DO-178C / ED-12C**, *Software Considerations in Airborne Systems and
   Equipment Certification*, 2011.
 - RTCA/EUROCAE, **DO-330 / ED-215**, *Software Tool Qualification Considerations*, 2011.
-- Federal Reserve, **SR Letter 11-7**, *Guidance on Model Risk Management*, 2011.
-- Federal Reserve, **SR Letter 26-2** (expected), *Update to Model Risk Management Guidance*,
-  2026 (confirm publication date before citation).
+- Federal Reserve, **SR Letter 11-7**, *Guidance on Model Risk Management*, 2011 (superseded
+  by SR 26-2).
+- Federal Reserve, OCC and FDIC, **SR Letter 26-2**, *Revised Guidance on Model Risk
+  Management*, April 17, 2026 (supersedes SR 11-7 and SR 21-8).
 - UL Solutions, **UL 4600**, *Standard for Safety for the Evaluation of Autonomous Products*,
   2020 (latest edition).
 - ISO, **ISO 21448:2022**, *Road vehicles - Safety of the intended functionality (SOTIF)*.
