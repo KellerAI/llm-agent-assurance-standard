@@ -3,9 +3,10 @@
 ## Information technology - Artificial intelligence - Action-level assurance for autonomous agents (LAAS)
 
 > **NOTICE:** This document is a draft illustration in the ISO/IEC Directives Part 2 format,
-> aligned to the drafting style of ISO/IEC 42001:2023 with a normative Annex A modelled on
-> ISO/IEC 27001:2022. It is **not** an official ISO/IEC deliverable, has not been submitted
-> to any standards body, and carries no endorsement from ISO, IEC, or any national body.
+> with a normative Annex A control table laid out like the Annex A of ISO/IEC 27001:2022. It
+> does not follow the harmonized management-system structure (clauses 4 to 10) used by
+> ISO/IEC 42001:2023 and ISO/IEC 27001:2022. It is **not** an official ISO/IEC deliverable,
+> has not been submitted to any standards body, and carries no endorsement from ISO, IEC, or any national body.
 > All rights reserved by the authors. © KellerAI / contributors (placeholder copyright,
 > draft only).
 >
