@@ -19,6 +19,7 @@ How the conventions in **llm-agent-assurance-standard** are enforced — what is
 | Linked issue | CI, on pull requests from `external/*` branches only (`.github/workflows/validate-linked-issue.yml:19`) | The issue named in the branch is open and carries the `codeowner-approved` label (`.github/workflows/validate-linked-issue.yml:12–13`, `:23`). |
 | Trust-dial gate | CI, on pull requests only (`.github/workflows/trust-dial-gate.yml:113`) | `opa eval` of `data.kellerai.oss.trust_dial.decision` against `conformance/`. |
 | Blast-radius pulse | CI, on pull requests only (`.github/workflows/blast-radius-pulse.yml:60`) | `scripts/pulse.sh` runs `opa eval` of `data.kellerai.oss.blast_radius.result` (`scripts/pulse.sh:242`). |
+| OPA test | CI (`.github/workflows/ci.yml` job `opa-test`, added by PR #23); not a required check until added to the rulesets | `opa check conformance/`, then `opa test conformance/laas/` and `opa test conformance/`, failing on any failing, erroring, or skipped test or a count below 44 and 115. |
 
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`, `conformance/blast_radius.rego:15`.
@@ -26,6 +27,34 @@ Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.r
 The pre-commit hook is managed by `lefthook`.
 Install it once with `lefthook install`; it then runs the sanitization gate before every commit.
 CI runs the same gates, so the hook is a convenience — not the sole line of defence.
+
+## Repository audit trail (`audit-trail` branch)
+
+The blast-radius and trust-dial outcome workflows write their records to the `audit-trail`
+branch, not to `main`, `qa`, or `dev` (PRs #24 and #25). The files keep their paths:
+`audit/blast-radius.jsonl`, `audit/decision-trace.jsonl`, and `audit/trust-dial-state.json`.
+The trust-dial gate reads `audit/trust-dial-state.json` from `audit-trail` and falls back to
+the in-tree copy while that branch does not exist.
+
+- **Why a separate branch.** `main`, `qa`, and `dev` are ruleset-protected, and
+  `github-actions` is not a bypass actor, so a direct write-back push is rejected with GH013.
+  No ruleset applies to `audit-trail`, so the default `GITHUB_TOKEN` can push to it without a
+  new bypass actor or a ruleset change.
+- **Created once by hand.** A maintainer creates `audit-trail` once, by hand, before the
+  writers first run. The writers never create it: if `origin/audit-trail` is missing, the
+  write-back step fails with an error saying the branch must be created first. This avoids
+  two writers each creating the branch from a different starting commit.
+- **Append-only, no force-push.** Every write appends and pushes as a fast-forward.
+  A rejected push is retried on a fresh base (blast-radius) or rebased (trust-dial), up to
+  five times. No writer force-pushes.
+- **When it takes effect.** `workflow_run` workflows run the copy of the workflow file on the
+  default branch, so the new writers run only after #24 and #25 reach `main` and
+  `audit-trail` exists. Until then, `audit/` on `main` holds the latest records
+  (last entry 2026-06-26). After the switch, `audit/` on `main`, `qa`, and `dev` is frozen history.
+- **Open option (maintainer decision).** `audit-trail` is unprotected, so a repository admin
+  could rewrite or delete it. A ruleset on `refs/heads/audit-trail` with only the `deletion`
+  and `non_fast_forward` rules, and no pull-request rule or bypass actor, would make it
+  append-only without blocking the writers. Adding it is Jonathan's decision.
 
 ## Reviewed, not automated
 
@@ -71,9 +100,9 @@ opa test conformance/laas/
 The test suite lives at `conformance/laas/laas_test.rego`.
 `opa test` must exit zero before any change to `conformance/laas/laas.rego`
 or `conformance/laas/data.json` is committed.
-This is a local contributor gate, not a CI gate.
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
-Sources: `.github/workflows/ci.yml:33–34`, `.github/workflows/ci.yml:37`, `.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`, `scripts/pulse.sh:242`.
+Run it locally first; CI runs it again in the `OPA test (conformance/)` job.
+In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus `opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job `OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`). It is not a required status check until it is added to the branch rulesets. The Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
+Sources: `.github/workflows/ci.yml:33–34`, `.github/workflows/ci.yml:37`, `.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`, `scripts/pulse.sh:242`, `.github/workflows/ci.yml` job `opa-test`.
 
 ## The LaaS action-conformance policy
 

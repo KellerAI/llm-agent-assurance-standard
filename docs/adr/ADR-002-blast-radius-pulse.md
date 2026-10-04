@@ -49,6 +49,19 @@ date: 2026-05-22
 >   `scripts/pulse.sh` at `.github/workflows/blast-radius-pulse.yml:60`; that script
 >   evaluates the verdict with `opa eval` at `scripts/pulse.sh:242`), and
 >   `audit/blast-radius.jsonl`.
+>
+> **Amendment (2026-10-04).** The committed trace no longer lands on the default branch.
+> `protect-main` rejects the write-back push from `github-actions` with GH013, so every
+> outcome run from 2026-09-04 to 2026-09-30 failed and the last record in
+> `audit/blast-radius.jsonl` on `main` is dated 2026-06-26. With PR #24 the outcome workflow
+> appends to `audit/blast-radius.jsonl` on the unprotected `audit-trail` branch; with PR #25
+> the trust-dial outcome writes there too. Writes are append-only fast-forward pushes, retried
+> on rejection and never forced. The writers never create the branch: a maintainer creates
+> `audit-trail` once by hand, and until then the write-back step fails with an error saying
+> so. The new writer runs once it reaches `main`. The Decision's "committed append-only trace at
+> `audit/blast-radius.jsonl`" now means that file on `audit-trail`. See
+> `docs/agents/enforcement.md` ("Repository audit trail") for the open option of a deletion and
+> non-fast-forward ruleset on that branch, which is the maintainer's decision.
 
 ## Context
 

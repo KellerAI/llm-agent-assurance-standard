@@ -93,10 +93,10 @@ script reports `OK`; `check.sh` (emitter → `opa eval`) ends with compliant `tr
 prints `PASS`; and the unit tests report `Ran 10 tests` and `OK`
 (invocation from `scripts/laas/test_osi_to_surface.py:4`).
 
-**What CI runs.** In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
+**What CI runs.** In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus `opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job `OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`). It is not a required status check until it is added to the branch rulesets. The Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
 Sources: `.github/workflows/ci.yml:34`, `.github/workflows/ci.yml:37`,
 `.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`,
-`scripts/pulse.sh:242`.
+`scripts/pulse.sh:242`, `.github/workflows/ci.yml` job `opa-test`.
 
 ## Conventions agents MUST follow
 
@@ -116,8 +116,8 @@ Sources: `.github/workflows/ci.yml:34`, `.github/workflows/ci.yml:37`,
   (`.github/workflows/validate-branch-name.yml:10`, `:14`, `:27`, `:31-36`).
 - **PRs for publishable files.** Edits to `standard/**`, `conformance/**`, `docs/**`,
   or `README.md` require a pull request. Changes must pass `opa check` and `opa test`;
-  run them locally, because no workflow in this repository runs them (see "What CI runs"
-  under `## Key commands`).
+  run them locally before pushing. CI also runs them in the non-required
+  `OPA test (conformance/)` job (see "What CI runs" under `## Key commands`).
 - **PR target.** Contributor and agent pull requests target `dev`. Changes are promoted
   to `main` through `dev` → `qa` → `main`: the `validate-branch-tier` workflow accepts PRs into
   `main` only from `qa/**`, into `qa` only from `dev/**`, and into `dev` from `external/**`,
