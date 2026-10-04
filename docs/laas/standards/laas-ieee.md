@@ -1010,7 +1010,7 @@ Readers should confirm current versions before relying on specific document deta
 
 - Board of Governors of the Federal Reserve System, SR Letter 11-7, *Supervisory Guidance on
   Model Risk Management*, April 2011.
-- Board of Governors of the Federal Reserve System, SR Letter 26-2, *Revised Guidance on
+- Board of Governors of the Federal Reserve System, OCC and FDIC, SR Letter 26-2, *Revised Guidance on
   Model Risk Management*, April 17, 2026 (supersedes and replaces SR 11-7 and SR 21-8).
 
 ### Autonomous-vehicle safety

@@ -35,7 +35,7 @@ residual escape rate, and human approval.
 An append-only, hash-chained decision trace is the conformance artifact.
 
 **Keywords:** AI agents, action gating, consequence tier, escape rate, independent verification,
-decision trace, OPA, policy-as-code, AI RMF, DO-178C, SR 11-7, UL 4600
+decision trace, OPA, policy-as-code, AI RMF, DO-178C, SR 26-2, SR 11-7 (superseded), UL 4600
 
 **Audience:** AI deployers, enterprise risk and compliance teams, government assessors,
 financial-services model-risk officers, software auditors, and AI agent implementers.
@@ -554,7 +554,8 @@ Untrusted vendor dependencies shall fail closed.
 
 #### Discussion
 
-The deploying operator owns the risk of vendor-model errors under the SR 11-7 principle
+The deploying operator owns the risk of vendor-model errors under the model-risk principle of
+SR 11-7 (superseded; carried forward in SR 26-2 and applied here by analogy)
 ("you own the risk of models you buy", `docs/laas/proposal-v1.1.md §2`).
 This control implements that principle as an obligation: if a vendor model produces a wrong
 output that passes through the gate, the miss counts against the operator's Bucket-B escape
@@ -606,7 +607,7 @@ reference shall all be recorded in the decision trace.
 #### Discussion
 
 Pre-commit verification is the LAAS analogue of DO-178C independence objectives and SR 11-7
-effective challenge: instructions do not prevent execution; an out-of-process mechanical gate
+(superseded; now SR 26-2) effective challenge: instructions do not prevent execution; an out-of-process mechanical gate
 does (`docs/laas/proposal-v1.1.md §7.1`).
 
 The independence floor CT is `conformance/laas/data.json →
@@ -1040,7 +1041,7 @@ LAAS inherits its structural mechanics from three mature assurance standards
 (`docs/laas/proposal-v1.1.md §2, §3`).
 This appendix maps LAAS mechanisms to their source-standard analogues.
 
-| LAAS Mechanism | DO-178C analogue | SR 11-7 analogue | UL 4600 analogue |
+| LAAS Mechanism | DO-178C analogue | SR 26-2 (formerly SR 11-7) analogue | UL 4600 analogue |
 |----------------|-----------------|------------------|------------------|
 | CT0–CT4 (consequence tiering) | DAL A–E (design assurance level) | Risk-tiering by materiality | Risk-based safety case depth |
 | Escape rate (Bucket B) | Structural coverage (MC/DC) | Backtesting on held-out set | Safety Performance Indicators (SPIs) |
@@ -1061,8 +1062,9 @@ superseded and replaced by **SR 26-2** (*Revised Guidance on Model Risk Manageme
 April 17, 2026). SR 26-2 places generative and agentic AI models outside its scope, so it
 does not extend to LLM agents; LAAS borrows its principles by analogy. Model-risk guidance
 remains the main regulatory-pull pathway for LAAS adoption in financial-services contexts.
-LAAS escape-rate measurement maps directly to SR 11-7 ongoing backtesting and outcome
-analysis; the VEN-001 control maps to SR 11-7's vendor-risk ownership principle.
+LAAS escape-rate measurement is analogous to the ongoing monitoring, backtesting and outcome
+analysis of SR 26-2 (formerly SR 11-7); the VEN-001 control is analogous to its expectation
+that banking organizations validate the vendor models they use.
 
 **UL 4600** (Standard for Safety for the Evaluation of Autonomous Products) provides the
 safety-case and standard-of-care culture for Bucket-B bounding.

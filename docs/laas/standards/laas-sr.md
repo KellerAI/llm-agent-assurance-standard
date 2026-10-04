@@ -18,8 +18,8 @@ right checks ran, by the right party, before the action took effect.
 
 ## Background
 
-Supervisory guidance on model risk management (SR 11-7, since superseded by SR 26-2) was written for models that produce an
-estimate a human then acts upon. Autonomous agents collapse that separation: the agent both
+Supervisory guidance on model risk management (SR 11-7, since superseded by SR 26-2) was
+written for models that produce an estimate a human then acts upon. Autonomous agents collapse that separation: the agent both
 produces the output and commits the action, at machine speed and scale. Traditional governance
 checkpoints (periodic validation, human review of material decisions, and post-hoc outcome
 analysis) do not bound the rate at which an undetected error in an agent's output reaches and is
@@ -68,7 +68,7 @@ evaluate against a single machine-readable bundle.
    independent-verification floor tier, a passing independent verifier shall evaluate the action
    *before* commitment. A verdict of fail, abstain, or indeterminate shall block and escalate the
    action. Post-execution review does not satisfy this expectation. This is the agent-action
-   analogue of effective challenge under SR 11-7. (LAAS-OBL-IRR-001.)
+   analogue of effective challenge under SR 11-7 (superseded; now SR 26-2). (LAAS-OBL-IRR-001.)
 
 6. **Verifier independence.** The verifier shall not share the actor's model substrate. Independence
    is satisfied by a deterministic/exact checker, by a distinct model lineage whose measured
@@ -82,14 +82,14 @@ evaluate against a single machine-readable bundle.
    coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a
    change-controlled version recorded in the trace. A verifier modified after its last qualification
    is treated as unqualified until re-qualified. This is the validator-qualification analogue under
-   SR 11-7 and DO-330. (LAAS-OBL-VQ-001.)
+   SR 11-7 (superseded; now SR 26-2) and DO-330. (LAAS-OBL-VQ-001.)
 
 8. **Bounded residual escape rate.** For open-world (Bucket B) claims, the institution shall
    declare a maximum acceptable residual escape rate per tier, estimate it by backtesting on a
    held-out, adversarially-stressed evaluation set with a stated confidence interval, and re-measure
    on any change to model, prompt, tool, or policy. The measured rate shall not exceed the declared
    tolerance, which shall not exceed the LAAS minimums. This is the ongoing-monitoring and
-   outcome-analysis analogue under SR 11-7. (LAAS-OBL-RES-001; tolerances by tier in
+   outcome-analysis analogue under SR 11-7 (superseded; now SR 26-2). (LAAS-OBL-RES-001; tolerances by tier in
    `conformance/laas/data.json`, key `escape_rate_tolerance_by_ct`.)
 
 9. **Human approval at the highest tier.** Every action at the human-approval floor tier shall
