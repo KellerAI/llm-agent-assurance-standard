@@ -720,3 +720,71 @@ test_szm_invalid_fraction_in_range_single_tier001 if {
 	vs := violations with input as _szm_with_ct(3.5) with data.laas as _cfg
 	count([v | some v in vs; contains(v.msg, "%!")]) == 0
 }
+
+# --------------------------------------------------------------------------- #
+# laas-szm ruling R3 (TDD: written before the laas.rego change)
+# residual_error_bound must be a number >= 0. A non-number or negative bound
+# fires RES-001 with an explicit invalid-bound message and no "%!" garbage.
+# Ruling R3a: null means absent, same as a missing key.
+# Fixture: _base_ct2 (Bucket-A deterministic verifier, tolerance 0.02), so the
+# Bucket-B "lacks a numeric residual_error_bound" rule cannot mask the result.
+# --------------------------------------------------------------------------- #
+
+_r3_phrase := "residual_error_bound must be a number >= 0"
+
+_r3_with_bound(v) := json.patch(_base_ct2, [{"op": "replace", "path": "/residual_error_bound", "value": v}])
+
+_r3_invalid(v) if {
+	inp := _r3_with_bound(v)
+	ids := error_ids with input as inp with data.laas as _cfg
+	"LAAS-OBL-RES-001" in ids
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _r3_phrase)
+	vs := violations with input as inp with data.laas as _cfg
+	count([v | some v in vs; contains(v.msg, "%!")]) == 0
+	not compliant with input as inp with data.laas as _cfg
+}
+
+test_szm_r3_negative_bound_invalid if _r3_invalid(-0.01)
+
+test_szm_r3_string_bound_invalid if _r3_invalid("0.01")
+
+test_szm_r3_object_bound_invalid if _r3_invalid({})
+
+test_szm_r3_array_bound_invalid if _r3_invalid([])
+
+# ruling R3a: a null bound is absent, exactly like a missing key.
+test_szm_r3_null_bound_is_absent if {
+	inp := _r3_with_bound(null)
+	absent := json.remove(_base_ct2, ["/residual_error_bound"])
+	not _has_msg_containing(inp, "LAAS-OBL-RES-001", _r3_phrase)
+	vn := violations with input as inp with data.laas as _cfg
+	va := violations with input as absent with data.laas as _cfg
+	vn == va
+	sn := summary with input as inp with data.laas as _cfg
+	sa := summary with input as absent with data.laas as _cfg
+	sn == sa
+}
+
+test_szm_r3_bool_bound_invalid if _r3_invalid(false)
+
+# ---- regression pins: valid bounds keep today's behaviour ----
+
+test_szm_r3_regression_zero_bound_valid if {
+	inp := _r3_with_bound(0)
+	ids := error_ids with input as inp with data.laas as _cfg
+	not "LAAS-OBL-RES-001" in ids
+	compliant with input as inp with data.laas as _cfg
+}
+
+test_szm_r3_regression_fraction_bound_valid if {
+	inp := _r3_with_bound(0.01)
+	ids := error_ids with input as inp with data.laas as _cfg
+	not "LAAS-OBL-RES-001" in ids
+	compliant with input as inp with data.laas as _cfg
+}
+
+test_szm_r3_regression_ct4_compliant_unchanged if {
+	s := summary with input as _base_ct4 with data.laas as _cfg
+	s.compliant == true
+	not _has_msg_containing(_base_ct4, "LAAS-OBL-RES-001", _r3_phrase)
+}
