@@ -554,9 +554,11 @@ Untrusted vendor dependencies shall fail closed.
 
 #### Discussion
 
-The deploying operator owns the risk of vendor-model errors under the model-risk principle of
-SR 11-7 (superseded; carried forward in SR 26-2 and applied here by analogy)
-("you own the risk of models you buy", `docs/laas/proposal-v1.1.md §2`).
+The deploying operator owns the risk of vendor-model errors. This applies by analogy SR 26-2
+§VII (which supersedes SR 11-7): for vendor and other third-party products, "the principles of
+model risk management remain applicable", and validation of vendor products is named as an
+important element of model risk management. Generative and agentic AI models are outside
+SR 26-2's scope (footnote 3), so this is an analogy, not a regulatory requirement.
 This control implements that principle as an obligation: if a vendor model produces a wrong
 output that passes through the gate, the miss counts against the operator's Bucket-B escape
 rate.
@@ -1063,8 +1065,8 @@ April 17, 2026). SR 26-2 places generative and agentic AI models outside its sco
 does not extend to LLM agents; LAAS borrows its principles by analogy. Model-risk guidance
 remains the main regulatory-pull pathway for LAAS adoption in financial-services contexts.
 LAAS escape-rate measurement is analogous to the ongoing monitoring, backtesting and outcome
-analysis of SR 26-2 (formerly SR 11-7); the VEN-001 control is analogous to its expectation
-that banking organizations validate the vendor models they use.
+analysis of SR 26-2 (formerly SR 11-7); the VEN-001 control is analogous to its §VII
+statement that validating vendor products is an important element of model risk management.
 
 **UL 4600** (Standard for Safety for the Evaluation of Autonomous Products) provides the
 safety-case and standard-of-care culture for Bucket-B bounding.
