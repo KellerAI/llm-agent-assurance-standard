@@ -555,3 +555,168 @@ test_sd3_guard_blocked_bucket_b_no_3b if {
 	])
 	not _has_msg_containing(inp, "LAAS-OBL-RES-001", "Bucket-B")
 }
+
+# --------------------------------------------------------------------------- #
+# laas-szm rulings R1/R2 (TDD: written before the laas.rego change)
+# A gate.assigned_ct that is not an integer in 0..4 is handled exactly like an
+# absent one: the gate tier falls back to the lattice, effective_ct is
+# max([expected_ct, _agg_ct]), and a single TIER-001 fires.
+# --------------------------------------------------------------------------- #
+
+# GATE-4 probe: CT4 surface, model verifier passed, no bound, no evidence, no assigned_ct.
+_szm_probe := {
+	"action": {"id": "act_7c31", "actor_model_lineage": "vendorX-llm-2026q1", "self_reported_ct": 4, "effect_surface": _surface_ct4},
+	"gate": {"bundle_version": "laas-fin-1.1.1", "bundle_signed": true, "out_of_process": true},
+	"verifier": {"id": "VRF-MODEL-PROBE", "type": "model", "model_lineage": "vendorY-llm-2026q2", "error_correlation": 0.1, "qualified": true, "verdict": "pass"},
+	"human_approval": {"approved": false},
+	"aggregate": {"window_effect_ct": 4},
+	"input": {"trusted": true},
+	"vendor": {"used": true, "attribution": "vendorX-llm-2026q1", "scope_limited": true},
+	"trace": _trace,
+	"action_blocked": false,
+	"escalation_approved": false,
+}
+
+_szm_msg(ct) := sprintf("gate did not record an integer assigned_ct in 0..4; enforcing lattice ct %d", [ct])
+
+_szm_with_ct(v) := json.patch(_szm_probe, [{"op": "add", "path": "/gate/assigned_ct", "value": v}])
+
+_szm_tier_count(inp) := count({v |
+	vs := violations with input as inp with data.laas as _cfg
+	some v in vs
+	v.obligation == "LAAS-OBL-TIER-001"
+})
+
+# invalid value -> exactly one TIER-001 carrying the fallback message, effective_ct 4.
+_szm_invalid_single_fire(val) if {
+	inp := _szm_with_ct(val)
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 4
+	_szm_tier_count(inp) == 1
+	_has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(4))
+}
+
+test_szm_probe_absent_assigned_ct_fails_closed if {
+	ct := effective_ct with input as _szm_probe with data.laas as _cfg
+	ct == 4
+	ids := error_ids with input as _szm_probe with data.laas as _cfg
+	"LAAS-OBL-TIER-001" in ids
+	"LAAS-OBL-HUM-001" in ids
+	"LAAS-OBL-IND-001" in ids
+	"LAAS-OBL-RES-001" in ids
+	_has_msg(_szm_probe, "LAAS-OBL-TIER-001", _szm_msg(4))
+	s := summary with input as _szm_probe with data.laas as _cfg
+	s.effective_ct == 4
+	s.compliant == false
+	not compliant with input as _szm_probe with data.laas as _cfg
+}
+
+test_szm_invalid_null_single_tier001 if _szm_invalid_single_fire(null)
+
+test_szm_invalid_string_single_tier001 if _szm_invalid_single_fire("4")
+
+test_szm_invalid_fraction_single_tier001 if _szm_invalid_single_fire(4.5)
+
+test_szm_invalid_negative_single_tier001 if _szm_invalid_single_fire(-1)
+
+test_szm_invalid_above_range_single_tier001 if _szm_invalid_single_fire(5)
+
+test_szm_negative_no_below_lattice_message if {
+	inp := _szm_with_ct(-1)
+	_has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(4))
+	not _has_msg(inp, "LAAS-OBL-TIER-001", "gate assigned_ct -1 is below lattice-derived ct 4")
+}
+
+test_szm_above_range_res001_fires if {
+	inp := _szm_with_ct(5)
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 4
+	ids := error_ids with input as inp with data.laas as _cfg
+	"LAAS-OBL-RES-001" in ids
+}
+
+test_szm_absent_aggregate_raises_lattice_ct2 if {
+	inp := json.patch(_szm_probe, [{"op": "replace", "path": "/action/effect_surface", "value": _surface_ct2}])
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 4
+	_has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(2))
+	ids := error_ids with input as inp with data.laas as _cfg
+	not "LAAS-OBL-AGG-001" in ids
+}
+
+test_szm_absent_low_tier_still_tier001 if {
+	inp := json.patch(_base_ct4, [
+		{"op": "remove", "path": "/gate/assigned_ct"},
+		{"op": "replace", "path": "/action/effect_surface", "value": _surface_ro},
+		{"op": "remove", "path": "/aggregate"},
+	])
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 0
+	_has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(0))
+	not compliant with input as inp with data.laas as _cfg
+}
+
+test_szm_string_no_format_garbage if {
+	inp := _szm_with_ct("4")
+	vs := violations with input as inp with data.laas as _cfg
+	_has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(4))
+	count([v | some v in vs; contains(v.msg, "%!")]) == 0
+}
+
+# ---- regression pins: valid assigned_ct behaviour is unchanged ----
+
+test_szm_regression_valid_ct4_compliant if {
+	s := summary with input as _base_ct4 with data.laas as _cfg
+	s.compliant == true
+	s.effective_ct == 4
+	ids := error_ids with input as _base_ct4 with data.laas as _cfg
+	not "LAAS-OBL-TIER-001" in ids
+}
+
+test_szm_regression_valid_below_lattice_single_fire if {
+	inp := json.patch(_base_ct4, [
+		{"op": "replace", "path": "/gate", "value": _gate(2)},
+		{"op": "replace", "path": "/aggregate/window_effect_ct", "value": 2},
+	])
+	_szm_tier_count(inp) == 1
+	_has_msg(inp, "LAAS-OBL-TIER-001", "gate assigned_ct 2 is below lattice-derived ct 4")
+	not _has_msg_containing(inp, "LAAS-OBL-TIER-001", "did not record")
+}
+
+test_szm_regression_valid_agg001 if {
+	inp := json.patch(_base_ct4, array.concat(_retier(3, _surface_ct3), [{"op": "replace", "path": "/aggregate/window_effect_ct", "value": 4}]))
+	_has_msg(inp, "LAAS-OBL-AGG-001", "assigned_ct 3 is below cumulative-window ct 4 (structuring guard)")
+}
+
+# ---- mutation-survivor pins (SELF-001/AGG-001 with invalid input, integral check) ----
+
+_szm_obl_count(inp, id) := count({v |
+	vs := violations with input as inp with data.laas as _cfg
+	some v in vs
+	v.obligation == id
+})
+
+test_szm_self001_invalid_ct_no_garbage if {
+	inp := json.patch(_szm_with_ct("4"), [{"op": "replace", "path": "/action/self_reported_ct", "value": 0}])
+	_has_msg(inp, "LAAS-OBL-SELF-001", "self_reported_ct 0 is below gate ct 4 (gate prevails)")
+}
+
+test_szm_self001_string_ct_no_spurious_warning if {
+	inp := _szm_with_ct("4")
+	_szm_obl_count(inp, "LAAS-OBL-SELF-001") == 0
+	_has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(4))
+}
+
+test_szm_null_ct_no_agg001 if {
+	inp := _szm_with_ct(null)
+	_szm_obl_count(inp, "LAAS-OBL-AGG-001") == 0
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 4
+	_has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(4))
+}
+
+test_szm_invalid_fraction_in_range_single_tier001 if {
+	_szm_invalid_single_fire(3.5)
+	vs := violations with input as _szm_with_ct(3.5) with data.laas as _cfg
+	count([v | some v in vs; contains(v.msg, "%!")]) == 0
+}
