@@ -345,8 +345,8 @@ tool qualification under RTCA DO-330.
 | ODD | Operational Design Domain (UL 4600) |
 | OPA | Open Policy Agent |
 | PII | Personally Identifiable Information |
-| SR 11-7 | Federal Reserve SR Letter 11-7, Supervisory Guidance on Model Risk Management |
-| SR 26-2 | Federal Reserve SR Letter 26-2 (successor to SR 11-7) |
+| SR 11-7 | Federal Reserve SR Letter 11-7, Supervisory Guidance on Model Risk Management (superseded by SR 26-2) |
+| SR 26-2 | Federal Reserve SR Letter 26-2, Revised Guidance on Model Risk Management (2026); supersedes SR 11-7; excludes generative and agentic AI models from its scope |
 | UL 4600 | UL Standard for Safety for the Evaluation of Autonomous Products |
 
 ---
@@ -980,6 +980,8 @@ All four standards share a common governing structure across five mechanics.
   embedded avionics; they do not address generative LLMs or online agents. UL 4600 addresses
   autonomous vehicles; its ODD concept is a direct ancestor of the AOE. SR 11-7/SR 26-2
   addresses model risk in financial services but does not define a per-action runtime gate.
+  SR 26-2 superseded SR 11-7 in April 2026 and places generative and agentic AI models outside
+  its scope, so this mapping is by analogy only.
 - **Machine-actionability:** this standard ships as a two-layer artifact (normative prose plus
   machine-evaluable OPA policy) that a fresh agent can evaluate without human explanation.
   The predecessor standards produce human-reviewed artifacts.
@@ -1008,8 +1010,8 @@ Readers should confirm current versions before relying on specific document deta
 
 - Board of Governors of the Federal Reserve System, SR Letter 11-7, *Supervisory Guidance on
   Model Risk Management*, April 2011.
-- Board of Governors of the Federal Reserve System, SR Letter 26-2 (successor to SR 11-7;
-  confirm issuance status as of date of use).
+- Board of Governors of the Federal Reserve System, SR Letter 26-2, *Revised Guidance on
+  Model Risk Management*, April 17, 2026 (supersedes and replaces SR 11-7 and SR 21-8).
 
 ### Autonomous-vehicle safety
 

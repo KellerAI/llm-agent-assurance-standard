@@ -46,7 +46,7 @@ This refutes "abstention makes agents useless": the always-reachable-runway rule
 
 Hallucination is not a model-accuracy problem; it is a system-integrity problem.
 Hazardously Misleading Information is being wrong *without warning*.
-The fix is structural: deterministic verification of checkable claims, bounded and abstaining probabilistic error, complete traceability, and independent validation (SR 11-7 → SR 26-2) — never "make the model better."
+The fix is structural: deterministic verification of checkable claims, bounded and abstaining probabilistic error, complete traceability, and independent validation (SR 11-7, superseded in 2026 by SR 26-2) — never "make the model better."
 This is the argument that makes LAAS necessary rather than optional.
 LAAS attaches assurance to the action, not the model — it does not certify the LLM, it gates each effect.
 Its obligations map one-to-one onto the three guarantees: independent, qualified, low-correlation pre-commit verification (`LAAS-OBL-IND-001`, `LAAS-OBL-VQ-001`) is deterministic plus effective-challenge integrity; the residual escape bound is bounded probabilistic error with abstention; the append-only chained trace is complete traceability.
@@ -65,7 +65,7 @@ It is the one safety-critical industry whose core component fails the way an LLM
 - **SOTIF — Safety Of The Intended Functionality** (ISO 21448): a discipline created specifically because ML perception produces hazards with no component fault — "correct hardware, wrong answer." That is the precise shape of hallucination and Hazardously Misleading Information. SOTIF is the autonomous-driving name for *integrity, not accuracy*, and LAAS is its instrument at the action layer.
 - **Graduated automation (J3016 levels) with data-earned ODD expansion**: automation is tiered, and the operating envelope is widened only on demonstrated field performance — disengagement and miles-per-intervention rates, scenario coverage. This is LAAS's CT0–CT4 tiers plus the earned, revocable envelope and the backtested residual escape rate (`LAAS-OBL-RES-001`); the disengagement rate is the road's IFSD rate.
 - **UL 4600 — the safety case**: autonomous-driving safety is not a checklist but a structured, auditable *argument* with evidence that residual risk is acceptable, continuously updated from operating data. This is LAAS's append-only decision trace (`LAAS-OBL-TRC-001`) and per-tier residual tolerance — assurance attached to the operation, with evidence, not to the model at enrollment.
-- **Operator accountability**: autonomous-driving regimes hold the deploying operator accountable, not the perception-model vendor — echoing SR 26-2's "you cannot outsource the obligation to govern" and LAAS's vendor-attribution rule (`LAAS-OBL-VEN-001`).
+- **Operator accountability**: autonomous-driving regimes hold the deploying operator accountable, not the perception-model vendor — echoing SR 26-2's expectation that banking organizations validate the vendor models they use, and LAAS's vendor-attribution rule (`LAAS-OBL-VEN-001`).
 
 The buttress's punchline: autonomous driving is the existence proof on GenAI's own substrate.
 Aviation and banking show the discipline works for engineered systems; autonomous driving shows it works for the same unreliable, open-world machine learning that GenAI is — at highway speed, with lives at stake.
@@ -89,7 +89,7 @@ Each scaled rigor by consequence, earned authority by measured reliability, kept
 Followed to its conclusion, each reconstructs a face of LAAS — and the third does so while running the very class of model in question.
 LAAS is therefore not a novel imposition on AI; it is the first faithful port of ETOPS, SR 26-2, and UL 4600 discipline to the agent-action layer.
 To reject LAAS is to claim that the only three industries that safely fly twins over oceans, let models move billions, and drive neural networks at highway speed were each wrong to do so — and to inherit the burden of explaining why.
-These precedents show that burden cannot be discharged.
+These precedents make that burden heavy, but they do not settle it: none of them was written for agentic AI, and SR 26-2 expressly leaves generative and agentic AI models outside its scope.
 
 ## Sources
 

@@ -1056,9 +1056,11 @@ most severe); LAAS CT numbers rise with consequence (CT4 is most severe).
 These are inverses; cross-mapping requires explicit reversal.
 (`docs/laas/proposal-v1.1.md §6.1`).
 
-**SR 11-7** (Federal Reserve Supervisory Guidance on Model Risk Management, 2011,
-extended by SR 26-2 for AI/ML) provides the primary regulatory-pull pathway for LAAS
-adoption in financial-services contexts.
+**SR 11-7** (Federal Reserve Supervisory Guidance on Model Risk Management, 2011) was
+superseded and replaced by **SR 26-2** (*Revised Guidance on Model Risk Management*,
+April 17, 2026). SR 26-2 places generative and agentic AI models outside its scope, so it
+does not extend to LLM agents; LAAS borrows its principles by analogy. Model-risk guidance
+remains the main regulatory-pull pathway for LAAS adoption in financial-services contexts.
 LAAS escape-rate measurement maps directly to SR 11-7 ongoing backtesting and outcome
 analysis; the VEN-001 control maps to SR 11-7's vendor-risk ownership principle.
 
@@ -1090,7 +1092,9 @@ checks ran by the right party with evidence, not that no error can occur
   Certification. RTCA, Inc.
 - RTCA DO-330 (2011): Software Tool Qualification Considerations. RTCA, Inc.
 - Board of Governors of the Federal Reserve System (2011): SR 11-7: Guidance on Model Risk
-  Management.
+  Management. Superseded by SR 26-2.
+- Board of Governors of the Federal Reserve System, OCC and FDIC (2026): SR 26-2: Revised
+  Guidance on Model Risk Management.
 - UL 4600 (2020, Edition 1): Standard for Safety for the Evaluation of Autonomous Products.
   UL Solutions.
 - ISO 21448:2022: Road vehicles. Safety of the intended functionality (SOTIF).
