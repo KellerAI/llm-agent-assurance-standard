@@ -8,10 +8,10 @@
 # Where the trail lives: the `audit-trail` branch, file audit/blast-radius.jsonl.
 # main, qa and dev are ruleset-protected ("Changes must be made through a pull
 # request"), and github-actions is not a bypass actor, so a direct push there
-# is rejected with GH013. audit-trail is outside every ruleset. The first write
-# seeds it with audit/ from the default branch; every later write is a
-# fast-forward append. The audit/ copy on main/dev/qa is the frozen pre-split
-# history and is no longer appended to.
+# is rejected with GH013. audit-trail is outside every ruleset. It is created
+# once by hand; this workflow never creates it and fails with an error if it
+# is missing. Every write is a fast-forward append. The audit/ copy on
+# main/dev/qa is the frozen pre-split history and is no longer appended to.
 #
 # workflow_run always runs the copy of this file on the default branch (main),
 # so a change here takes effect only once it reaches main.
@@ -67,7 +67,6 @@ jobs:
       - name: Append trace line on the audit-trail branch
         env:
           AUDIT_BRANCH: audit-trail
-          SEED_SHA: ${{ github.sha }}
           PR_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
@@ -78,21 +77,25 @@ jobs:
           git config user.name "blast-radius-bot"
           git config user.email "blast-radius-bot@users.noreply.github.com"
           frag="$(pwd)/.pulse-in/trace-fragment.jsonl"
+          # The writers never create the branch: two writers creating it from
+          # different commits would race. It is created once, by hand.
+          set +e
+          git ls-remote --exit-code --heads origin "${AUDIT_BRANCH}" >/dev/null
+          rc=$?
+          set -e
+          if [ "$rc" -eq 2 ]; then
+            echo "::error::branch '${AUDIT_BRANCH}' does not exist on origin. It must be created once by hand (a maintainer task) before this workflow can write the audit trail."
+            exit 1
+          elif [ "$rc" -ne 0 ]; then
+            echo "::error::git ls-remote for '${AUDIT_BRANCH}' failed (exit ${rc})"
+            exit 1
+          fi
           # Append-only writer. Fast-forward pushes only (never --force), so a
           # race with the trust-dial writer is retried on a fresh base.
           for attempt in 1 2 3 4 5; do
             rm -rf .audit && git worktree prune
-            if git fetch --no-tags origin "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/${AUDIT_BRANCH}" 2>/dev/null; then
-              base="origin/${AUDIT_BRANCH}"
-            else
-              # First write: seed the branch with audit/ as committed on the
-              # default branch, so the existing trail carries over unchanged.
-              audit_tree="$(git rev-parse "${SEED_SHA}:audit")"
-              root_tree="$(printf '040000 tree %s\taudit\n' "$audit_tree" | git mktree)"
-              base="$(git commit-tree "$root_tree" \
-                -m "chore(audit): seed ${AUDIT_BRANCH} from audit/ at ${SEED_SHA} [skip ci]")"
-            fi
-            git worktree add --detach .audit "$base"
+            git fetch --no-tags origin "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/${AUDIT_BRANCH}"
+            git worktree add --detach .audit "origin/${AUDIT_BRANCH}"
             log=.audit/audit/blast-radius.jsonl
             mkdir -p .audit/audit
             # Ensure newline termination on the existing trace before append.
