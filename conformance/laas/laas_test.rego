@@ -788,3 +788,124 @@ test_szm_r3_regression_ct4_compliant_unchanged if {
 	s.compliant == true
 	not _has_msg_containing(_base_ct4, "LAAS-OBL-RES-001", _r3_phrase)
 }
+
+# --------------------------------------------------------------------------- #
+# laas-szm rulings R2a and R3c (TDD: written before the laas.rego change)
+# R2a: an integral-float assigned_ct in 0..4 (e.g. 2.0) is valid and must
+# behave exactly like the integer: effective_ct, the tolerance lookup, and
+# every %d message. Floats are built with json.unmarshal("N.0") so formatting
+# cannot normalise them; test_szm_r2a_float_sentinel proves they stay floats.
+# R3c: the invalid-bound RES-001 fires on a blocked record and at CT0.
+# --------------------------------------------------------------------------- #
+
+_r2a_f(n) := json.unmarshal(sprintf("%d.0", [n]))
+
+# float inputs carry an extra inert key: 2.0 == 2 as Rego terms, so without it
+# OPA may reuse results cached for the integer twin (observed while writing
+# these tests) and the comparison would be vacuous.
+_r2a_float_ct(inp, n) := json.patch(inp, [
+	{"op": "replace", "path": "/gate/assigned_ct", "value": _r2a_f(n)},
+	{"op": "add", "path": "/r2a_float_marker", "value": true},
+])
+
+_r2a_set_ct(inp, ct) := json.patch(inp, [{"op": "replace", "path": "/gate/assigned_ct", "value": ct}])
+
+# window ct 0: max([2.0, 2]) returns the int 2 and would mask D1, so the
+# cumulative window must sit below the assigned tier for the float to reach
+# effective_ct.
+_r2a_agg0(inp) := json.patch(inp, [{"op": "replace", "path": "/aggregate/window_effect_ct", "value": 0}])
+
+_r2a_no_garbage(inp) if {
+	vs := violations with input as inp with data.laas as _cfg
+	count([v | some v in vs; contains(v.msg, "%!")]) == 0
+}
+
+_r2a_no_fallback(inp) if {
+	not _has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(2))
+	not _has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(3))
+	not _has_msg(inp, "LAAS-OBL-TIER-001", _szm_msg(4))
+}
+
+# guard: the fixture value really is a float (a %d render is garbage).
+test_szm_r2a_float_sentinel if {
+	sprintf("%d", [_r2a_f(2)]) != "2"
+	_r2a_f(2) == 2
+}
+
+test_szm_r2a_ct2_float_exceeds_tolerance if {
+	base := _r2a_agg0(json.patch(_base_ct2, [{"op": "replace", "path": "/residual_error_bound", "value": 0.03}]))
+	inp := _r2a_float_ct(base, 2)
+	_has_msg(inp, "LAAS-OBL-RES-001", "residual escape rate 0.03 exceeds tolerance 0.02 for ct 2")
+	s := summary with input as inp with data.laas as _cfg
+	s.effective_ct == 2
+	si := summary with input as _r2a_set_ct(base, 2) with data.laas as _cfg
+	s == si
+	_r2a_no_fallback(inp)
+	_r2a_no_garbage(inp)
+}
+
+test_szm_r2a_ct2_float_bucket_b_no_bound if {
+	base := _r2a_agg0(json.patch(_ct2_nobound, [{"op": "replace", "path": "/verifier", "value": _verifier_model_indep}]))
+	inp := _r2a_float_ct(base, 2)
+	_has_msg(inp, "LAAS-OBL-RES-001", _sd3b_msg)
+	_r2a_no_garbage(inp)
+}
+
+test_szm_r2a_float_below_lattice_message if {
+	m := "gate assigned_ct 1 is below lattice-derived ct 2"
+	_has_msg(_r2a_set_ct(_base_ct2, 1), "LAAS-OBL-TIER-001", m)
+	inp := _r2a_float_ct(_base_ct2, 1)
+	_has_msg(inp, "LAAS-OBL-TIER-001", m)
+	_r2a_no_garbage(inp)
+}
+
+test_szm_r2a_float_agg001_message if {
+	base := json.patch(_base_ct2, [
+		{"op": "replace", "path": "/action/effect_surface/scope", "value": "org"},
+		{"op": "replace", "path": "/aggregate/window_effect_ct", "value": 4},
+	])
+	m := "assigned_ct 3 is below cumulative-window ct 4 (structuring guard)"
+	_has_msg(_r2a_set_ct(base, 3), "LAAS-OBL-AGG-001", m)
+	inp := _r2a_float_ct(base, 3)
+	_has_msg(inp, "LAAS-OBL-AGG-001", m)
+	_r2a_no_garbage(inp)
+}
+
+test_szm_r2a_float_self001_message if {
+	base := _r2a_agg0(json.patch(_base_ct2, [{"op": "replace", "path": "/action/self_reported_ct", "value": 0}]))
+	m := "self_reported_ct 0 is below gate ct 2 (gate prevails)"
+	_has_msg(_r2a_set_ct(base, 2), "LAAS-OBL-SELF-001", m)
+	inp := _r2a_float_ct(base, 2)
+	_has_msg(inp, "LAAS-OBL-SELF-001", m)
+	_r2a_no_garbage(inp)
+}
+
+# regression pin: CT4 record with 4.0 equals the integer-4 record.
+test_szm_r2a_regression_ct4_float_equals_int if {
+	inp := _r2a_float_ct(_base_ct4, 4)
+	vf := violations with input as inp with data.laas as _cfg
+	vi := violations with input as _base_ct4 with data.laas as _cfg
+	vf == vi
+	sf := summary with input as inp with data.laas as _cfg
+	si := summary with input as _base_ct4 with data.laas as _cfg
+	sf == si
+}
+
+# ---- R3c guards: invalid-bound RES-001 without tolerance-path help ----
+
+test_szm_r3c_blocked_negative_bound_invalid if {
+	inp := json.patch(_base_ct4, [
+		{"op": "replace", "path": "/action_blocked", "value": true},
+		{"op": "replace", "path": "/residual_error_bound", "value": -0.01},
+	])
+	_has_msg(inp, "LAAS-OBL-RES-001", _r3_phrase)
+	not compliant with input as inp with data.laas as _cfg
+}
+
+test_szm_r3c_ct0_string_bound_invalid if {
+	inp := json.patch(_base_ct2, array.concat(_retier(0, _surface_ro), [{"op": "replace", "path": "/residual_error_bound", "value": "0.01"}]))
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 0
+	_has_msg(inp, "LAAS-OBL-RES-001", _r3_phrase)
+	not compliant with input as inp with data.laas as _cfg
+}
