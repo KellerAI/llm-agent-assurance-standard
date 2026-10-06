@@ -160,7 +160,7 @@ table.
 AeroSpace and Defence Industries Association of Europe.
 *ASD-STE100: Simplified Technical English, Specification for the preparation of technical
 documentation in a controlled language.*
-Issue 8. Brussels: ASD, 2021.
+Issue 9. Brussels: ASD, January 2025.
 
 These profiles adapt ASD-STE100 principles. They do not reproduce its rule text or its
 controlled dictionary, and they are not endorsed by ASD. The domain dictionaries are original
