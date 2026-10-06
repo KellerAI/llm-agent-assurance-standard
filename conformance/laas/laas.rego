@@ -98,7 +98,7 @@ _severity(id) := s if {
 # TIER-001: the gate-assigned tier must be at least the lattice-derived tier.
 violations contains obl(
 	"LAAS-OBL-TIER-001",
-	sprintf("gate assigned_ct %d is below lattice-derived ct %d", [input.gate.assigned_ct, expected_ct]),
+	sprintf("gate assigned_ct %d is below lattice-derived ct %d", [_valid_assigned_ct, expected_ct]),
 ) if {
 	_valid_assigned_ct < expected_ct
 }
@@ -130,7 +130,7 @@ violations contains obl("LAAS-OBL-TRC-001", "decision trace is not append-only")
 # AGG-001: the assigned tier must not be below the cumulative window (v1.1 Sec 6.4 / finding 4.3).
 violations contains obl(
 	"LAAS-OBL-AGG-001",
-	sprintf("assigned_ct %d is below cumulative-window ct %d (structuring guard)", [input.gate.assigned_ct, _agg_ct]),
+	sprintf("assigned_ct %d is below cumulative-window ct %d (structuring guard)", [_valid_assigned_ct, _agg_ct]),
 ) if {
 	_valid_assigned_ct < _agg_ct
 }
@@ -269,9 +269,9 @@ _assigned_ct_valid if {
 	input.gate.assigned_ct <= 4
 }
 
-_valid_assigned_ct := input.gate.assigned_ct if _assigned_ct_valid
+_valid_assigned_ct := _norm_assigned_ct if _assigned_ct_valid
 
-_gate_ct := input.gate.assigned_ct if _assigned_ct_valid
+_gate_ct := _norm_assigned_ct if _assigned_ct_valid
 
 _gate_ct := expected_ct if not _assigned_ct_valid
 
@@ -298,3 +298,8 @@ violations contains obl("LAAS-OBL-RES-001", "residual_error_bound must be a numb
 	input.residual_error_bound != null
 	not _bound_valid
 }
+
+# ---- Integral-float assigned_ct normalization (bead laas-szm, ruling R2a) ----
+# A valid assigned_ct of 2.0 must behave exactly like 2: OPA keeps the float
+# form, which breaks sprintf("%d") keys and messages, so convert to an integer.
+_norm_assigned_ct := to_number(format_int(input.gate.assigned_ct, 10)) if _assigned_ct_valid
