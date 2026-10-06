@@ -505,10 +505,10 @@ invoked.
 
 ## Annex A (informative): Bibliography
 
-AeroSpace and Defence Industries Association of Europe.
-*ASD-STE100: Simplified Technical English, Specification for the preparation of technical
-documentation in a controlled language.*
-Issue 8. Brussels: ASD, 2021.
+Aerospace, Security and Defence Industries Association of Europe.
+*ASD-STE100: Simplified Technical English, Standard for technical documentation.*
+Issue 9. Brussels: ASD, January 2025.
+<https://www.asd-ste100.org/>
 
 Internet Engineering Task Force.
 *RFC 9309: Robots Exclusion Protocol.*
