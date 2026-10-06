@@ -47,7 +47,7 @@ expected_ct := m if {
 # tier the gate must actually enforce: never below the cumulative window (v1.1 Sec 6.4)
 effective_ct := max([_gate_ct, _agg_ct])
 
-_agg_ct := object.get(input, ["aggregate", "window_effect_ct"], 0)
+_agg_ct := _norm_agg_ct
 
 # residual-escape tolerance for the effective tier, if one is defined
 residual_tolerance := t if {
@@ -303,3 +303,13 @@ violations contains obl("LAAS-OBL-RES-001", "residual_error_bound must be a numb
 # A valid assigned_ct of 2.0 must behave exactly like 2: OPA keeps the float
 # form, which breaks sprintf("%d") keys and messages, so convert to an integer.
 _norm_assigned_ct := to_number(format_int(input.gate.assigned_ct, 10)) if _assigned_ct_valid
+
+# ---- Integral-float window ct normalization (bead laas-szm, ruling R2b) ----
+# An integral-float aggregate.window_effect_ct (4.0) must behave exactly like 4;
+# a non-integral or non-number value is passed through unchanged.
+_agg_raw := object.get(input, ["aggregate", "window_effect_ct"], 0)
+
+_norm_agg_ct := to_number(format_int(_agg_raw, 10)) if {
+	is_number(_agg_raw)
+	_agg_raw == floor(_agg_raw)
+} else := _agg_raw
