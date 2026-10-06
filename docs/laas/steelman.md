@@ -23,7 +23,7 @@ This is LAAS's foundational claim, vindicated by precedent.
 LAAS's governance unit is the **(action, consequence-tier)** pair, and the tier is gate-derived, never self-asserted (`LAAS-OBL-TIER-001`; the gate computes CT0–CT4 from the observed effect surface).
 The article proves that "is this agent trusted?" is the wrong question — aviation already discarded its equivalent.
 The right question is the one LAAS asks: what has this action, on this task-class, earned?
-The objection that tiering is bureaucratic overhead dies here: ETOPS' staircase *expanded* twin-engine routes, and the envelope is revocable (`effective_ct := max([input.gate.assigned_ct, _agg_ct])`, where `_agg_ct` is the cumulative-window tier `aggregate.window_effect_ct`; `conformance/laas/laas.rego:48–50`), exactly as ETOPS authority contracts when reliability regresses.
+The objection that tiering is bureaucratic overhead dies here: ETOPS' staircase *expanded* twin-engine routes, and the envelope is revocable (`effective_ct := max([_gate_ct, _agg_ct])`, where `_gate_ct` is the gate-assigned tier or, if absent or invalid, the lattice tier (`conformance/laas/laas.rego:274–276`), and `_agg_ct` is the cumulative-window tier `aggregate.window_effect_ct`; `conformance/laas/laas.rego:48–50`), exactly as ETOPS authority contracts when reliability regresses.
 
 ## Pillar 2 — *Reliability You Can Bank*: the range is priced in measured failure data
 

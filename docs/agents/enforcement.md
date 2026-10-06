@@ -107,9 +107,12 @@ checks that the tier assignment, verification, and enforcement are correct.
   - **CT4** — irreversible or high-consequence; requires independent
     verification **plus** human approval; default when surface is undetermined
     (`data.json:13`).
-- **Effective tier:** max of the gate-assigned CT and the cumulative window CT,
+- **Effective tier:** max of the gate tier and the cumulative window CT,
   preventing structuring attacks (`laas.rego:48`).
+  The gate tier is `gate.assigned_ct`, or the lattice CT when `assigned_ct` is absent or not an integer 0..4
+  (`laas.rego:265–276`).
 - **Fail-safe default:** `default expected_ct := 4` (`laas.rego:30`).
+  An absent or invalid `assigned_ct` falls back to the lattice CT and raises TIER-001 (`laas.rego:262–283`).
 
 ### LaaS obligation families
 
@@ -117,16 +120,21 @@ Each obligation maps to a violation rule in `laas.rego`; severities are
 recorded in `conformance/laas/data.json:19–32`.
 
 - **`LAAS-OBL-TIER-001`** — CT is gate-derived from the observed effect surface;
-  a gate-assigned tier below the lattice-derived tier is an error
+  a valid gate-assigned tier below the lattice-derived tier is an error
   (`laas.rego:99–104`; `data.json:20`).
+  It also fires when the gate did not record an integer `assigned_ct` in 0..4,
+  and the lattice tier is then enforced (`laas.rego:278–283`; `data.json:20`).
 - **`LAAS-OBL-SELF-001`** — a self-reported tier may not lower the gate-derived
-  tier; the gate always prevails (warning, `laas.rego:107–112`; `data.json:21`).
+  tier; the gate always prevails
+  (compared against the lattice CT when `assigned_ct` is invalid;
+  warning, `laas.rego:107–112`; `data.json:21`).
 - **`LAAS-OBL-ENF-001`** — enforcement-plane integrity: the policy bundle must
   be signed and the gate must run out-of-process (`laas.rego:115–123`; `data.json:22`).
 - **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained
   (`laas.rego:126–128`; `data.json:23`).
-- **`LAAS-OBL-AGG-001`** — the assigned tier must not be below the cumulative
+- **`LAAS-OBL-AGG-001`** — a valid assigned tier must not be below the cumulative
   window CT; guards against structuring (`laas.rego:131–136`; `data.json:24`).
+  An invalid `assigned_ct` is handled by TIER-001 (`laas.rego:278–283`).
 - **`LAAS-OBL-INP-001`** — untrusted input must raise the tier to the configured
   floor (CT≥3 by default) or the action must be blocked
   (`laas.rego:139–146`; `data.json:18,25`).
@@ -145,6 +153,9 @@ recorded in `conformance/laas/data.json:19–32`.
   action, a numeric bound also needs non-empty `evidence_refs` (`laas.rego:248–253`),
   and a Bucket-B action (no passed deterministic verifier) must supply a bound
   (`laas.rego:255–260`; `data.json:15,30`).
+  A supplied `residual_error_bound` that is not a number >= 0 also fires RES-001 at any CT, blocked or not
+  (`laas.rego:285–300`).
+  A `null` bound counts as absent, and an invalid bound is never compared to the tolerance.
 - **`LAAS-OBL-HUM-001`** — CT4 actions require human approval unless the action
   is blocked (`laas.rego:178–182`; `data.json:13,31`).
 

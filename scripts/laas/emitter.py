@@ -242,7 +242,7 @@ def emit_decision_record(
 
     GATE-DERIVED, NOT AGENT-ASSERTED: `gate.assigned_ct` is computed here from
     the observed surface via derive_ct(). The aggregate window can only RAISE
-    the effective tier (policy: effective_ct = max(assigned_ct, window_ct)).
+    the effective tier (policy: effective_ct = max(gate ct, window_ct); gate ct = assigned_ct, or the lattice ct when absent or not an integer 0..4).
     """
     aggregate = aggregate or AggregateState()
     vendor = vendor or VendorInfo()

@@ -52,7 +52,7 @@ The emitter accepts a structured description of one proposed action's **observed
 | Vendor | `used`, `attribution`, `scope_limited` | Supply-chain provenance on the call (§8.2). |
 | Input provenance | `trusted` | Provenance tag on the inbound context (§8.3 injection resistance). |
 | Trace | `append_only`, `actor_chain_prev_hash`, `merkle_anchor` | Gate's append-only sink (§7.4/§7.7). |
-| Bucket B | `residual_error_bound` | Backtest report for the claim class; `null` for pure Bucket A (§5). |
+| Bucket B | `residual_error_bound` | Backtest report for the claim class; `null` for pure Bucket A (§5). Must be a number >= 0 (`null` = absent); any other value fires `RES-001` (`conformance/laas/laas.rego:296-300`). The emitter does not validate it (`scripts/laas/emitter.py:236`). |
 | Decision | `action_blocked`, `escalation_approved`, `human_approval.approved` | Gate enforcement outcome + human-approval queue (§6.3). |
 | Gate (config) | `bundle_id`, `bundle_signed`, `out_of_process`, `tier_lattice` | The signed bundle + the gate's own deployment attestations (§7.7). The emitter writes `bundle_id` as `gate.bundle_version` (`scripts/laas/emitter.py:100`, `:283`). The CLI never reads these from the spec JSON: `bundle_id` and `tier_lattice` come from `-b` or, without it, from the in-module defaults (`scripts/laas/emitter.py:99-101`, `:428`), and `bundle_signed` / `out_of_process` keep their `GateContext` defaults of `true` (`scripts/laas/emitter.py:88-89`). |
 
@@ -75,7 +75,7 @@ Exit codes:
 | Code | When |
 | --- | --- |
 | `0` | Record written. |
-| `2` | Pre-flight validation failed: `verifier.verdict` not in `pass`/`fail`/`abstain`/`indeterminate`, `verifier.type` not in `deterministic`/`model`/`human`, or `gate.assigned_ct` not an integer in 0..4 (`scripts/laas/emitter.py:50-51`, `:332-349`). The emitter prints `EMITTER VALIDATION FAILED:` and the problems to stderr and writes no record (`scripts/laas/emitter.py:430-435`). |
+| `2` | Pre-flight validation failed: `verifier.verdict` not in `pass`/`fail`/`abstain`/`indeterminate`, `verifier.type` not in `deterministic`/`model`/`human`, or `gate.assigned_ct` not an integer in 0..4; the policy enforces the same domain (`conformance/laas/laas.rego:265-270`) (`scripts/laas/emitter.py:50-51`, `:332-349`). The emitter prints `EMITTER VALIDATION FAILED:` and the problems to stderr and writes no record (`scripts/laas/emitter.py:430-435`). |
 | `1` | Uncaught Python exception, for example malformed JSON (`json.decoder.JSONDecodeError`) or a spec without `effect_surface` (`KeyError`) (`scripts/laas/emitter.py:358`, `:427`). |
 
 The spec's top-level keys are `id`, `actor`, `effect_surface`, `verifier`, `aggregate`, `vendor`, `input`, `trace`, `residual_error_bound`, `human_approval`, `action_blocked` and `escalation_approved` (`scripts/laas/emitter.py:355-412`); `scripts/laas/fixtures/transfer.effect-surface.json` is a complete example. The required keys are `effect_surface.external_effect` (`scripts/laas/emitter.py:360`) and, when a `verifier` object is given, its `id`, `type` and `verdict` (`scripts/laas/emitter.py:375-377`). When an optional key is omitted the emitter fills a default:
@@ -99,7 +99,7 @@ The spec's top-level keys are `id`, `actor`, `effect_surface`, `verifier`, `aggr
 | `action.effect_surface.consequence` | lattice axis | resolved surface key |
 | `action.self_reported_ct` | `SELF-001` warning | `ActorContext.self_reported_ct` (informational) |
 | `action.actor_model_lineage` | `IND-001` (vs verifier) | verified actor identity |
-| `gate.assigned_ct` | `TIER-001`, `AGG-001`, `effective_ct` | **`derive_ct()` output**, raised to the window — gate-derived |
+| `gate.assigned_ct` | `TIER-001`, `AGG-001`, `effective_ct`; must be an integer 0..4, absent or invalid fires `TIER-001` and the lattice CT is enforced (`conformance/laas/laas.rego:265-283`) | **`derive_ct()` output**, raised to the window — gate-derived |
 | `gate.bundle_signed` | `ENF-001` | `GateContext.bundle_signed` |
 | `gate.out_of_process` | `ENF-001` | `GateContext.out_of_process` |
 | `aggregate.window_effect_ct` | `effective_ct`, `AGG-001` | `AggregateState.window_effect_ct` (via `object.get`, default 0) |
@@ -112,7 +112,7 @@ The spec's top-level keys are `id`, `actor`, `effect_surface`, `verifier`, `aggr
 | `vendor.used` / `.attribution` / `.scope_limited` | `VEN-001` | supply-chain provenance |
 | `trace.append_only` | `TRC-001` | append-only sink |
 | `input.trusted` | `INP-001` | input provenance tag |
-| `residual_error_bound` | `RES-001` | backtest report; `null` only for Bucket A (passed deterministic verifier), otherwise `RES-001` fires at CT>=2 (`conformance/laas/laas.rego:255-260`) |
+| `residual_error_bound` | `RES-001` | backtest report; must be a number >= 0 (`null` = absent), else `RES-001` fires at any CT, blocked or not (`conformance/laas/laas.rego:296-300`); `null` only for Bucket A (passed deterministic verifier), otherwise `RES-001` fires at CT>=2 (`conformance/laas/laas.rego:255-260`) |
 | `evidence_refs` | `RES-001` (required with a numeric bound at CT>=2, `conformance/laas/laas.rego:234-241`, `:248-253`) | not yet emitted by `scripts/laas/emitter.py` |
 | `action_blocked` | block path for IRR/IND/VQ/HUM/INP-001 and the RES-001 spec-alignment rules, including the CT4 model-verifier IND-001 rule (`blocked`, `conformance/laas/laas.rego:61`; `not blocked` at `:227`, `:250`, `:257`) | gate enforcement outcome |
 

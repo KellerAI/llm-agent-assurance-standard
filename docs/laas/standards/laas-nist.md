@@ -143,13 +143,16 @@ Rank tables (source: `conformance/laas/data.json → tier_lattice`):
 Any unknown input defaults to the highest rank in its axis
 (`docs/laas/proposal-v1.1.md §6.2`).
 
-The **effective CT** is the maximum of the gate-assigned CT and the cumulative window CT
+The **effective CT** is the maximum of the gate CT and the cumulative window CT
 (anti-structuring, `conformance/laas/laas.rego:48-50`):
 
 ```text
-effective_ct := max([input.gate.assigned_ct, _agg_ct])
+effective_ct := max([_gate_ct, _agg_ct])
 _agg_ct := object.get(input, ["aggregate", "window_effect_ct"], 0)
 ```
+
+`_gate_ct` is `input.gate.assigned_ct` when it is an integer in 0..4, otherwise the
+lattice-derived `expected_ct` (`conformance/laas/laas.rego:265-276`).
 
 ### 2.3 Effect Surface and the Authorized Operating Envelope
 
@@ -260,7 +263,10 @@ The system shall derive the Consequence Tier of every agent action from the obse
 surface (the tuple (reversibility, scope, consequence) as measured by the out-of-process gate)
 using the tier lattice defined in `conformance/laas/data.json → tier_lattice`.
 The gate-assigned CT shall never be set below the lattice-derived value.
-The effective CT shall be the maximum of the gate-assigned CT and the cumulative window CT.
+The gate shall record `assigned_ct` as an integer in 0..4; an absent or invalid value
+constitutes a TIER-001 violation, and the lattice-derived CT is enforced in its place
+(`conformance/laas/laas.rego:262-283`).
+The effective CT shall be the maximum of the gate CT and the cumulative window CT.
 
 #### Discussion
 
@@ -272,11 +278,15 @@ If any axis of the effect surface is undetermined, the tier defaults to CT4
 (`conformance/laas/data.json → default_ct_when_undetermined: 4`,
 `conformance/laas/laas.rego:30`).
 
-The Rego predicate for this control (`conformance/laas/laas.rego:99-104`):
+The Rego predicates for this control (`conformance/laas/laas.rego:99-104`, `:278-283`):
 
 ```rego
 violations contains obl("LAAS-OBL-TIER-001", ...) if {
-    input.gate.assigned_ct < expected_ct
+    _valid_assigned_ct < expected_ct
+}
+
+violations contains obl("LAAS-OBL-TIER-001", ...) if {
+    not _assigned_ct_valid
 }
 ```
 
@@ -284,11 +294,16 @@ violations contains obl("LAAS-OBL-TIER-001", ...) if {
 
 1. Verify that the gate computes `expected_ct` using the tier lattice in `data.json` for every
    action with an external effect.
-2. Verify that `input.gate.assigned_ct >= expected_ct` for every decision-trace record.
+2. Verify that a valid `assigned_ct` (integer 0..4) satisfies `assigned_ct >= expected_ct`
+   for every decision-trace record (`conformance/laas/laas.rego:103`).
 3. Verify that `effective_ct = max(gate_derived_ct, aggregate_window_ct)` is computed before
    any obligation check.
 4. Verify that undetermined inputs produce `expected_ct = 4`.
-5. Sample ten decision-trace records; confirm no record has `assigned_ct < expected_ct`.
+5. Sample ten decision-trace records; confirm no record has a valid `assigned_ct` (integer 0..4)
+   below `expected_ct`.
+6. Verify that an absent, non-integer, or out-of-range (outside 0..4) `assigned_ct` raises
+   `LAAS-OBL-TIER-001` and the record is evaluated at `expected_ct`
+   (`conformance/laas/laas.rego:274-283`).
 
 ---
 
@@ -319,7 +334,8 @@ the `summary.warnings` count (`conformance/laas/laas.rego:107-112`).
 1. Verify that the decision-trace schema includes `self_reported_ct` as a declared field
    (see `docs/laas/proposal-v1.1.md §7.2`).
 2. Verify that the Rego policy emits a `LAAS-OBL-SELF-001` warning when
-   `self_reported_ct < gate.assigned_ct`.
+   `self_reported_ct` is below the gate CT (the lattice CT when `assigned_ct` is invalid;
+   `conformance/laas/laas.rego:109-111`).
 3. Verify that the gate's enforcement logic uses `gate_derived_ct`, not `self_reported_ct`,
    for all obligation-selection decisions.
 4. Review audit logs for systematic under-reporting patterns by any agent identity.
@@ -463,14 +479,17 @@ N individually sub-threshold actions can compose into a high-CT aggregate effect
 structuring analogous to transaction structuring in financial regulation
 (`docs/laas/proposal-v1.1.md §6.4`).
 The Rego policy computes `_agg_ct` from `input.aggregate.window_effect_ct` and takes
-the maximum of `input.gate.assigned_ct` and `_agg_ct` (`conformance/laas/laas.rego:48-50`):
+the maximum of the gate CT and `_agg_ct` (`conformance/laas/laas.rego:48-50`):
 
 ```rego
-effective_ct := max([input.gate.assigned_ct, _agg_ct])
+effective_ct := max([_gate_ct, _agg_ct])
 _agg_ct := object.get(input, ["aggregate", "window_effect_ct"], 0)
 ```
 
-The AGG-001 violation fires when `input.gate.assigned_ct < _agg_ct`
+`_gate_ct` is `input.gate.assigned_ct` when it is an integer in 0..4, otherwise `expected_ct`
+(`conformance/laas/laas.rego:274-276`).
+
+The AGG-001 violation fires when a valid `assigned_ct` < `_agg_ct`
 (`conformance/laas/laas.rego:131-136`), preventing an operator from assigning a tier that
 ignores cumulative exposure.
 
@@ -480,7 +499,7 @@ ignores cumulative exposure.
 2. Verify that `effective_ct >= aggregate_window_ct` for every decision-trace record.
 3. Construct a test sequence of N low-CT actions whose aggregate crosses CT3; confirm the
    gate re-tiers the (N+1)th action to CT3 and emits the appropriate obligations.
-4. Verify that the AGG-001 violation fires when `assigned_ct < _agg_ct`.
+4. Verify that the AGG-001 violation fires when a valid `assigned_ct` < `_agg_ct`.
 5. Verify that `aggregate_window_ct` is a declared field in the trace
    (field name `aggregate_window_ct`, `docs/laas/proposal-v1.1.md §7.2`).
 
@@ -799,6 +818,10 @@ RES-001 fires when the bound exceeds the tolerance (`conformance/laas/laas.rego:
 when a numeric bound at CT ≥ 2 lacks non-empty `evidence_refs` (`conformance/laas/laas.rego:248-253`);
 and when a non-blocked CT ≥ 2 action that is not Bucket A, meaning no passed deterministic
 verifier (`conformance/laas/laas.rego:243-246`), supplies no bound (`conformance/laas/laas.rego:255-260`).
+RES-001 also fires, at any CT and whether or not the action is blocked, when a
+`residual_error_bound` is supplied that is not `null` and not a number >= 0; `null` is
+equivalent to absent, and an invalid bound is never compared to the tolerance
+(`conformance/laas/laas.rego:285-300`).
 
 If a higher-is-better figure is needed, `integrity = 1 - escape_rate`:
 at CT3, `integrity ≥ 0.995`; at CT4, `integrity = 1.0` (Bucket B contributes zero
@@ -825,7 +848,9 @@ model training and fine-tuning; the evaluation set is independently audited
 6. Verify that every non-blocked CT ≥ 2 record with a non-null `residual_error_bound` carries
    non-empty `evidence_refs`, and every non-blocked CT ≥ 2 record without a passed deterministic
    verifier carries a bound; RES-001 fires otherwise (`conformance/laas/laas.rego:248-260`).
-7. Confirm re-measurement is triggered (and evidence is refreshed in the trace) upon any
+7. Verify that a record whose `residual_error_bound` is present, not `null`, and not a
+   number >= 0 raises RES-001 at any CT, blocked or not (`conformance/laas/laas.rego:296-300`).
+8. Confirm re-measurement is triggered (and evidence is refreshed in the trace) upon any
    model, prompt, tool, or policy change.
 
 ---
@@ -936,8 +961,9 @@ The agent's self-reported tier is irrelevant; the gate's derivation stands (LAAS
 
 ### 5.2 Effective CT and Anti-Structuring
 
-The effective CT is `max([input.gate.assigned_ct, _agg_ct])`
-(`conformance/laas/laas.rego:48`).
+The effective CT is `effective_ct := max([_gate_ct, _agg_ct])`
+(`conformance/laas/laas.rego:48`), where `_gate_ct` is the gate-assigned CT or, if absent or
+not an integer in 0..4, the lattice `expected_ct` (`conformance/laas/laas.rego:274-276`).
 The cumulative window prevents structuring: N individually low-CT actions that compose into
 a high-CT aggregate trigger re-tiering of subsequent actions (LAAS-AGG-1).
 

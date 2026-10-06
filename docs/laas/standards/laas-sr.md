@@ -122,7 +122,8 @@ following evidence:
 - **Tier classification in practice.** Decision-trace records demonstrating that the gate derives
   the Consequence Tier from the observed effect surface and that the gate-assigned tier is never
   below the lattice-derived value, including for undetermined inputs (which should default to the
-  highest tier).
+  highest tier), and that a record lacking a valid gate-assigned tier (an integer 0..4) is flagged
+  and evaluated at the lattice tier (`conformance/laas/laas.rego:262-283`).
 - **Verifier independence and qualification.** For high-tier actions, evidence that the verifier is
   independent of the actor (deterministic, distinct lineage with bounded error-correlation, or
   human; distinct lineage is accepted only below the highest tier) and qualified, with a current qualification record referenced in the trace and a negative-

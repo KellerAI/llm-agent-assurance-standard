@@ -36,7 +36,8 @@ Cites into `conformance/laas/` show where the policy implements a term; they add
   "A conforming system MUST NOT trust" the agent's self-classification of its own action, a verifier's soundness or independence without evidence, or the integrity of the enforcement plane (`standard/LAAS.md:26-31`).
   "Any control that lets the constrained party tier, grade, or gate itself is non-conforming" (`standard/LAAS.md:33`).
 - **Effective tier / cumulative window** — "The cumulative effect of a sequence MUST be tiered too: if a windowed aggregate crosses a threshold, subsequent actions are re-tiered to the aggregate's tier (anti-structuring)" (`standard/LAAS.md:59-60`).
-  The policy rule `effective_ct` takes the higher of the gate-assigned tier and the window aggregate's tier (`conformance/laas/laas.rego:47-48`).
+  The policy rule `effective_ct` takes the higher of the gate tier and the window aggregate's tier (`conformance/laas/laas.rego:47-48`).
+  The gate tier is `gate.assigned_ct` when it is an integer in 0..4, otherwise the lattice tier (`conformance/laas/laas.rego:274-276`).
 - **Obligation** — an entry in the authoritative, versioned list in `data.json → obligations`, carrying an ID, severity, CT floor, precedence, and a reference to its rationale (`standard/LAAS.md:64-65`).
   `error`-severity violations are blocking; `warning`-severity violations are reported (`standard/LAAS.md:65-66`).
   The 12 obligation IDs are listed under [Obligation IDs](#obligation-ids).
@@ -52,6 +53,7 @@ Cites into `conformance/laas/` show where the policy implements a term; they add
   `standard/LAAS.md` does not define Bucket A.
   The policy treats an action whose deterministic verifier passed as Bucket A (`conformance/laas/laas.rego:243-246`).
   At CT≥2 a non-blocked action that is not Bucket A and has no numeric `residual_error_bound` violates RES-001 (`conformance/laas/laas.rego:255-260`); on a non-blocked CT≥2 action, a numeric bound without non-empty `evidence_refs` also violates it (`conformance/laas/laas.rego:248-253`).
+  A supplied `residual_error_bound` that is not `null` and not a number >= 0 also violates RES-001, at any CT, blocked or not, and is never compared to the tolerance; `null` counts as absent (`conformance/laas/laas.rego:285-300`).
 - **Decision trace** — each gated action emits one decision-trace record, written to an append-only, content-addressed store the actor cannot rewrite (`standard/LAAS.md:107-110`).
 - **Decision record** — the policy's `input`: one gate-produced decision record, evaluated against the obligation bundle (`conformance/laas/laas.rego:5-6`).
 - **Conformance predicate** — "If an obligation's trigger matched, then either the action **passed** an independent, qualified verifier (plus human approval at CT4, plus residual ≤ tolerance) **or** the action was **blocked** and escalated. Nothing else conforms." (`standard/LAAS.md:115-117`).

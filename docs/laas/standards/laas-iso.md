@@ -187,7 +187,8 @@ DO-178C Design Assurance Level (DAL) letters (A highest risk; E lowest risk). Th
 shall be accounted for in any cross-mapping.
 
 Note 3 to entry: The effective consequence tier accounts for cumulative window effects (4.4)
-and is `max(gate_assigned_ct, cumulative_window_ct)`.
+and is `max(gate_ct, cumulative_window_ct)`, where `gate_ct` is the gate-assigned CT when it is an
+integer in 0..4 and otherwise the lattice `expected_ct` (`conformance/laas/laas.rego:265–276`).
 
 Note 4 to entry: `default_ct_when_undetermined = 4` as specified in
 `conformance/laas/data.json:11`.
@@ -376,8 +377,11 @@ high-consequence action into a sequence of individually lower-consequence action
 The effective consequence tier for any action is:
 
 ```text
-effective_ct = max( gate_assigned_ct, cumulative_window_ct )
+effective_ct = max( gate_ct, cumulative_window_ct )
 ```
+
+where `gate_ct` shall be the gate-assigned CT when the gate recorded an integer in 0..4, and
+otherwise the lattice `expected_ct` (`conformance/laas/laas.rego:265–276`).
 
 *Requirement source: `conformance/laas/laas.rego:48–50`.*
 
@@ -566,7 +570,7 @@ Each decision-trace record shall contain, at minimum, the following fields:
 | `verifier_error_correlation` | Measured error-correlation (model verifiers only; `null` otherwise) |
 | `verifier_input_hash` | Hash of the inputs supplied to the verifier |
 | `verdict` | `pass`, `fail`, `abstain`, or `indeterminate` |
-| `residual_error_bound` | Measured escape rate (Bucket B); `null` for pure Bucket A |
+| `residual_error_bound` | Measured escape rate (Bucket B), a number >= 0; `null` for pure Bucket A |
 | `residual_tolerance` | Declared escape-rate tolerance for the effective tier |
 | `evidence_refs` | References to supporting evidence artefacts |
 | `escalation` | Null or `{queue, ticket_id}` if the action was escalated |
@@ -695,7 +699,10 @@ The policy is stricter than this predicate on the residual clause. At CT≥2, on
 `residual_error_bound` conforms only when a deterministic verifier passed
 (`conformance/laas/laas.rego:243–246`, `:255–260`), and a numeric bound requires non-empty
 `evidence_refs` (`conformance/laas/laas.rego:248–253`). At CT4 a model verifier is not
-independent (`conformance/laas/laas.rego:225–230`).
+independent (`conformance/laas/laas.rego:225–230`). A supplied `residual_error_bound` shall be a
+number >= 0; `null` is equivalent to absent. Any other value constitutes an RES-001
+non-conformance at any CT, whether or not the action is blocked, and is never compared to the
+tolerance (`conformance/laas/laas.rego:285–300`).
 
 ### 8.2 Deployer conformance attestation
 
@@ -734,7 +741,7 @@ justified exception in the conformance evidence.
 
 | Control ref | Control objective | Control | Obligation | CT floor |
 |-------------|------------------|---------|------------|----------|
-| A.1 | Tier determination is gate-derived and ungameable | The gate shall derive the consequence tier from the observed effect surface using the tier lattice (Clause 4). The agent's self-reported tier shall not lower the gate-derived tier. | LAAS-OBL-TIER-001 | CT0 |
+| A.1 | Tier determination is gate-derived and ungameable | The gate shall derive the consequence tier from the observed effect surface using the tier lattice (Clause 4). The agent's self-reported tier shall not lower the gate-derived tier. The gate shall record `assigned_ct` as an integer in 0..4; an absent or invalid value is a TIER-001 non-conformance and the lattice CT is enforced (`conformance/laas/laas.rego:262–283`). | LAAS-OBL-TIER-001 | CT0 |
 | A.2 | Self-reported tier does not suppress gate tier | The system shall flag any self-reported tier that is lower than the gate-derived tier. The gate-derived tier shall prevail. | LAAS-OBL-SELF-001 | CT0 |
 | A.3 | Enforcement-plane integrity | The gate shall operate out-of-process, and the policy bundle shall be cryptographically signed and version-pinned (Clause 6.1). | LAAS-OBL-ENF-001 | CT0 |
 | A.4 | Append-only, hash-chained decision trace | All gated actions shall produce a decision-trace record written to an append-only store the actor cannot rewrite, with per-actor hash-chaining and periodic Merkle anchoring (Clause 6.2). | LAAS-OBL-TRC-001 | CT0 |
@@ -836,6 +843,6 @@ The following documents are cited for informative purposes.
 - Five Eyes Intelligence Partnership, *Careful Adoption of Agentic AI Services*, April–May 2026.
 - KellerAI, **LAAS v1.1 proposal**, `docs/laas/proposal-v1.1.md`, 2026-06-18.
 - KellerAI, **LAAS machine-evaluable obligation bundle**, `conformance/laas/data.json`,
-  version 1.1.1, bundle ID `laas-fin-1.1.2`.
+  version 1.1.2, bundle ID `laas-fin-1.1.2`.
 - KellerAI, **LAAS conformance policy**, `conformance/laas/laas.rego`,
   package `kellerai.laas.actions`.

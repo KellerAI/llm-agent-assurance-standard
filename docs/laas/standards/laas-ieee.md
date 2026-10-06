@@ -226,9 +226,11 @@ action, carrying the fields enumerated in Section 7.2 of this standard.
 The organization or individual that operates a conforming agent system against this standard.
 
 **effective CT**
-The maximum of the gate-assigned CT and the aggregate-window CT;
+The maximum of the gate CT and the aggregate-window CT;
 the tier actually enforced
 (`conformance/laas/laas.rego:48`).
+The gate CT is the gate-assigned CT, or the lattice `expected_ct` when the gate recorded no
+valid CT (`conformance/laas/laas.rego:274–276`).
 
 **enforcement gate (gate)**
 An out-of-process component that (a) observes the action's effect surface, (b) derives the
@@ -458,14 +460,18 @@ This is the default when the gate cannot observe the effect surface
 `expected_ct`.
 Violation of this requirement constitutes a TIER-001 (`LAAS-OBL-TIER-001`) error-severity
 violation (`conformance/laas/laas.rego:99–104`).
+The gate shall record `gate.assigned_ct` as an integer in 0..4.
+An absent or invalid `gate.assigned_ct` constitutes a TIER-001 error-severity violation, and the
+gate shall enforce the lattice `expected_ct` in its place (`conformance/laas/laas.rego:262–283`).
 
 **5.1.5** The effective CT enforced by the gate shall be:
 
 ```text
-effective_ct = max( gate.assigned_ct, aggregate_window_ct )
+effective_ct = max( gate_ct, aggregate_window_ct )
 ```
 
-where `aggregate_window_ct` is the cumulative window effect tier defined in Section 5.3
+where `gate_ct` is `gate.assigned_ct` when it is an integer in 0..4, and otherwise the lattice
+`expected_ct` (`conformance/laas/laas.rego:265–276`); and `aggregate_window_ct` is the cumulative window effect tier defined in Section 5.3
 (`conformance/laas/laas.rego:48–50`).
 
 **5.1.6** The operational definitions of the three axes shall be:
@@ -488,7 +494,7 @@ This field is informational; it shall be recorded in the decision trace.
 effective CT.
 The gate tier prevails.
 
-**5.2.3** When `self_reported_ct` is less than `gate.assigned_ct`, the gate shall record a
+**5.2.3** When `self_reported_ct` is less than the gate CT (5.1.5), the gate shall record a
 SELF-001 (`LAAS-OBL-SELF-001`) warning-severity violation in the decision trace
 (`conformance/laas/laas.rego:107–112`).
 This warning does not block the action.
@@ -502,7 +508,7 @@ effect class (`aggregate_window_ct`).
 threshold, subsequent actions in that window shall be re-tiered to the aggregate's CT
 (`conformance/laas/laas.rego:48–50`, `conformance/laas/laas.rego:131–136`).
 
-**5.3.3** The gate-assigned CT for any action shall not be less than `aggregate_window_ct`.
+**5.3.3** A valid gate-assigned CT for any action shall not be less than `aggregate_window_ct`.
 Violation constitutes an AGG-001 (`LAAS-OBL-AGG-001`) error-severity violation.
 
 **5.3.4** This requirement closes the structuring loophole by which an actor could decompose
@@ -680,6 +686,11 @@ that is not Bucket A and supplies no bound constitutes an RES-001 violation
 shall be recorded in the decision trace under `evidence_refs`
 (`conformance/laas/laas.rego:234–241`, `:248–253`).
 
+**6.4.8** A supplied `residual_error_bound` shall be a number >= 0; `null` is equivalent to
+absent.
+Any other value constitutes an RES-001 violation at any CT, whether or not the action is blocked,
+and is never compared to the tolerance (`conformance/laas/laas.rego:285–300`).
+
 ---
 
 ## 7. Enforcement-Plane and Evidence Requirements
@@ -720,7 +731,7 @@ every decision-trace record.
 | `action_ref` | A stable identifier for the action |
 | `effect_surface_hash` | Cryptographic hash of the gate-observed effect surface |
 | `gate_derived_ct` | The expected CT from the tier lattice |
-| `effective_ct` | `max(gate.assigned_ct, aggregate_window_ct)` |
+| `effective_ct` | `max(gate_ct, aggregate_window_ct)` |
 | `self_reported_ct` | The actor's self-declared tier (informational) |
 | `trigger_matched` | Whether the obligation trigger condition fired |
 | `verifier_id` | Identifier of the verifier invoked |
@@ -732,7 +743,7 @@ every decision-trace record.
 | `verifier_error_correlation` | Measured correlation with the actor; null for non-model verifiers |
 | `verifier_input_hash` | Cryptographic hash of inputs provided to the verifier |
 | `verdict` | One of `pass`, `fail`, `abstain`, `indeterminate` |
-| `residual_error_bound` | Measured escape rate; null for pure Bucket A actions |
+| `residual_error_bound` | Measured escape rate, a number >= 0; null for pure Bucket A actions |
 | `residual_tolerance` | Declared maximum tolerance for the effective CT |
 | `evidence_refs` | References to backtest reports or other supporting evidence |
 | `escalation` | Null, or `{queue, ticket_id}` when the action was escalated |

@@ -106,7 +106,7 @@ The harness uses the identical convention: `key = str(int(ct))`, then `tol_map[k
 … AND (residual_error_bound == null OR residual_error_bound <= residual_tolerance) …
 ```
 
-and `laas.rego LAAS-OBL-RES-001` fires when `input.residual_error_bound > residual_tolerance` (`conformance/laas/laas.rego:185-193`). It also fires at CT>=2 when a numeric bound lacks non-empty `evidence_refs` (`:248-253`) or a non-Bucket-A action has no bound (`:255-260`). The policy compares the **bound**. So the harness:
+and `laas.rego LAAS-OBL-RES-001` fires when `input.residual_error_bound > residual_tolerance` (`conformance/laas/laas.rego:185-193`). It also fires at CT>=2 when a numeric bound lacks non-empty `evidence_refs` (`:248-253`) or a non-Bucket-A action has no bound (`:255-260`), or, at any CT, when the bound is not `null` and not a number >= 0 (`:285-300`). The policy compares the **bound**. So the harness:
 
 - **PASS** iff `upper_ci_bound ≤ tolerance`
 - **FAIL** iff `upper_ci_bound > tolerance`
