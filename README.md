@@ -29,7 +29,7 @@ It is a **standard of care**, not a correctness guarantee.
   This is the canonical source; `conformance/laas/data.json` is derived from it.
 - [`conformance/laas/`](conformance/laas/) — OPA/Rego policy (`package kellerai.laas.actions`)
   that machine-checks gate-produced decision records against the standard.
-  Includes the obligation bundle, a 71-case test suite, and a bundled CT4-blocked example.
+  Includes the obligation bundle, an 84-case test suite, and a bundled CT4-blocked example.
 - [`docs/laas/standards/`](docs/laas/standards/) — four standards-body-styled renderings of LAAS:
   IEEE, NIST, ISO, and Federal Reserve SR-letter (SR 11-7 / SR 26-2) formats.
   A PDF build pipeline with house-styled covers and CSS themes lives under
@@ -65,7 +65,7 @@ It is a **standard of care**, not a correctness guarantee.
 | Path | What it contains |
 |------|-----------------|
 | [`standard/LAAS.md`](standard/LAAS.md) | Normative standard — tiers, obligations, governing invariant |
-| [`conformance/laas/`](conformance/laas/) | OPA policy + data bundle + 71-case test suite + CT4 example |
+| [`conformance/laas/`](conformance/laas/) | OPA policy + data bundle + 84-case test suite + CT4 example |
 | [`docs/laas/standards/`](docs/laas/standards/) | IEEE, NIST, ISO, SR renderings + PDF pipeline |
 | [`scripts/laas/`](scripts/laas/) | Emitter, backtest harness, OSI adapter, proof scripts (`check.sh`, `osi_check.sh`) |
 | [`docs/laas/`](docs/laas/) | Design docs: v1.1 proposal, steelman, backtest spec and demo, emitter, OSI adapter, J-space annex |
@@ -83,7 +83,7 @@ Run the LAAS policy against the bundled example decision record:
 ```bash
 cd conformance/laas
 
-# Syntax check + test suite (expect: 71/71 PASS)
+# Syntax check + test suite (expect: 84/84 PASS)
 opa check laas.rego laas_test.rego
 opa test . -v
 
@@ -123,7 +123,7 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 71/71` for `conformance/laas/`, `PASS: 142/142` for all of `conformance/`, and
+Expected: `PASS: 84/84` for `conformance/laas/`, `PASS: 155/155` for all of `conformance/`, and
 exit 0 from every other command.
 
 ## Status

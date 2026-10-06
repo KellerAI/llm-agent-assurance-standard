@@ -16,7 +16,7 @@ Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.r
 |------|------|
 | `data.json` | Single source of truth — obligation bundle, tier lattice, tolerances, floors |
 | `laas.rego` | Policy — package `kellerai.laas.actions` |
-| `laas_test.rego` | `opa test` suite (71 cases: 12 obligation-specific, 3 pass/block/read-only, 4 OSI-adapter golden, 25 spec-alignment for SD-1 to SD-3, 18 for gate-tier validity (R1/R2), 9 for residual-bound validity (R3/R3a)) |
+| `laas_test.rego` | `opa test` suite (84 cases: 12 obligation-specific, 3 pass/block/read-only, 4 OSI-adapter golden, 25 spec-alignment for SD-1 to SD-3, 18 for gate-tier validity (R1/R2), 9 for residual-bound validity (R3/R3a), 9 for integral-float gate tier and any-CT bound validity (R2a/R3c), 4 for integral-float window ct (R2b)) |
 | `examples/action.ct4-blocked.json` | Sample decision record for `opa eval` |
 
 ## Input
@@ -39,7 +39,7 @@ data.kellerai.laas.actions.compliant   # bool — true iff zero error-severity v
 ## Run it
 
 ```bash
-# Syntax check + test suite (expect all green — currently 71/71 PASS)
+# Syntax check + test suite (expect all green — currently 84/84 PASS)
 opa check laas.rego laas_test.rego
 opa test . -v
 
@@ -106,6 +106,6 @@ Supporting lines: `.github/workflows/ci.yml:33-34` (sanitization gate),
 `.github/workflows/blast-radius-pulse.yml:60` (`bash scripts/pulse.sh`, which runs `opa eval` at
 `scripts/pulse.sh:242`).
 
-> Re-verified on OPA 1.18.2 (2026-10-04): `opa check` and `opa test` (71/71 PASS). The
+> Re-verified on OPA 1.18.2 (2026-10-06): `opa check` and `opa test` (84/84 PASS). The
 > conformance predicate references only declared trace fields, so it is mechanically evaluable —
 > see `standard/LAAS.md` §5.
