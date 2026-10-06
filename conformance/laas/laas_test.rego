@@ -909,3 +909,67 @@ test_szm_r3c_ct0_string_bound_invalid if {
 	_has_msg(inp, "LAAS-OBL-RES-001", _r3_phrase)
 	not compliant with input as inp with data.laas as _cfg
 }
+
+# --------------------------------------------------------------------------- #
+# laas-szm ruling R2b (TDD: written before the laas.rego change)
+# R2b extends R2a to aggregate.window_effect_ct: an integral-float window ct
+# (4.0) must behave exactly like the integer in effective_ct, the tolerance
+# lookup, and every %d message. Non-integral values (2.5) keep today's
+# behaviour, pinned below. Float inputs carry an inert r2b_float_marker key
+# for the same cache reason as r2a_float_marker (:803-805).
+# --------------------------------------------------------------------------- #
+
+# assigned_ct 2 and lattice ct 2 sit below the window, so the float 4.0
+# strictly wins max() and reaches effective_ct (cf. :813-815).
+_r2b_float_window(inp, n) := json.patch(inp, [
+	{"op": "replace", "path": "/aggregate/window_effect_ct", "value": _r2a_f(n)},
+	{"op": "add", "path": "/r2b_float_marker", "value": true},
+])
+
+_r2b_int_window(inp, n) := json.patch(inp, [{"op": "replace", "path": "/aggregate/window_effect_ct", "value": n}])
+
+# guard: the R2b fixture's window ct really is a float.
+test_szm_r2b_float_sentinel if {
+	inp := _r2b_float_window(_base_ct2, 4)
+	w := inp.aggregate.window_effect_ct
+	sprintf("%d", [w]) != "4"
+	w == 4
+}
+
+# CT4 tolerance is 0, so bound 0.01 must trip RES-001 for 4 and 4.0 alike.
+test_szm_r2b_float_window_res001 if {
+	m := "residual escape rate 0.01 exceeds tolerance 0 for ct 4"
+	_has_msg(_r2b_int_window(_base_ct2, 4), "LAAS-OBL-RES-001", m)
+	inp := _r2b_float_window(_base_ct2, 4)
+	_has_msg(inp, "LAAS-OBL-RES-001", m)
+	vf := violations with input as inp with data.laas as _cfg
+	vi := violations with input as _r2b_int_window(_base_ct2, 4) with data.laas as _cfg
+	vf == vi
+}
+
+test_szm_r2b_float_window_no_garbage if {
+	_has_msg(
+		_r2b_float_window(_base_ct2, 4), "LAAS-OBL-AGG-001",
+		"assigned_ct 2 is below cumulative-window ct 4 (structuring guard)",
+	)
+	_r2a_no_garbage(_r2b_float_window(_base_ct2, 4))
+}
+
+# pin (not an endorsement): today a non-integral window ct 2.5 reaches
+# effective_ct as 2.5, has no tolerance key (so no RES-001), and AGG-001
+# renders "%!d(float64=2.5)". R2b leaves this behaviour unchanged.
+test_szm_r2b_pin_nonintegral_window if {
+	inp := json.patch(_base_ct2, [
+		{"op": "replace", "path": "/aggregate/window_effect_ct", "value": 2.5},
+		{"op": "add", "path": "/r2b_float_marker", "value": true},
+	])
+	vs := violations with input as inp with data.laas as _cfg
+	vs == {{
+		"obligation": "LAAS-OBL-AGG-001",
+		"severity": "error",
+		"msg": "assigned_ct 2 is below cumulative-window ct %!d(float64=2.5) (structuring guard)",
+	}}
+	s := summary with input as inp with data.laas as _cfg
+	s.effective_ct == 2.5
+	s.compliant == false
+}
