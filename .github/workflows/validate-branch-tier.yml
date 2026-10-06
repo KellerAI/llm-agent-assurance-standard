@@ -2,7 +2,7 @@ name: Validate branch tier
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, edited]
 
 permissions:
   contents: read
@@ -10,11 +10,13 @@ permissions:
 # Enforces the 4-tier merge model:
 #   main  <- qa/**  only
 #   qa    <- dev/** only
-#   dev   <- external/** (contributors) or a CODEOWNER branch
+#   dev   <- external/** (contributors), a CODEOWNER branch, or an author
+#            listed in .github/tier-allowed-authors.txt (code-owned file)
 # external/* naming is validated separately by validate-branch-name.yml.
 jobs:
   validate-branch-tier:
-    name: "Branch tier (${{ github.base_ref }} <- ${{ github.head_ref }})"
+    # Fixed name: rulesets require this exact context (no expressions).
+    name: Branch tier
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -46,11 +48,26 @@ jobs:
 
           is_maintainer = actor.lower() in codeowners
 
+          # Read .github/tier-allowed-authors.txt: non-CODEOWNER PR authors allowed
+          # into dev. The file sits under /.github/, so CODEOWNERS review guards it.
+          ALLOWLIST = ".github/tier-allowed-authors.txt"
+          allowed = {}  # lowercase login -> (line number, login as written)
+          try:
+              with open(ALLOWLIST) as f:
+                  for lineno, line in enumerate(f, start=1):
+                      entry = line.split("#", 1)[0].strip()
+                      if not entry:
+                          continue
+                      login = entry.split()[0].lstrip("@")
+                      allowed.setdefault(login.lower(), (lineno, login))
+          except FileNotFoundError:
+              pass
+
           # Tier rules: maps target branch to (allowed-source-pattern, error-message).
           RULES = {
               "main": (r"^qa(/.*)?$",    "PRs into main must come from qa/**"),
               "qa":   (r"^dev(/.*)?$",   "PRs into qa must come from dev/**"),
-              "dev":  (r"^(external/|dependabot/)",    "PRs into dev must come from external/**, dependabot/**, or a CODEOWNER branch"),
+              "dev":  (r"^(external/|dependabot/)",    "PRs into dev must come from external/**, dependabot/**, a CODEOWNER, or an author in .github/tier-allowed-authors.txt"),
           }
 
           if base not in RULES:
@@ -66,6 +83,11 @@ jobs:
 
           if base == "dev" and is_maintainer:
               print(f"Tier check passed: CODEOWNER '{actor}' may merge directly into dev.")
+              sys.exit(0)
+
+          if base == "dev" and actor.lower() in allowed:
+              lineno, login = allowed[actor.lower()]
+              print(f"tier: dev allowed via {ALLOWLIST}:{lineno} ({login})")
               sys.exit(0)
 
           print(f"::error::{message}")

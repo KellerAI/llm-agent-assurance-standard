@@ -1,0 +1,5 @@
+# CODE-OWNED: /.github/ is covered by .github/CODEOWNERS; every change here needs code-owner review.
+# Non-CODEOWNER PR authors that validate-branch-tier.yml lets into dev. One GitHub login per line.
+# SAFETY: son-of-anton-ai must stay OUT of .github/CODEOWNERS, and code-owner review must stay on
+# in the dev, qa and main rulesets. Otherwise a PR could add its own author here and pass unreviewed.
+son-of-anton-ai
