@@ -442,7 +442,10 @@ A verifier that is under the control of, or whose verdict can be modified by, th
 verified shall not satisfy the independence requirement. Any control path that allows the
 constrained party to tier, grade, or gate itself is non-conforming.
 
-*Requirement source: `conformance/laas/laas.rego:76–84`, `:225–230`.*
+*Requirement source: normative. The OPA policy checks only verifier type, model lineage,
+error correlation, tier, verdict and block state (`conformance/laas/laas.rego:61-65`, `conformance/laas/laas.rego:76–84`,
+`:225–230`); it does not check who controls the verifier or can modify its verdict. Control
+independence requires a deployment control.*
 
 ### 5.3 Verifier qualification (LAAS-OBL-VQ-001)
 
@@ -528,10 +531,12 @@ modify, or circumvent, including in elevated-permission or override modes.
 
 The gate's policy bundle shall be cryptographically signed and version-pinned. The
 `bundle_signed` field of the decision trace shall be `true`. A decision trace asserting an
-unsigned or in-process gate is non-conforming regardless of other verdict fields.
+unsigned or in-process gate is non-conforming regardless of other verdict fields (`LAAS-OBL-ENF-001`, `standard/LAAS.md:72`).
 
 *Requirement source: `conformance/laas/data.json:16` (`require_bundle_signed: true`);
-`conformance/laas/laas.rego:115–118`.*
+`conformance/laas/laas.rego:115–118`, which checks only the `gate.bundle_signed` flag.
+The policy does not consume `gate.bundle_version`; version pinning requires a deployment
+control or separate verification.*
 
 ### 6.2 Decision trace (LAAS-OBL-TRC-001)
 
@@ -661,7 +666,9 @@ Untrusted or unattributed third-party dependencies shall fail closed. A componen
 provenance or scope limits cannot be established shall cause the gate to block and escalate
 the action.
 
-*Requirement source: `conformance/laas/laas.rego:149–152`.*
+*Requirement source: normative. `conformance/laas/laas.rego:149–152` (VEN-001) checks only
+that a used vendor has attribution and scope limits (`:69–72`); the block-and-escalate
+behaviour is not evaluated by OPA and requires a deployment control.*
 
 ---
 
@@ -693,7 +700,9 @@ trigger_matched == true  IMPLIES
 ```
 
 *Predicate source: `docs/laas/proposal-v1.1.md:258–265` (conformance_predicate field);
-evaluated by `conformance/laas/laas.rego:155–193`, `:225–260`.*
+a subset is checked by `conformance/laas/laas.rego:155–193`, `:225–260`. OPA does not evaluate
+escalation or the restriction of blocking to `fail`/`abstain`/`indeterminate` verdicts; those
+require deployment controls or separate verification.*
 
 The policy is stricter than this predicate on the residual clause. At CT≥2, on a non-blocked action, a null
 `residual_error_bound` conforms only when a deterministic verifier passed

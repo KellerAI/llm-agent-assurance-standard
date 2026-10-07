@@ -130,8 +130,10 @@ recorded in `conformance/laas/data.json:19–32`.
   warning, `laas.rego:107–112`; `data.json:21`).
 - **`LAAS-OBL-ENF-001`** — enforcement-plane integrity: the policy bundle must
   be signed and the gate must run out-of-process (`laas.rego:115–123`; `data.json:22`).
-- **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained
-  (`laas.rego:126–128`; `data.json:23`).
+- **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained.
+  The cited OPA rule checks only the `append_only` flag; it does not reference
+  the chain hash or Merkle anchor, so chaining needs separate verification or a
+  deployment control (`laas.rego:126–128`; `data.json:23`).
 - **`LAAS-OBL-AGG-001`** — a valid assigned tier must not be below the cumulative
   window CT; guards against structuring (`laas.rego:131–136`; `data.json:24`).
   An invalid `assigned_ct` is handled by TIER-001 (`laas.rego:278–283`).

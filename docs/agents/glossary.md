@@ -44,7 +44,7 @@ Cites into `conformance/laas/` show where the policy implements a term; they add
 - **Verifier independence** — "A verifier is independent of the actor iff one holds, by tier" (`standard/LAAS.md:85`): a different kind of checker (deterministic/exact), valid at any CT for the deterministic class; a distinct model lineage with measured error-correlation ≤ `max_error_correlation`, valid up to CT3; or a human, required in addition at CT4 (`standard/LAAS.md:87-89`).
   "A verifier sharing the actor's model lineage is presumed non-independent" (`standard/LAAS.md:91`).
   The policy rule is `independence_ok` (`conformance/laas/laas.rego:76-84`).
-  At CT4 a separate rule rejects any passed model verifier (`conformance/laas/laas.rego:225-230`).
+  At CT4 a separate rule rejects any passed model verifier on a non-blocked record; blocked records are exempt because the rule requires `not blocked` (`conformance/laas/laas.rego:225-230`).
 - **Verifier qualification** — "A verifier gating CT≥3 MUST be qualified: documented coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a change-controlled version recorded in the trace" (`standard/LAAS.md:95-96`).
 - **Escape rate** — the residual undetected-error rate of the open-world ("Bucket B") class (`standard/LAAS.md:100-101`).
   The operator declares a maximum escape rate per CT, estimates it by backtesting on a held-out adversarial set, and re-measures it on any model, prompt, tool, or policy change; conformance requires measured escape rate ≤ tolerance, with evidence referenced in the trace (`standard/LAAS.md:100-103`).

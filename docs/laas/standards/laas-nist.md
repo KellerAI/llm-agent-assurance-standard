@@ -305,8 +305,9 @@ violations contains obl("LAAS-OBL-TIER-001", ...) if {
 5. Sample ten decision-trace records; confirm no record has a valid `assigned_ct` (integer 0..4)
    below `expected_ct`.
 6. Verify that an absent, non-integer, or out-of-range (outside 0..4) `assigned_ct` raises
-   `LAAS-OBL-TIER-001` and the record is evaluated at `expected_ct`
-   (`conformance/laas/laas.rego:274-283`).
+   `LAAS-OBL-TIER-001` and the gate tier `_gate_ct` falls back to `expected_ct`
+   (`conformance/laas/laas.rego:274-283`); `effective_ct` remains `max([_gate_ct, _agg_ct])`,
+   so a higher window tier still determines it (`conformance/laas/laas.rego:48`).
 
 ---
 
@@ -827,7 +828,9 @@ upon.
 Conformance asserts `measured_escape_rate ≤ tolerance`, not correctness
 (`standard/LAAS.md §4.3`, `docs/laas/proposal-v1.1.md §5`).
 RES-001 fires when the bound exceeds the tolerance (`conformance/laas/laas.rego:185-193`);
-when a numeric bound at CT ≥ 2 lacks non-empty `evidence_refs` (`conformance/laas/laas.rego:248-253`);
+when a non-blocked action supplies a numeric bound (`conformance/laas/laas.rego:232`) at a tier with a defined tolerance (CT ≥ 2 in the shipped
+`conformance/laas/data.json:15`; `conformance/laas/laas.rego:53-55`) and `evidence_refs` is not a non-empty array of
+non-empty strings (`conformance/laas/laas.rego:234-241`, `conformance/laas/laas.rego:248-253`);
 and when a non-blocked CT ≥ 2 action that is not Bucket A, meaning no passed deterministic
 verifier (`conformance/laas/laas.rego:243-246`), supplies no bound (`conformance/laas/laas.rego:255-260`).
 RES-001 also fires, at any CT and whether or not the action is blocked, when a

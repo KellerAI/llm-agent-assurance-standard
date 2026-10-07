@@ -83,8 +83,8 @@ obligation or rule in `laas.rego` that consumes it.
 `action.actor_model_lineage` and `verifier.model_lineage` feed `LAAS-OBL-IND-001` only when
 `verifier.type == "model"`: `independence_ok` requires the two lineages to differ
 (`laas.rego:82`), and the IND-001 rule fires on `not independence_ok` (`laas.rego:162-167`).
-At CT4 a second IND-001 rule fires for any passed model verifier, regardless of lineage or
-correlation (`laas.rego:225-230`).
+At CT4 a second IND-001 rule fires for any non-blocked action with a passed model verifier,
+regardless of lineage or correlation (`laas.rego:225-230`).
 
 **Fields present in the example that `laas.rego` does not reference** (informational only):
 `action.id`, `action.actor_id`, `action.effect_surface.tool`, `gate.bundle_version`,

@@ -358,7 +358,12 @@ tool qualification under RTCA DO-330.
 ### 4.1 Conformance predicate
 
 A conforming system shall satisfy, for every gated action, the following predicate
-(stated normatively; implemented in `conformance/laas/laas.rego:155–193`, `:225–260`):
+(stated normatively; `conformance/laas/laas.rego:155–193`, `:225–260` check only a subset of it:
+the verifier, human-approval, and residual-bound conditions.
+The verifier and human-approval checks (`:155–182`, `:225–230`) are waived when the action is blocked,
+as are the missing-bound and missing-evidence residual checks (`:248–260`);
+the over-tolerance residual check (`:184–193`) has no blocked exemption.
+OPA does not evaluate escalation; the "escalated" condition requires deployment controls):
 
 > If any obligation's trigger condition matched the action, then the action either
 > (a) passed an independent, qualified pre-commit verifier (plus human approval when
@@ -704,7 +709,9 @@ actor operates with elevated permissions (e.g., in modes that disable standard p
 checks).
 
 **7.1.2** The policy bundle executed by the gate shall be **signed** and **version-pinned**
-(`conformance/laas/data.json:16`, `conformance/laas/laas.rego:115–118`).
+(`conformance/laas/data.json:16`).
+The rule at `conformance/laas/laas.rego:115–118` checks only that `input.gate.bundle_signed` is set
+when signing is required; it does not check the version pin, which requires separate verification.
 The gate shall verify the signature before executing the bundle.
 
 **7.1.3** The decision-trace sink shall be append-only; the actor shall not be able to modify
@@ -776,8 +783,9 @@ evidence shall be re-readable, though re-deriving a non-deterministic model verd
 required.
 
 **7.2.6** Failure to emit a conforming, append-only, chained trace record constitutes a TRC-001
-(`LAAS-OBL-TRC-001`) error-severity violation
-(`conformance/laas/laas.rego:126–128`).
+(`LAAS-OBL-TRC-001`) error-severity violation.
+The OPA rule (`conformance/laas/laas.rego:126–128`) checks only `input.trace.append_only`;
+chaining and anchoring require separate verification.
 
 ### 7.3 Evidence store
 

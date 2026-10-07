@@ -123,7 +123,9 @@ following evidence:
   the Consequence Tier from the observed effect surface and that the gate-assigned tier is never
   below the lattice-derived value, including for undetermined inputs (which should default to the
   highest tier), and that a record lacking a valid gate-assigned tier (an integer 0..4) is flagged
-  and evaluated at the lattice tier (`conformance/laas/laas.rego:262-283`).
+  (one TIER-001) with its gate tier falling back to the lattice tier
+  (`conformance/laas/laas.rego:262-283`); the enforced tier is the maximum of that fallback and
+  the cumulative-window tier, so it can exceed the lattice tier (`conformance/laas/laas.rego:48`).
 - **Verifier independence and qualification.** For high-tier actions, evidence that the verifier is
   independent of the actor (deterministic, distinct lineage with bounded error-correlation, or
   human; distinct lineage is accepted only below the highest tier) and qualified, with a current qualification record referenced in the trace and a negative-

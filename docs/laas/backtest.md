@@ -134,7 +134,7 @@ The harness emits one JSON **evidence artifact** per measurement (`schema: "laas
 
 ### Trace-consumable contract
 
-- `evidence_id` — content-addressed (`ev_backtest_<sha256[:16]>` over every field except `evidence_id` and `measured_at`, `scripts/laas/backtest.py:436-444`), stable, and **goes verbatim into the trace's `evidence_refs`** (mirrors §7.4's `["ev_ledger_diff_001"]` opaque-id convention). The policy requires it there whenever the bound is numeric at CT>=2 (`conformance/laas/laas.rego:248-253`).
+- `evidence_id` — content-addressed (`ev_backtest_<sha256[:16]>` over every field except `evidence_id` and `measured_at`, `scripts/laas/backtest.py:436-444`), stable, and **goes verbatim into the trace's `evidence_refs`** (mirrors §7.4's `["ev_ledger_diff_001"]` opaque-id convention). The policy checks only the array's shape: a non-empty `evidence_refs` array of non-empty strings (`conformance/laas/laas.rego:234-241`). For a non-blocked action with a numeric bound (`conformance/laas/laas.rego:232`), `LAAS-OBL-RES-001` flags a violation only when that shape check fails (`conformance/laas/laas.rego:248-253`); it does not check that the array contains this artifact ID, and blocked records are exempt (`not blocked`, `:250`).
 - `residual_error_bound` — the **upper CI bound**; the trace copies this into its own `residual_error_bound` field, which `laas.rego LAAS-OBL-RES-001` reads.
 - `residual_tolerance` — the value looked up from `data.json`, so the artifact is self-describing and the trace's `residual_tolerance` can be cross-checked against the bundle.
 - Identification fields: `schema` (`laas.bucketB.backtest_evidence/v1`), `ct` (the measured tier), and `tolerance_source` (the `--data-json` path the tolerance was read from).
