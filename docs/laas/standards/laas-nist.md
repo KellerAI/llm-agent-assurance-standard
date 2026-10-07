@@ -148,8 +148,11 @@ The **effective CT** is the maximum of the gate CT and the cumulative window CT
 
 ```text
 effective_ct := max([_gate_ct, _agg_ct])
-_agg_ct := object.get(input, ["aggregate", "window_effect_ct"], 0)
+_agg_ct := _norm_agg_ct
 ```
+
+`_norm_agg_ct` reads `input.aggregate.window_effect_ct` (default 0) and normalizes integral floats
+(`conformance/laas/laas.rego:310-315`).
 
 `_gate_ct` is `input.gate.assigned_ct` when it is an integer in 0..4, otherwise the
 lattice-derived `expected_ct` (`conformance/laas/laas.rego:265-276`).
@@ -479,12 +482,21 @@ N individually sub-threshold actions can compose into a high-CT aggregate effect
 structuring analogous to transaction structuring in financial regulation
 (`docs/laas/proposal-v1.1.md §6.4`).
 The Rego policy computes `_agg_ct` from `input.aggregate.window_effect_ct` and takes
-the maximum of the gate CT and `_agg_ct` (`conformance/laas/laas.rego:48-50`):
+the maximum of the gate CT and `_agg_ct` (`conformance/laas/laas.rego:48-50`, `:310-315`):
 
 ```rego
 effective_ct := max([_gate_ct, _agg_ct])
-_agg_ct := object.get(input, ["aggregate", "window_effect_ct"], 0)
+_agg_ct := _norm_agg_ct
+
+_agg_raw := object.get(input, ["aggregate", "window_effect_ct"], 0)
+
+_norm_agg_ct := to_number(format_int(_agg_raw, 10)) if {
+    is_number(_agg_raw)
+    _agg_raw == floor(_agg_raw)
+} else := _agg_raw
 ```
+
+An integral-float window ct (for example `4.0`) is normalized to an integer (ruling R2b).
 
 `_gate_ct` is `input.gate.assigned_ct` when it is an integer in 0..4, otherwise `expected_ct`
 (`conformance/laas/laas.rego:274-276`).
