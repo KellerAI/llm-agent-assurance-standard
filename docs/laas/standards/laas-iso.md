@@ -525,7 +525,9 @@ The gate (3.5) shall operate as an out-of-process component that the agent canno
 modify, or circumvent, including in elevated-permission or override modes.
 
 *Requirement source: `conformance/laas/data.json:17` (`require_out_of_process_gate: true`);
-`conformance/laas/laas.rego:120–123`.*
+`conformance/laas/laas.rego:120–123`, which checks only the recorded `gate.out_of_process`
+flag. The policy does not verify that the gate is isolated or beyond the agent's control;
+that requires a deployment control or separate verification.*
 
 #### 6.1.2 Signed policy bundle
 

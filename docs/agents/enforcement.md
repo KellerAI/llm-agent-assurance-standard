@@ -109,6 +109,9 @@ checks that the tier assignment, verification, and enforcement are correct.
     (`data.json:13`).
 - **Effective tier:** max of the gate tier and the cumulative window CT,
   preventing structuring attacks (`laas.rego:48`).
+  The cumulative window CT is supplied by the caller (the policy does not compute it);
+  the max rule only consumes it, so preventing structuring also depends on that supplied value
+  (`input.aggregate.window_effect_ct`, `laas.rego:310`).
   The gate tier is `gate.assigned_ct`, or the lattice CT when `assigned_ct` is absent or not an integer 0..4
   (`laas.rego:265–276`).
 - **Fail-safe default:** `default expected_ct := 4` (`laas.rego:30`).
@@ -130,6 +133,8 @@ recorded in `conformance/laas/data.json:19–32`.
   warning, `laas.rego:107–112`; `data.json:21`).
 - **`LAAS-OBL-ENF-001`** — enforcement-plane integrity: the policy bundle must
   be signed and the gate must run out-of-process (`laas.rego:115–123`; `data.json:22`).
+  OPA checks only the recorded `gate.bundle_signed` and `gate.out_of_process` flags;
+  the actual signature and process boundary require separate verification.
 - **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained.
   The cited OPA rule checks only the `append_only` flag; it does not reference
   the chain hash or Merkle anchor, so chaining needs separate verification or a
@@ -143,10 +148,13 @@ recorded in `conformance/laas/data.json:19–32`.
 - **`LAAS-OBL-VEN-001`** — third-party or vendor dependencies require attribution
   and scope limits (`laas.rego:149–152`; `data.json:26`).
 - **`LAAS-OBL-IRR-001`** — CT≥3 actions require a passing independent pre-commit
-  verifier unless the action is blocked (`laas.rego:155–159`; `data.json:27`).
+  verifier unless the action is blocked. OPA's IRR-001 rule checks only that a
+  non-blocked CT≥3 verifier verdict is `pass` (`laas.rego:155–159`; `data.json:27`);
+  independence and qualification are checked by IND-001 and VQ-001 below.
 - **`LAAS-OBL-IND-001`** — the pre-commit verifier must be independent: deterministic,
   human, or a model of a different lineage with error-correlation ≤ 0.2
-  (`laas.rego:76–84`, `:162–167`). At CT4 a passed model verifier always violates it;
+  (`laas.rego:76–84`, `:162–167`). At CT4 a passed model verifier on a non-blocked
+  action violates it;
   a deterministic or human verifier is required (`laas.rego:225–230`; `data.json:13,14,28`).
 - **`LAAS-OBL-VQ-001`** — the verifier must be qualified (DO-330 analogue)
   (`laas.rego:170–175`; `data.json:29`).

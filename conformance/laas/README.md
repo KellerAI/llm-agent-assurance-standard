@@ -82,7 +82,9 @@ obligation or rule in `laas.rego` that consumes it.
 
 `action.actor_model_lineage` and `verifier.model_lineage` feed `LAAS-OBL-IND-001` only when
 `verifier.type == "model"`: `independence_ok` requires the two lineages to differ
-(`laas.rego:82`), and the IND-001 rule fires on `not independence_ok` (`laas.rego:162-167`).
+(`laas.rego:82`), and the IND-001 rule fires only when the effective CT is at or above the
+independent-verification floor, the action is not blocked, the verifier passed, and
+`independence_ok` does not hold (`laas.rego:63`, `:65`, `:162-167`).
 At CT4 a second IND-001 rule fires for any non-blocked action with a passed model verifier,
 regardless of lineage or correlation (`laas.rego:225-230`).
 

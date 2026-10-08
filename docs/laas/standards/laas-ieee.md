@@ -167,8 +167,12 @@ issuing an action; used to determine whether a verifier shares the actor's subst
 
 **aggregate window CT**
 The consequence tier derived from the cumulative effect of a windowed set of actions by the same
-principal, session, or effect class; computed by the gate and used to enforce the anti-structuring
-rule (see `conformance/laas/laas.rego:48–50`).
+principal, session, or effect class; computed by the gate and used to enforce the
+anti-structuring rule.
+The reference policy reads this tier from the supplied `aggregate.window_effect_ct` field and
+enforces `effective_ct` as at least that value (`conformance/laas/laas.rego:48–50`,
+`conformance/laas/laas.rego:310–315`); deriving the window tier from cumulative actions requires
+separate verification.
 
 **append-only store**
 A storage system to which records can be added but not modified or deleted by any party,
@@ -458,8 +462,11 @@ where the rank mappings are:
 
 **5.1.3** When any axis of the observed effect surface is undetermined or absent, the gate shall
 assign `expected_ct = 4`.
-This is the default when the gate cannot observe the effect surface
-(`conformance/laas/laas.rego:30`).
+In the reference policy, `expected_ct` defaults to 4 (`conformance/laas/laas.rego:30`) and is
+lowered only when `external_effect` is explicitly `false`, which yields CT0, or when
+`external_effect` is `true` and all three axes map to lattice tiers
+(`conformance/laas/laas.rego:33–45`); an undetermined axis with `external_effect` explicitly
+`false` therefore yields CT0, not CT4.
 
 **5.1.4** The gate-assigned CT (`gate.assigned_ct`) shall not be less than the lattice-derived
 `expected_ct`.
@@ -583,7 +590,10 @@ These mechanisms scale human oversight to exceptions rather than volume
 
 **6.1.1** For every action whose effective CT is 3 or 4, the gate shall require a passing
 independent, qualified pre-commit verifier before the action is committed
-(`conformance/laas/data.json:12`, `conformance/laas/laas.rego:155–159`).
+(`conformance/laas/data.json:12`). In the reference policy, a non-blocked CT≥3 action whose
+verifier verdict is not `pass` constitutes an IRR-001 violation (`conformance/laas/laas.rego:155–159`);
+independence and qualification of a passing verifier are checked separately as IND-001 and
+VQ-001 (`conformance/laas/laas.rego:162–175`).
 
 **6.1.2** Pre-commit means verification completes and the gate evaluates the verdict before the
 action takes effect.
@@ -623,8 +633,8 @@ conditions holds (`conformance/laas/laas.rego:76–84`, `:225–230`, `docs/laas
 empirically, the gate shall fall back to a deterministic or human verifier at CT≥3.
 
 **6.2.3** A verifier that does not satisfy any condition in Requirement 6.2.1 is non-independent.
-Using a non-independent verifier for a CT≥3 action, when the action was not blocked,
-constitutes an IND-001 (`LAAS-OBL-IND-001`) error-severity violation
+Using a non-independent verifier that returned `pass` for a CT≥3 action, when the action
+was not blocked, constitutes an IND-001 (`LAAS-OBL-IND-001`) error-severity violation
 (`conformance/laas/laas.rego:162–167`; CT4 model verifiers: `:225–230`).
 
 **6.2.4** The independence basis shall be recorded as one of the string values
@@ -689,7 +699,11 @@ that is not Bucket A and supplies no bound constitutes an RES-001 violation
 
 **6.4.7** Evidence of the escape-rate measurement, including the backtest report reference,
 shall be recorded in the decision trace under `evidence_refs`
-(`conformance/laas/laas.rego:234–241`, `:248–253`).
+(`conformance/laas/laas.rego:234–241`, `:248–253`). The reference policy checks only the
+shape of `evidence_refs` (a non-empty array of non-empty strings, `:234–241`); it does not
+verify that the strings identify the measurement evidence or the backtest report. That
+provenance and artifact-ID binding require enforcement by the deployment or by separate
+verification.
 
 **6.4.8** A supplied `residual_error_bound` shall be a number >= 0; `null` is equivalent to
 absent.
@@ -703,10 +717,13 @@ and is never compared to the tolerance (`conformance/laas/laas.rego:285–300`).
 ### 7.1 Enforcement-plane integrity (ENF-001)
 
 **7.1.1** The gate shall operate as an out-of-process component in a trust boundary separate
-from the actor (`conformance/laas/data.json:17`, `conformance/laas/laas.rego:120–123`).
+from the actor (`conformance/laas/data.json:17`).
 The actor shall not be able to disable, modify, bypass, or influence the gate, even when the
 actor operates with elevated permissions (e.g., in modes that disable standard permission
 checks).
+The rule at `conformance/laas/laas.rego:120–123` checks only that `input.gate.out_of_process` is
+set when an out-of-process gate is required; the trust boundary and the actor's inability to
+bypass the gate require separate verification.
 
 **7.1.2** The policy bundle executed by the gate shall be **signed** and **version-pinned**
 (`conformance/laas/data.json:16`).
@@ -715,7 +732,9 @@ when signing is required; it does not check the version pin, which requires sepa
 The gate shall verify the signature before executing the bundle.
 
 **7.1.3** The decision-trace sink shall be append-only; the actor shall not be able to modify
-or delete trace records (`conformance/laas/laas.rego:126–128`).
+or delete trace records.
+The rule at `conformance/laas/laas.rego:126–128` checks only `input.trace.append_only`; whether
+the sink prevents the actor from modifying or deleting records requires separate verification.
 
 **7.1.4** A decision trace asserting an in-process gate or an unsigned bundle is non-conforming
 regardless of the verdict recorded, and constitutes an ENF-001 (`LAAS-OBL-ENF-001`)

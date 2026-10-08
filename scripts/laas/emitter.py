@@ -175,9 +175,11 @@ class TraceAnchor:
 def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
     """Return (gate_derived_ct, resolved_surface_keys).
 
-    Matches laas.rego's `expected_ct` (laas.rego:30-39) for a boolean
-    `external_effect`, so the gate's `assigned_ct` is never below the
-    policy's lattice-derived tier (avoids TIER-001):
+    Matches laas.rego's `expected_ct` (laas.rego:30-44) for a boolean
+    `external_effect` only when `gate.lattice` equals the policy bundle's
+    `tier_lattice` (data.json:7-9) and `gate.ct_when_undetermined` is 4
+    (laas.rego:30). Both are the GateContext defaults; overriding either
+    can put `assigned_ct` below the policy's tier (TIER-001):
 
         - external_effect False         -> CT0
         - external effect, keys known   -> max(rev, scope, consequence)

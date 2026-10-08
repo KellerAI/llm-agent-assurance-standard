@@ -279,7 +279,10 @@ The gate observes the actual tool invocation (the amount transferred, the counte
 identified, the scope of write), not the agent's description of what it intends to do.
 If any axis of the effect surface is undetermined, the tier defaults to CT4
 (`conformance/laas/data.json → default_ct_when_undetermined: 4`,
-`conformance/laas/laas.rego:30`).
+`conformance/laas/laas.rego:30`). In the reference policy, `expected_ct` stays at this CT4
+default unless `external_effect` is explicitly `false` (CT0) or is `true` with all three axes
+resolvable in the tier lattice (`conformance/laas/laas.rego:30-45`); an explicit `false`
+therefore yields CT0 even when the axes are undetermined.
 
 The Rego predicates for this control (`conformance/laas/laas.rego:99-104`, `:278-283`):
 
@@ -331,7 +334,8 @@ This control implements the warning tier of the Zero-Trust-on-classification inv
 Self-reports are recorded for diagnostic and audit purposes (a pattern of agents persistently
 under-reporting their tier is a governance signal), but they cannot lower the operative tier.
 This is a `warning`-severity obligation; it does not block the action but does appear in
-the `summary.warnings` count (`conformance/laas/laas.rego:107-112`).
+the `summary.warnings` count (`conformance/laas/laas.rego:107-112`, `:86-92`, `:204-207`,
+`:215-222`; `conformance/laas/data.json:21`).
 
 #### Assessment / Verification Objectives
 
@@ -860,9 +864,10 @@ model training and fine-tuning; the evaluation set is independently audited
    where `residual_error_bound` is non-null.
 4. Confirm the evaluation set was adversarially stressed and independently audited.
 5. Verify that the RES-001 violation fires when `residual_error_bound > residual_tolerance`.
-6. Verify that every non-blocked CT ≥ 2 record with a non-null `residual_error_bound` carries
+6. Verify that every non-blocked CT ≥ 2 record with a numeric `residual_error_bound` carries
    non-empty `evidence_refs`, and every non-blocked CT ≥ 2 record without a passed deterministic
-   verifier carries a bound; RES-001 fires otherwise (`conformance/laas/laas.rego:248-260`).
+   verifier carries a numeric bound; RES-001 fires otherwise (`conformance/laas/laas.rego:248-260`).
+   A non-null, non-numeric bound is also caught by the invalid-bound check in step 7.
 7. Verify that a record whose `residual_error_bound` is present, not `null`, and not a
    number >= 0 raises RES-001 at any CT, blocked or not (`conformance/laas/laas.rego:296-300`).
 8. Confirm re-measurement is triggered (and evidence is refreshed in the trace) upon any
