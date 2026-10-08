@@ -1,10 +1,10 @@
 # LAAS v1.1 — ActionDescriptor Emitter (Design & Contract)
 
 - **Component:** the runtime *gate-side* emitter that translates a live agent's observed effect surface into the decision-record JSON evaluated by `package kellerai.laas.actions`.
-- **Standard:** LLM-Agent Assurance Standard (LAAS) v1.1.
+- **Standard:** LLM-Agent Assurance Standard (LAAS) v1.1. Section references (`§0.1`, `§6.1`, `§7.7`, …) and "finding N.N" references in this document point to `docs/laas/proposal-v1.1.md` (e.g. `docs/laas/proposal-v1.1.md:70` `### 0.1`, `:305` `### 7.7`), not to the section numbering of `standard/LAAS.md`.
 - **Output contract source of truth:** `conformance/laas/laas.rego` + `conformance/laas/examples/action.ct4-blocked.json` (the canonical in-repo policy + bundle).
 - **Reference implementation:** `scripts/laas/emitter.py` (Python 3, stdlib only).
-- **Runnable proof:** `scripts/laas/check.sh` (emit → `opa eval` against `conformance/laas/`).
+- **Runnable proof:** `bash scripts/laas/check.sh` from the repository root (emit → `opa eval` against `conformance/laas/`).
 
 ---
 
@@ -47,14 +47,43 @@ The emitter accepts a structured description of one proposed action's **observed
 | Effect surface | `consequence` | Worst-case impact model: `none`/`low`/`material`/`high`. Unknown → `high`. |
 | Actor | `actor_id`, `actor_model_lineage` | Verified agent identity (§4.3 — cryptographic identity, not self-asserted). |
 | Actor | `self_reported_ct` | The agent's *proposed* tier — informational only. |
-| Verifier | `id`, `type`, `verdict`, `qualified`, `model_lineage`, `error_correlation` | The gate's **verifier registry** result, run by the gate, not the agent (§7.3/§7.5). |
+| Verifier | `id`, `type`, `verdict`, `qualified`, `model_lineage`, `error_correlation` | The gate's **verifier registry** result, run by the gate, not the agent (§7.3/§7.5). The CLI also accepts `qualification_ref` (`scripts/laas/emitter.py:381`) but does not emit it: the verifier block holds only the five keys at `scripts/laas/emitter.py:310-316`, plus `error_correlation` when supplied. |
 | Aggregate | `window_effect_ct` | Gate's windowed cumulative-blast-radius store (§6.4 structuring guard). |
 | Vendor | `used`, `attribution`, `scope_limited` | Supply-chain provenance on the call (§8.2). |
 | Input provenance | `trusted` | Provenance tag on the inbound context (§8.3 injection resistance). |
 | Trace | `append_only`, `actor_chain_prev_hash`, `merkle_anchor` | Gate's append-only sink (§7.4/§7.7). |
 | Bucket B | `residual_error_bound` | Backtest report for the claim class; `null` for pure Bucket A (§5). |
 | Decision | `action_blocked`, `escalation_approved`, `human_approval.approved` | Gate enforcement outcome + human-approval queue (§6.3). |
-| Gate (config) | `bundle_id`, `bundle_signed`, `out_of_process`, `tier_lattice` | The signed bundle + the gate's own deployment attestations (§7.7). |
+| Gate (config) | `bundle_id`, `bundle_signed`, `out_of_process`, `tier_lattice` | The signed bundle + the gate's own deployment attestations (§7.7). The emitter writes `bundle_id` as `gate.bundle_version` (`scripts/laas/emitter.py:100`, `:283`). The CLI never reads these from the spec JSON: `bundle_id` and `tier_lattice` come from `-b` or, without it, from the in-module defaults (`scripts/laas/emitter.py:99-101`, `:428`), and `bundle_signed` / `out_of_process` keep their `GateContext` defaults of `true` (`scripts/laas/emitter.py:88-89`). |
+
+### 2.1 Command-line interface
+
+`scripts/laas/emitter.py` reads one effect-surface spec (JSON) and writes one decision record (JSON, 2-space indent):
+
+```bash
+python3 scripts/laas/emitter.py [-i INPUT] [-b BUNDLE] [-o OUTPUT]
+```
+
+| Flag | Default | Effect |
+| --- | --- | --- |
+| `-i`, `--input` | stdin | Effect-surface spec JSON to read (`scripts/laas/emitter.py:417`, `:422-426`). |
+| `-b`, `--bundle` | none | `data.json` bundle; loads `bundle_id`, `tier_lattice` and `default_ct_when_undetermined` (`scripts/laas/emitter.py:418`, `:94-107`). Without it the in-module defaults apply (`scripts/laas/emitter.py:428`). |
+| `-o`, `--output` | stdout | File to write the record to (`scripts/laas/emitter.py:419`, `:437-441`). |
+
+Exit codes:
+
+| Code | When |
+| --- | --- |
+| `0` | Record written. |
+| `2` | Pre-flight validation failed: `verifier.verdict` not in `pass`/`fail`/`abstain`/`indeterminate`, `verifier.type` not in `deterministic`/`model`/`human`, or `gate.assigned_ct` not an integer in 0..4 (`scripts/laas/emitter.py:50-51`, `:332-349`). The emitter prints `EMITTER VALIDATION FAILED:` and the problems to stderr and writes no record (`scripts/laas/emitter.py:430-435`). |
+| `1` | Uncaught Python exception, for example malformed JSON (`json.decoder.JSONDecodeError`) or a spec without `effect_surface` (`KeyError`) (`scripts/laas/emitter.py:358`, `:427`). |
+
+The spec's top-level keys are `id`, `actor`, `effect_surface`, `verifier`, `aggregate`, `vendor`, `input`, `trace`, `residual_error_bound`, `human_approval`, `action_blocked` and `escalation_approved` (`scripts/laas/emitter.py:355-412`); `scripts/laas/fixtures/transfer.effect-surface.json` is a complete example. The required keys are `effect_surface.external_effect` (`scripts/laas/emitter.py:360`) and, when a `verifier` object is given, its `id`, `type` and `verdict` (`scripts/laas/emitter.py:375-377`). When an optional key is omitted the emitter fills a default:
+
+- `actor.actor_id` → `agent.unknown`, `actor.actor_model_lineage` → `unknown-lineage` (`scripts/laas/emitter.py:368-369`).
+- `actor.self_reported_ct` → the emitted `gate.assigned_ct`, so no `SELF-001` warning fires (`scripts/laas/emitter.py:274-278`).
+- `verifier` → a placeholder `{"id": "none", "type": "deterministic", "model_lineage": "n/a", "qualified": false, "verdict": "indeterminate"}` (`scripts/laas/emitter.py:321-327`).
+- `id` (or `action.id`) → `act_unknown` (`scripts/laas/emitter.py:411`, `:270`).
 
 ---
 
@@ -64,7 +93,7 @@ The emitter accepts a structured description of one proposed action's **observed
 
 | `input` path read by policy | Rego use | Emitter source |
 | --- | --- | --- |
-| `action.effect_surface.external_effect` | `expected_ct` (CT0 branch) | `EffectSurface.external_effect` |
+| `action.effect_surface.external_effect` | `expected_ct`: CT0 only on boolean `false` (`conformance/laas/laas.rego:34`), lattice only on `true` (`:39`), otherwise CT4 (`:30`) | `EffectSurface.external_effect` |
 | `action.effect_surface.reversibility` | lattice axis | resolved surface key (worst-key if undetermined) |
 | `action.effect_surface.scope` | lattice axis | resolved surface key |
 | `action.effect_surface.consequence` | lattice axis | resolved surface key |
@@ -75,18 +104,19 @@ The emitter accepts a structured description of one proposed action's **observed
 | `gate.out_of_process` | `ENF-001` | `GateContext.out_of_process` |
 | `aggregate.window_effect_ct` | `effective_ct`, `AGG-001` | `AggregateState.window_effect_ct` (via `object.get`, default 0) |
 | `verifier.verdict` | `IRR-001` | gate verifier registry |
-| `verifier.type` | `IND-001` | gate verifier registry |
+| `verifier.type` | `IND-001` (incl. the CT4 model-verifier rule, `conformance/laas/laas.rego:229`), `RES-001` Bucket-A test (`:244`) | gate verifier registry |
 | `verifier.model_lineage` | `IND-001` | gate verifier registry |
-| `verifier.error_correlation` | `IND-001` | gate verifier registry (model verifiers only) |
+| `verifier.error_correlation` | `IND-001` | gate verifier registry (model verifiers only); emitted only when the spec supplies it (`scripts/laas/emitter.py:317-318`) |
 | `verifier.qualified` | `VQ-001` | gate verifier registry |
 | `human_approval.approved` | `HUM-001` | human-approval queue |
 | `vendor.used` / `.attribution` / `.scope_limited` | `VEN-001` | supply-chain provenance |
 | `trace.append_only` | `TRC-001` | append-only sink |
 | `input.trusted` | `INP-001` | input provenance tag |
-| `residual_error_bound` | `RES-001` | backtest report (`null` for Bucket A) |
-| `action_blocked` | block path for IRR/HUM/INP-001 | gate enforcement outcome |
+| `residual_error_bound` | `RES-001` | backtest report; `null` only for Bucket A (passed deterministic verifier), otherwise `RES-001` fires at CT>=2 (`conformance/laas/laas.rego:255-260`) |
+| `evidence_refs` | `RES-001` (required with a numeric bound at CT>=2, `conformance/laas/laas.rego:234-241`, `:248-253`) | not yet emitted by `scripts/laas/emitter.py` |
+| `action_blocked` | block path for IRR/IND/VQ/HUM/INP-001 and the RES-001 spec-alignment rules, including the CT4 model-verifier IND-001 rule (`blocked`, `conformance/laas/laas.rego:61`; `not blocked` at `:227`, `:250`, `:257`) | gate enforcement outcome |
 
-> Note: `gate.bundle_version`, `escalation_approved`, and the `trace.actor_chain_prev_hash` / `merkle_anchor` fields are **not** read by *this* policy but are part of the §7.2 declared decision-trace schema and the `action.ct4-blocked.json` example, so the emitter emits them for the trace sink. They are harmless to the policy (it ignores unread keys).
+> Note: `action.id`, `action.actor_id`, `action.effect_surface.tool`, `verifier.id`, `gate.bundle_version`, `escalation_approved`, and the `trace.actor_chain_prev_hash` / `merkle_anchor` fields are **not** read by *this* policy (compare `rg -o 'input(\.[a-z_]+)+' conformance/laas/laas.rego | sort -u`). All of them appear in the `action.ct4-blocked.json` example, and all but `action.effect_surface.tool` have a counterpart in the §7.2 declared decision-trace schema (`action_ref`, `actor_id`, `verifier_id`, `policy_bundle_version`, `escalation_approved`, `actor_chain_prev_hash`, `merkle_anchor`; `docs/laas/proposal-v1.1.md:229-257`), so the emitter emits them for the trace sink. They are harmless to the policy (it ignores unread keys).
 
 ### The CT-derivation the emitter performs (§6.1 — gate-derived, ungameable)
 
@@ -99,16 +129,16 @@ ct = default_ct_when_undetermined (= 4)           if ANY axis undetermined     (
 gate.assigned_ct = max(ct, aggregate.window_effect_ct)   (§6.4 structuring guard — window can only RAISE)
 ```
 
-`derive_ct()` mirrors `laas.rego`'s `expected_ct` rule exactly, so the gate's `assigned_ct` is never below the policy's lattice-derived tier (no spurious `TIER-001`). The lattice is loaded from the **signed bundle** (`data.json`) at runtime, not hardcoded — the in-module table is only a self-check fallback.
+This is what the emitter's `derive_ct()` does, not the policy. `derive_ct()` mirrors `laas.rego`'s `expected_ct` rule only when `external_effect` is a boolean. A falsy value such as null gives CT0 in the emitter (`scripts/laas/emitter.py:193-194`), and a truthy non-boolean such as `"false"` takes the emitter's lattice path; the policy returns CT4 for both (`conformance/laas/laas.rego:30`), so `TIER-001` can fire either way. Set `external_effect` explicitly. When `-b` names the **signed bundle** (`data.json`), the lattice is loaded from it at runtime; without `-b` the emitter uses the in-module `_DEFAULT_LATTICE` fallback (`scripts/laas/emitter.py:38-42`, `:428`). `scripts/laas/check.sh:18` passes `-b`.
 
 ---
 
 ## 4. Proof — emitted record is policy-evaluable
 
-`./check.sh` emits a record from `fixtures/transfer.effect-surface.json` (the §6.1 worked example: `payments.transfer` to an external counterparty) and pipes it through `opa eval` against the canonical in-repo policy + bundle (`conformance/laas/`). **opa 1.14.1 result:**
+`bash scripts/laas/check.sh`, run from the repository root, emits a record from `scripts/laas/fixtures/transfer.effect-surface.json` (the §6.1 worked example: `payments.transfer` to an external counterparty) with `-b conformance/laas/data.json`, then evaluates it with `opa eval` against the canonical in-repo policy + bundle (`conformance/laas/`) for `summary`, `error_ids` and `compliant` (`scripts/laas/check.sh:18`, `:31-40`). If `opa` is not on `PATH`, the script prints the emitted record, skips the evaluation, and exits 0 (`scripts/laas/check.sh:23-26`). **Result under opa 1.18.2:**
 
 ```json
-{ "bundle": "laas-fin-1.1.0", "compliant": true, "effective_ct": 4,
+{ "bundle": "laas-fin-1.1.1", "compliant": true, "effective_ct": 4,
   "errors": 0, "expected_ct": 4, "warnings": 0 }
 ```
 
@@ -118,11 +148,35 @@ Three additional cases were evaluated to prove the gate-derived/ungameable prope
 
 | Case | Emitted `assigned_ct` | Policy result |
 | --- | --- | --- |
-| Agent **self-reports CT1** on a CT4 surface, not blocked, no human approval | **4** (self-report ignored) | `compliant: false` — `HUM-001` error + `SELF-001` warning |
-| Read-only (`external_effect: false`) | 0 | `compliant: true`, `expected_ct: 0` |
-| Undetermined surface (scope missing) | **4** (default-to-highest §6.2) | `compliant: true`, `expected_ct: 4` |
+| A. Agent **self-reports CT1** on a CT4 surface, not blocked, no human approval, verifier verdict `pass` | **4** (self-report ignored) | `compliant: false` — `HUM-001` error + `SELF-001` warning |
+| B. Read-only (`external_effect: false`), cumulative window 0 | 0 | `compliant: true`, `expected_ct: 0` |
+| C. Undetermined surface (scope missing), cumulative window 0 | **4** (default-to-highest §6.2) | `compliant: true`, `expected_ct: 4` |
 
 The self-report can never lower the tier — the gaming case is caught.
+
+The verifier verdict and the window matter. With the fixture's abstaining verifier, case A also fires `IRR-001`: `error_ids` is `["LAAS-OBL-HUM-001", "LAAS-OBL-IRR-001"]`. With the fixture's `aggregate.window_effect_ct` of 4, case B emits `assigned_ct` 4, not 0, because the window can only raise the tier (`scripts/laas/emitter.py:257`).
+
+No committed fixture holds these cases. Each case is the fixture with one `jq` filter applied:
+
+```text
+A: .actor.self_reported_ct=1 | .action_blocked=false | .verifier.verdict="pass"
+B: .effect_surface.external_effect=false | .aggregate.window_effect_ct=0
+C: del(.effect_surface.scope) | .aggregate.window_effect_ct=0
+```
+
+To reproduce a case from the repository root, set `FILTER` to its filter:
+
+```bash
+FILTER='.actor.self_reported_ct=1 | .action_blocked=false | .verifier.verdict="pass"'
+REC="$(mktemp)"
+jq "$FILTER" scripts/laas/fixtures/transfer.effect-surface.json \
+  | python3 scripts/laas/emitter.py -b conformance/laas/data.json > "$REC"
+jq '.gate.assigned_ct' "$REC"
+opa eval -f pretty -d conformance/laas/laas.rego -d conformance/laas/data.json \
+  -i "$REC" 'data.kellerai.laas.actions.summary'
+opa eval -f pretty -d conformance/laas/laas.rego -d conformance/laas/data.json \
+  -i "$REC" 'data.kellerai.laas.actions.error_ids'
+```
 
 ---
 
@@ -131,9 +185,9 @@ The self-report can never lower the tier — the gaming case is caught.
 The emitter's *shape* contract is complete and proven; the gaps are all about **sourcing** the inputs from a live agent runtime, not about the output format.
 
 1. **Effect-surface observer (the hardest part).** `derive_ct` is only as good as the `(external_effect, reversibility, scope, consequence)` classification. A real harness needs a per-tool **effect-surface adapter** that resolves the *actual* call (e.g. `payments.transfer(amount, dest=external)` → `irreversible/public/high`) from the tool schema + bound arguments. **TODO:** build the tool→axes registry; until a tool is registered, every axis is `None` → default-to-highest CT4 (fail-closed, correct).
-2. **Verifier registry & independence.** The emitter trusts the gate's verifier result. The harness must implement the registry that (a) **selects** the right verifier per claim class, (b) records its real `type`/`qualified`/`qualification_ref`, and (c) for model verifiers, supplies a **measured** `error_correlation` vs the actor lineage (§7.3) — not a placeholder. **TODO:** wire the backtest/eval pipeline that produces `error_correlation`.
+2. **Verifier registry & independence.** The emitter trusts the gate's verifier result. The harness must implement the registry that (a) **selects** the right verifier per claim class, (b) records its real `type`/`qualified`/`qualification_ref`, and (c) for model verifiers, supplies a **measured** `error_correlation` vs the actor lineage (§7.3) — not a placeholder. **TODO:** wire the backtest/eval pipeline that produces `error_correlation`, and emit `qualification_ref`, which the decision record does not carry today (§2).
 3. **Aggregation store (`window_effect_ct`).** Requires a real windowed counter keyed per principal/session/effect-class (§6.4). **TODO:** define the window policy (time vs count) and the effect-class key.
-4. **`residual_error_bound` (Bucket B).** Must come from a backtest report for the claim class, re-measured on any model/prompt/tool/policy change (§5). The emitter passes it through and emits `null` for pure Bucket A. **TODO:** integrate the backtest-report lookup.
+4. **`residual_error_bound` (Bucket B).** Must come from a backtest report for the claim class, re-measured on any model/prompt/tool/policy change (§5). The emitter passes it through and emits `null` for pure Bucket A. **TODO:** integrate the backtest-report lookup. `evidence_refs` is not yet emitted, so a numeric bound at CT>=2 fires `RES-001` (`conformance/laas/laas.rego:248-253`).
 5. **Enforcement-plane attestations.** `bundle_signed` and `out_of_process` are currently config defaults. In production they must be **verified at gate startup** (signature check on the pinned bundle; proof the gate process is outside the actor's reach), not asserted. **TODO:** add the bundle-signature verifier and the out-of-process self-attestation.
 6. **Trace chaining.** `actor_chain_prev_hash` / `merkle_anchor` are passed through. A real sink must compute the per-actor hash-chain head and the periodic Merkle anchor, and persist to an append-only store the actor cannot rewrite (§7.4/§7.7). **TODO:** implement the chained-trace writer; set `append_only` from the sink's actual mode, not a default.
 7. **Human-approval queue & standing envelopes.** `human_approval.approved` is a single bool today. §6.3 allows pre-authorized envelopes + batched approval; the harness must resolve "is this in-envelope?" before deciding approval. **TODO:** integrate the AOE/standing-envelope check.

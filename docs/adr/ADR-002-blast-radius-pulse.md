@@ -4,6 +4,52 @@ status: Proposed
 date: 2026-05-22
 ---
 
+> **Erratum (2026-09-29).** This ADR was written for the `kellerai-oss-template`
+> repository and carried into this one, so "the repository" below means that template,
+> and several references name files that do not exist here. This repository still calls
+> that template's reusable conformance workflow (`.github/workflows/ci.yml:37`). The
+> decision text below is unchanged; this note only records where each reference now
+> points. It does not assert that the template line ranges cited below still hold.
+>
+> - `conformance/conformance.rego` (including its `:264-279` and `:246-257` line cites),
+>   `conformance/data.json` (including its line and key cites), `scripts/bootstrap.sh`,
+>   and `template/`: external; they exist in `kellerai-oss-template`, not here.
+>   `template/_files/` and `template/**` name paths under that template's `template/`.
+> - `affects_manifest_complete` and `trust_dial_wired`: deny families of the template's
+>   `conformance/conformance.rego`; neither is defined as a rule in this repository.
+>   `affects_manifest_complete` appears here only inside `reason` strings of
+>   `conformance/affects.json:176`, `conformance/affects.json:189`, and
+>   `conformance/affects.json:224`.
+> - `.github/workflows/conformance.yml:18-21` (the `workflow_call` input description):
+>   refers to the template's workflow of the same name. In this repository,
+>   `.github/workflows/conformance.yml:18` begins the unrelated `agentic-gates:` job.
+> - `.github/labeler.yml`: belongs to rejected Option B; it exists in neither repository.
+> - `blast-radius-pulse-spec.md` (including §7 and §9) and `affects-manifest-seed.json`:
+>   external design documents; they exist in neither repository. The manifest this
+>   decision adopts is `conformance/affects.json`.
+> - `the-trust-dial.md`: the external KellerAI whitepaper *The Trust Dial: Earned
+>   Autonomy for Self-Improving AI Primitives* (2026-05-21), as in ADR-001; its line cite
+>   refers to that document.
+> - `docs/adoption-guide.md`: external; it exists in `kellerai-oss-template`, not here.
+> - `audit/decision-trace.jsonl:1` (the refreeze precedent): refers to the template's
+>   trace. In this repository, `audit/decision-trace.jsonl:1` is a trust-dial `outcome`
+>   record dated 2026-06-26, not a policy-integrity refreeze.
+> - BR-001: not present in this repository's manifest, which defines BR-002 through
+>   BR-015 (`conformance/affects.json:15` to `conformance/affects.json:217`). BR-006 and
+>   BR-008 are at `conformance/affects.json:74` and `conformance/affects.json:112`.
+> - The ADR-001 cite in the first Context paragraph (its `:46-55` line cite): ADR-001's
+>   Decision section, now at `docs/adr/ADR-001-trust-dial-dependabot.md:73-82` after
+>   ADR-001's own erratum.
+> - Gap IDs G-05, G-08 through G-12, the ten-step build checklist, and open questions
+>   OQ-1..OQ-5: not defined in this repository.
+> - Present in this repository: `conformance/affects.json`,
+>   `conformance/blast_radius.rego` (package `kellerai.oss.blast_radius`,
+>   `conformance/blast_radius.rego:15`), `scripts/pulse.sh` (`--predict` at
+>   `scripts/pulse.sh:61`), `.github/workflows/blast-radius-pulse.yml` (which runs
+>   `scripts/pulse.sh` at `.github/workflows/blast-radius-pulse.yml:60`; that script
+>   evaluates the verdict with `opa eval` at `scripts/pulse.sh:242`), and
+>   `audit/blast-radius.jsonl`.
+
 ## Context
 
 The repository is the conformance authority for the kellerai OSS family.

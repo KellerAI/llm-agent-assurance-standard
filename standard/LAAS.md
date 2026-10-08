@@ -5,9 +5,9 @@
 **Enforcing policy:** [`conformance/laas/laas.rego`](../conformance/laas/laas.rego) — package `kellerai.laas.actions`
 **Rationale / design record:** `docs/laas/proposal-v1.1.md`
 
-> Like `OSS-PUBLICATION-STANDARD.md`, this prose is the canonical reference and `data.json`
-> is derived from it. Where this document and `data.json` disagree, that is a bug: open a
-> `policy-bug` issue. Prose cannot block a bad action — the Rego policy does.
+> As in `OSS-PUBLICATION-STANDARD.md` (a document external to this repository), this prose is
+> the canonical reference and `data.json` is derived from it. Where this document and `data.json` disagree, that is a bug: open an
+> issue with the `action defect` form (`.github/ISSUE_TEMPLATE/action-bug.yml`). Prose cannot block a bad action — the Rego policy does.
 
 ---
 
