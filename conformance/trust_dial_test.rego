@@ -210,6 +210,16 @@ test_change_surface_empty_array_downgrades_to_hold if {
 	trust_dial.verdict == "hold-for-review" with input as inp
 }
 
+# Two or more non-allowlisted changed files must not trigger eval_conflict_error
+# on _first_offending_file (regression: it must be single-valued). Rationale
+# must resolve deterministically to the lexicographically-first offending path.
+test_change_surface_multiple_offenders_deterministic_rationale if {
+	inp := object.union(_input("Assisted", "github-actions", "version-update:semver-patch", 0), {"changed_files": ["docs/x.md", "CHANGELOG.md"]})
+	d := trust_dial.decision with input as inp
+	d.verdict == "block"
+	contains(d.rationale, "CHANGELOG.md")
+}
+
 # Rationale field includes change-surface decision for safe case.
 test_rationale_includes_change_surface_safe if {
 	inp := object.union(_input("Assisted", "github-actions", "version-update:semver-patch", 0), {"changed_files": [".github/workflows/ci.yml"]})

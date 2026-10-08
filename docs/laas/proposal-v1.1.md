@@ -1,7 +1,8 @@
 # LLM-Agent Assurance Standard (LAAS) — Proposal v1.1
 
 **Working title:** LAAS — *LLM-Agent Assurance Standard*. **Disambiguation:** unrelated to "Logging/License-as-a-Service." Formal-name shortlist for ratification (finding 1.7): **ALAS** (Agentic LLM Assurance Standard), **A²LS**, **AgentAL**. "LAAS" retained as the working acronym below.
-**Supersedes:** v1.0 (`LAAS_first_proposal.md`, 2026-06-18), kept intact for diff.
+**Supersedes:** v1.0 (`LAAS_first_proposal.md`, 2026-06-18), a document external to this repository; it is not included here.
+**Document status:** design rationale and historical record, not normative. The normative v1.1 text is [`standard/LAAS.md`](../../standard/LAAS.md), which names this file as its rationale and design record (`standard/LAAS.md:6`). The v1.1 standard differs from this proposal in places; where they differ, `standard/LAAS.md` governs.
 **Date:** 2026-06-18
 **Status of claims:** confidence-flagged inline; ledger at the end. No standards body has endorsed or is known to be considering LAAS; the adoption section describes *options*, not commitments.
 

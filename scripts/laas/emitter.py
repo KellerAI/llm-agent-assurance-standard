@@ -83,8 +83,8 @@ class GateContext:
     verified, and whether this gate runs out-of-process (§7.7).
     """
 
-    bundle_id: str = "laas-fin-1.1.0"
-    bundle_version: str = "laas-fin-1.1.0"
+    bundle_id: str = "laas-fin-1.1.1"
+    bundle_version: str = "laas-fin-1.1.1"
     bundle_signed: bool = True
     out_of_process: bool = True
     lattice: dict = field(default_factory=lambda: dict(_DEFAULT_LATTICE))
@@ -96,8 +96,8 @@ class GateContext:
         with open(data_json_path, encoding="utf-8") as fh:
             cfg = json.load(fh)["laas"]
         kwargs: dict[str, Any] = {
-            "bundle_id": cfg.get("bundle_id", "laas-fin-1.1.0"),
-            "bundle_version": cfg.get("bundle_id", "laas-fin-1.1.0"),
+            "bundle_id": cfg.get("bundle_id", "laas-fin-1.1.1"),
+            "bundle_version": cfg.get("bundle_id", "laas-fin-1.1.1"),
             "lattice": cfg["tier_lattice"],
             "ct_when_undetermined": cfg.get(
                 "default_ct_when_undetermined", _DEFAULT_CT_WHEN_UNDETERMINED
@@ -175,17 +175,25 @@ class TraceAnchor:
 def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
     """Return (gate_derived_ct, resolved_surface_keys).
 
-    Mirrors laas.rego's `expected_ct` exactly so the gate's `assigned_ct` is
-    never below the policy's lattice-derived tier (avoids TIER-001):
+    Matches laas.rego's `expected_ct` (laas.rego:30-39) for a boolean
+    `external_effect`, so the gate's `assigned_ct` is never below the
+    policy's lattice-derived tier (avoids TIER-001):
 
-        - no external effect            -> CT0
+        - external_effect False         -> CT0
         - external effect, keys known   -> max(rev, scope, consequence)
         - any axis undetermined         -> ct_when_undetermined (4)
+
+    Callers must pass a real bool for `external_effect`. For a non-boolean
+    value this function diverges from the policy: a falsy one (e.g. None)
+    returns CT0 while the policy returns CT4 (laas.rego:30), and a truthy
+    one takes the lattice path while the policy also returns CT4. The
+    policy mismatch is tracked as a follow-up; fail-closed emitter
+    behaviour is not implemented here.
     """
     if not surface.external_effect:
         return 0, {"external_effect": False}
 
-    resolved: dict[str, str] = {"external_effect": True}
+    resolved: dict[str, Any] = {"external_effect": True}
     axis_cts: list[int] = []
     undetermined = False
     for axis in ("reversibility", "scope", "consequence"):
