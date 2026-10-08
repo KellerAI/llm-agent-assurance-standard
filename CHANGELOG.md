@@ -44,7 +44,7 @@ and this project adheres to
   - The NIST and SR invalid-`assigned_ct` text now distinguishes the gate-tier fallback (`_gate_ct = expected_ct`) from `effective_ct = max([_gate_ct, _agg_ct])` (`laas.rego:48`).
   - The CT4 model-verifier (`LAAS-OBL-IND-001`) and residual/evidence (`LAAS-OBL-RES-001`) claims now carry the non-blocked qualification.
   - Evidence handling is described as a shape check (a non-empty array of non-empty strings) with no ID binding.
-  - Rule claims now state each rule's guards (tier floor, `not blocked`, verifier `pass`, numeric bound), and `LAAS-OBL-IRR-001` is separated from the IND-001 and VQ-001 checks.
+  - Corrected rule claims now state the guards of the rules they cite (tier floor, `not blocked`, verifier `pass`, numeric bound). In `docs/laas/backtest.md`, the `LAAS-OBL-RES-001` missing-evidence and missing-bound paths now require a record that is `not blocked` with a numeric `residual_tolerance` (`laas.rego:248-260`). Also, `LAAS-OBL-IRR-001` is separated from the IND-001 and VQ-001 checks.
   - The chaining (`LAAS-OBL-TRC-001`), version pinning (`LAAS-OBL-ENF-001`), escalation, verifier-control independence, and vendor-trust (`LAAS-OBL-VEN-001`) requirements stay normative, but are no longer described as implemented by the cited rules.
   - Input claims now state that the policy reads a caller-supplied window tier, yields CT0 for an undetermined axis when `external_effect` is explicitly `false`, and checks the recorded `out_of_process`, `append_only`, and `bundle_signed` flags rather than the trust boundary or sink they describe.
   - No policy behaviour change: `conformance/**/*.rego` and `conformance/**/*.json` are unchanged.
