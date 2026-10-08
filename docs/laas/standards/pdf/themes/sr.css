@@ -1,11 +1,11 @@
-/* Federal-Reserve SR-letter-style emulation for LAAS: UNOFFICIAL draft rendering.
+/* SR-letter-format theme for the KellerAI LAAS rendering: unofficial draft.
    No Federal Reserve logos, seals, or trademarks are used. */
 
 @page {
   size: Letter;
   margin: 24mm 22mm 22mm 22mm;
   @top-right {
-    content: "SR 26-XX (Unofficial Draft)";
+    content: "KellerAI LAAS 1.1 · SR-letter-format rendering · Draft";
     font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
     font-size: 8pt;
     letter-spacing: 0.02em;
@@ -13,7 +13,7 @@
   }
   @bottom-center { content: counter(page); font-size: 9pt; color: #1a1a1a; }
   @bottom-left {
-    content: "Unofficial draft: not an official Federal Reserve supervisory letter";
+    content: "Unofficial: not a publication of the Board of Governors of the Federal Reserve System.";
     font-size: 7pt;
     color: #888;
   }
@@ -38,37 +38,15 @@
   font-family: "Tinos", "Times New Roman", "STIX Two Text", serif;
 }
 
-.sr-cover .sr-letterhead {
-  text-align: center;
-}
-.sr-cover .sr-org {
-  font-size: 12pt;
+.sr-cover .sr-publisher {
+  font-size: 11pt;
   font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #1a1a1a;
-}
-.sr-cover .sr-city {
-  font-size: 9.5pt;
-  color: #1a1a1a;
-  margin-top: 1.5mm;
-}
-.sr-cover .sr-division {
-  font-size: 10pt;
-  text-transform: uppercase;
-  letter-spacing: 0.10em;
-  color: #1a1a1a;
-  margin-top: 2.5mm;
+  color: #14213d;
 }
 .sr-cover .sr-rule {
   border-top: 1px solid #1a1a1a;
   width: 100%;
   margin: 6mm 0;
-}
-.sr-cover .sr-desigrow {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
 }
 .sr-cover .sr-desig {
   font-size: 11pt;
@@ -76,31 +54,23 @@
   color: #1a1a1a;
 }
 .sr-cover .sr-date {
-  font-size: 11pt;
+  font-size: 10pt;
   color: #1a1a1a;
+  margin-top: 1.5mm;
 }
-.sr-cover .sr-addressee {
-  font-size: 9.5pt;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #1a1a1a;
-  line-height: 1.5;
-  margin-top: 8mm;
-}
-.sr-cover .sr-subject {
+.sr-cover .sr-title {
   font-size: 13pt;
   line-height: 1.35;
   color: #1a1a1a;
-  margin-top: 6mm;
+  margin-top: 8mm;
 }
-.sr-cover .sr-applicability {
+.sr-cover .sr-scope {
   font-size: 10pt;
   font-style: italic;
   line-height: 1.4;
   color: #1a1a1a;
   margin-top: 4mm;
 }
-.sr-cover .sr-label { font-weight: bold; font-style: normal; }
 .sr-cover .cover-spacer { flex: 1; }
 .sr-cover .cover-notice {
   border-top: 1px solid #999;

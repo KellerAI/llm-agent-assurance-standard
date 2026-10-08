@@ -14,7 +14,7 @@ This file is the Tier-1 entry point. Deeper detail lives under [`docs/agents/`](
   verification floor rules. Prose is authoritative; `conformance/laas/data.json` is derived from it.
 - The **enforcing OPA policy**: [`conformance/laas/laas.rego`](conformance/laas/laas.rego)
   — package `kellerai.laas.actions`; driven by [`conformance/laas/data.json`](conformance/laas/data.json).
-- **Standard-body renderings**: IEEE, ISO, NIST, and SR formats under
+- **KellerAI renderings**: LAAS in IEEE-, ISO-, NIST-, and SR-letter formats under
   [`docs/laas/standards/`](docs/laas/standards/); PDF build pipeline at
   [`docs/laas/standards/pdf/`](docs/laas/standards/pdf/).
 - **Reference tooling**: [`scripts/laas/`](scripts/laas/) — decision-record emitter
@@ -54,7 +54,7 @@ Load the file that answers your question. Do not load the whole tree.
 | LAAS obligation bundle + tier lattice | `conformance/laas/data.json` |
 | LAAS Rego policy source | `conformance/laas/laas.rego` |
 | LAAS test suite | `conformance/laas/laas_test.rego` |
-| Standard-body renderings (IEEE/ISO/NIST/SR) | `docs/laas/standards/` |
+| KellerAI renderings (IEEE-, ISO-, NIST-, SR-letter-format) | `docs/laas/standards/` |
 | PDF build pipeline | `docs/laas/standards/pdf/README.md` |
 | Decision-record tooling | `scripts/laas/` |
 | Design rationale / proposal | `docs/laas/proposal-v1.1.md` |

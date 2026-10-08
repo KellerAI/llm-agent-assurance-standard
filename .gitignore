@@ -27,3 +27,6 @@ dist/
 
 # Generated scan artifact (repo-structure.json from scripts/scan-repo-structure.sh) — never shipped
 repo-structure.json
+
+# Local regal advisory reports (contain machine-local paths) — never shipped
+.cartographer/

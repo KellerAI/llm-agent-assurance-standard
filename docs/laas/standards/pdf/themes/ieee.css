@@ -1,11 +1,11 @@
-/* IEEE-Std-style emulation for LAAS: UNOFFICIAL draft rendering.
-   No IEEE logos, seals, or trademarks are used. */
+/* IEEE-format theme for the KellerAI LAAS rendering: unofficial draft.
+   Published by KellerAI. No IEEE logos, seals, or trademarks are used. */
 
 @page {
   size: Letter;
   margin: 22mm 20mm 20mm 20mm;
   @top-right {
-    content: "IEEE P-XXXX/D1 (Unofficial Draft)";
+    content: "KellerAI LAAS 1.1 · IEEE-format rendering · Draft";
     font-family: "STIX Two Text", "Tinos", "Times New Roman", serif;
     font-size: 8pt;
     color: #555;
@@ -17,7 +17,7 @@
     color: #111;
   }
   @bottom-left {
-    content: "Unofficial draft: not an approved IEEE standard";
+    content: "Unofficial: not a publication of the IEEE.";
     font-size: 7pt;
     color: #888;
   }

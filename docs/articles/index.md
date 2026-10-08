@@ -5,8 +5,8 @@
 - **Article count:** 25
 - **Dates:** Publication dates from the kellerai.blog sitemap `<lastmod>`, cross-validated against
   each article's month/year dateline (25/25 agreement).
-- **Renderings:** IEEE = IEEE P-XXXX/D1 draft standard; NIST = NIST SP 800-style control profile;
-  ISO = ISO/IEC Directives Part 2 draft; SR = Federal Reserve SR 11-7/SR 26-2 supervisory guidance.
+- **Renderings:** KellerAI renderings of LAAS in IEEE-, ISO-, NIST-, and SR-letter formats,
+  published by KellerAI and not issued, approved, or endorsed by any of those bodies.
 
 ---
 

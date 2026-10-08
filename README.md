@@ -30,9 +30,9 @@ It is a **standard of care**, not a correctness guarantee.
 - [`conformance/laas/`](conformance/laas/) — OPA/Rego policy (`package kellerai.laas.actions`)
   that machine-checks gate-produced decision records against the standard.
   Includes the obligation bundle, a 44-case test suite, and a bundled CT4-blocked example.
-- [`docs/laas/standards/`](docs/laas/standards/) — four standards-body-styled renderings of LAAS:
-  IEEE, NIST, ISO, and Federal Reserve SR-letter (SR 11-7 / SR 26-2) formats.
-  A PDF build pipeline with house-styled covers and CSS themes lives under
+- [`docs/laas/standards/`](docs/laas/standards/) — four KellerAI renderings of LAAS in IEEE-, ISO-,
+  NIST-, and SR-letter formats (the last after SR 11-7 / SR 26-2), none issued by those bodies.
+  A PDF build pipeline with KellerAI covers and per-format CSS themes lives under
   [`docs/laas/standards/pdf/`](docs/laas/standards/pdf/).
 - [`scripts/laas/`](scripts/laas/) — reference tooling: gate-side action emitter (`emitter.py`),
   Bucket-B backtest harness for escape-rate measurement (`backtest.py`), OSI-to-effect-surface
