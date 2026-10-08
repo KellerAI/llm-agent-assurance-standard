@@ -14,7 +14,7 @@ permissions:
 # external/* naming is validated separately by validate-branch-name.yml.
 jobs:
   validate-branch-tier:
-    name: "Branch tier (${{ github.base_ref }} <- ${{ github.head_ref }})"
+    name: Branch tier
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
