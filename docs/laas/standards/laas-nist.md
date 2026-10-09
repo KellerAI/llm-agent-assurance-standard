@@ -5,7 +5,7 @@
 **Designation:** LAAS-NIST-PROFILE-DRAFT-1.1
 **Document type:** Control profile (NIST AI RMF crosswalk and SP 800-style control catalog)
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Status:** Draft, not approved; all thresholds cite `conformance/laas/data.json`
 
@@ -152,10 +152,10 @@ _agg_ct := _norm_agg_ct
 ```
 
 `_norm_agg_ct` reads `input.aggregate.window_effect_ct` (default 0) and normalizes integral floats
-(`conformance/laas/laas.rego:310-315`).
+(`conformance/laas/laas.rego:311-316`).
 
 `_gate_ct` is `input.gate.assigned_ct` when it is an integer in 0..4, otherwise the
-lattice-derived `expected_ct` (`conformance/laas/laas.rego:265-276`).
+lattice-derived `expected_ct` (`conformance/laas/laas.rego:266-277`).
 
 ### 2.3 Effect Surface and the Authorized Operating Envelope
 
@@ -268,7 +268,7 @@ using the tier lattice defined in `conformance/laas/data.json → tier_lattice`.
 The gate-assigned CT shall never be set below the lattice-derived value.
 The gate shall record `assigned_ct` as an integer in 0..4; an absent or invalid value
 constitutes a TIER-001 violation, and the lattice-derived CT is enforced in its place
-(`conformance/laas/laas.rego:262-283`).
+(`conformance/laas/laas.rego:263-284`).
 The effective CT shall be the maximum of the gate CT and the cumulative window CT.
 
 #### Discussion
@@ -284,7 +284,7 @@ default unless `external_effect` is explicitly `false` (CT0) or is `true` with a
 resolvable in the tier lattice (`conformance/laas/laas.rego:30-45`); an explicit `false`
 therefore yields CT0 even when the axes are undetermined.
 
-The Rego predicates for this control (`conformance/laas/laas.rego:99-104`, `:278-283`):
+The Rego predicates for this control (`conformance/laas/laas.rego:99-104`, `:279-284`):
 
 ```rego
 violations contains obl("LAAS-OBL-TIER-001", ...) if {
@@ -309,7 +309,7 @@ violations contains obl("LAAS-OBL-TIER-001", ...) if {
    below `expected_ct`.
 6. Verify that an absent, non-integer, or out-of-range (outside 0..4) `assigned_ct` raises
    `LAAS-OBL-TIER-001` and the gate tier `_gate_ct` falls back to `expected_ct`
-   (`conformance/laas/laas.rego:274-283`); `effective_ct` remains `max([_gate_ct, _agg_ct])`,
+   (`conformance/laas/laas.rego:275-284`); `effective_ct` remains `max([_gate_ct, _agg_ct])`,
    so a higher window tier still determines it (`conformance/laas/laas.rego:48`).
 
 ---
@@ -334,8 +334,8 @@ This control implements the warning tier of the Zero-Trust-on-classification inv
 Self-reports are recorded for diagnostic and audit purposes (a pattern of agents persistently
 under-reporting their tier is a governance signal), but they cannot lower the operative tier.
 This is a `warning`-severity obligation; it does not block the action but does appear in
-the `summary.warnings` count (`conformance/laas/laas.rego:107-112`, `:86-92`, `:204-207`,
-`:215-222`; `conformance/laas/data.json:21`).
+the `summary.warnings` count (`conformance/laas/laas.rego:107-112`, `:86-92`, `:205-208`,
+`:216-223`; `conformance/laas/data.json:21`).
 
 #### Assessment / Verification Objectives
 
@@ -487,7 +487,7 @@ N individually sub-threshold actions can compose into a high-CT aggregate effect
 structuring analogous to transaction structuring in financial regulation
 (`docs/laas/proposal-v1.1.md §6.4`).
 The Rego policy computes `_agg_ct` from `input.aggregate.window_effect_ct` and takes
-the maximum of the gate CT and `_agg_ct` (`conformance/laas/laas.rego:48-50`, `:310-315`):
+the maximum of the gate CT and `_agg_ct` (`conformance/laas/laas.rego:48-50`, `:311-316`):
 
 ```rego
 effective_ct := max([_gate_ct, _agg_ct])
@@ -504,7 +504,7 @@ _norm_agg_ct := to_number(format_int(_agg_raw, 10)) if {
 An integral-float window ct (for example `4.0`) is normalized to an integer (ruling R2b).
 
 `_gate_ct` is `input.gate.assigned_ct` when it is an integer in 0..4, otherwise `expected_ct`
-(`conformance/laas/laas.rego:274-276`).
+(`conformance/laas/laas.rego:275-277`).
 
 The AGG-001 violation fires when a valid `assigned_ct` < `_agg_ct`
 (`conformance/laas/laas.rego:131-136`), preventing an operator from assigning a tier that
@@ -674,7 +674,8 @@ evidence is required wherever rollback substitutes for pre-commit verification
 1. Verify that every decision-trace record with `effective_ct >= 3` and
    `action_blocked == false` has `verifier.verdict == "pass"`.
 2. Verify that `trigger_matched == true` implies either `verdict == "pass"` (with independent,
-   qualified verifier, human approval at CT4, and residual ≤ tolerance) or
+   qualified verifier, human approval at CT4, and residual ≤ tolerance or, at a zero tolerance,
+   the deterministic or human gate of `standard/LAAS.md §4.3`) or
    `action_blocked == true`: the LAAS conformance predicate
    (`docs/laas/proposal-v1.1.md §7.2`).
 3. Submit a test CT3 action without a verifier; confirm the gate blocks it and emits
@@ -728,7 +729,7 @@ independence_ok if {
 ```
 
 At CT4 a separate rule fires IND-001 for any passed model verifier on a non-blocked action
-(`conformance/laas/laas.rego:225-230`).
+(`conformance/laas/laas.rego:226-231`).
 
 #### Assessment / Verification Objectives
 
@@ -743,7 +744,7 @@ At CT4 a separate rule fires IND-001 for any passed model verifier on a non-bloc
    actor or has `error_correlation > 0.2`.
 5. Confirm that at CT4, a human verifier is present in addition to any automated verifier.
 6. Verify the IND-001 violation fires at CT4 for any passing model verifier on a non-blocked
-   action (`conformance/laas/laas.rego:225-230`).
+   action (`conformance/laas/laas.rego:226-231`).
 
 ---
 
@@ -816,6 +817,9 @@ adversarially-stressed set with a stated confidence interval, and shall re-measu
 model, prompt, tool, or policy change.
 Conformance requires measured escape rate ≤ declared tolerance at every CT, with traceable
 evidence referenced in the decision trace.
+At a zero tolerance, the residual clause is instead satisfied by a passing deterministic verifier
+(Bucket A) or by the human gate: a human verifier whose verdict is pass, plus recorded human
+approval (`standard/LAAS.md §4.3`).
 
 Declared tolerances (source: `conformance/laas/data.json → escape_rate_tolerance_by_ct`):
 
@@ -823,7 +827,11 @@ Declared tolerances (source: `conformance/laas/data.json → escape_rate_toleran
 |----|---------------------|
 | 2 | 0.02 (2 %) |
 | 3 | 0.005 (0.5 %) |
-| 4 | 0.0 (0 %) |
+| 4 | 0.0 (0 %); see the zero-tolerance note below |
+
+No finite-sample backtest can demonstrate a tolerance of 0, so at a zero tolerance the
+over-tolerance comparison is skipped for a Bucket-A or human-gated action, and the recorded bound
+is evidence, not a pass condition (`conformance/laas/laas.rego:318-346`).
 
 #### Discussion
 
@@ -831,21 +839,24 @@ The escape rate is the rate at which a wrong output passes every applicable chec
 upon.
 Conformance asserts `measured_escape_rate ≤ tolerance`, not correctness
 (`standard/LAAS.md §4.3`, `docs/laas/proposal-v1.1.md §5`).
-RES-001 fires when the bound exceeds the tolerance (`conformance/laas/laas.rego:185-193`);
-when a non-blocked action supplies a numeric bound (`conformance/laas/laas.rego:232`) at a tier with a defined tolerance (CT ≥ 2 in the shipped
+RES-001 fires when the bound exceeds the tolerance (`conformance/laas/laas.rego:185-194`),
+except at a zero tolerance for a Bucket-A or human-gated action (`conformance/laas/laas.rego:318-356`);
+when a non-blocked action supplies a numeric bound (`conformance/laas/laas.rego:233`) at a tier with a defined tolerance (CT ≥ 2 in the shipped
 `conformance/laas/data.json:15`; `conformance/laas/laas.rego:53-55`) and `evidence_refs` is not a non-empty array of
-non-empty strings (`conformance/laas/laas.rego:234-241`, `conformance/laas/laas.rego:248-253`);
+non-empty strings (`conformance/laas/laas.rego:235-242`, `conformance/laas/laas.rego:249-254`);
 and when a non-blocked CT ≥ 2 action that is not Bucket A, meaning no passed deterministic
-verifier (`conformance/laas/laas.rego:243-246`), supplies no bound (`conformance/laas/laas.rego:255-260`).
+verifier (`conformance/laas/laas.rego:244-247`), supplies no bound (`conformance/laas/laas.rego:256-261`).
+At a zero tolerance, RES-001 also fires when a non-blocked action outside Bucket A records a bound
+of exactly 0, which is not a finite-sample backtest bound (`conformance/laas/laas.rego:348-356`).
 RES-001 also fires, at any CT and whether or not the action is blocked, when a
 `residual_error_bound` is supplied that is not `null` and not a number >= 0; `null` is
 equivalent to absent, and an invalid bound is never compared to the tolerance
-(`conformance/laas/laas.rego:285-300`).
+(`conformance/laas/laas.rego:286-301`).
 
 If a higher-is-better figure is needed, `integrity = 1 - escape_rate`:
-at CT3, `integrity ≥ 0.995`; at CT4, `integrity = 1.0` (Bucket B contributes zero
-undetected escapes). At CT4 a non-blocked action requires a deterministic or human verifier,
-since a passing model verifier fires IND-001 (`conformance/laas/laas.rego:225-230`), and human
+at CT3, `integrity ≥ 0.995`. At CT4 the zero tolerance is met by the deterministic or human gate,
+not by a measured bound of 0 (`standard/LAAS.md §4.3`). At CT4 a non-blocked action requires a deterministic or human verifier,
+since a passing model verifier fires IND-001 (`conformance/laas/laas.rego:226-231`), and human
 approval under HUM-001 (`conformance/laas/laas.rego:178-182`).
 
 Backtesting methodology requirements (`docs/laas/proposal-v1.1.md §5`):
@@ -861,16 +872,20 @@ model training and fine-tuning; the evaluation set is independently audited
 2. Obtain the most recent backtest report; confirm it was produced after the last
    model/prompt/tool/policy change.
 3. Verify that `residual_error_bound ≤ residual_tolerance` in every decision-trace record
-   where `residual_error_bound` is non-null.
+   where `residual_error_bound` is non-null, except at a zero tolerance for a Bucket-A or
+   human-gated action (`conformance/laas/laas.rego:331-346`).
 4. Confirm the evaluation set was adversarially stressed and independently audited.
-5. Verify that the RES-001 violation fires when `residual_error_bound > residual_tolerance`.
+5. Verify that the RES-001 violation fires when `residual_error_bound > residual_tolerance`,
+   except at a zero tolerance for a Bucket-A or human-gated action.
 6. Verify that every non-blocked CT ≥ 2 record with a numeric `residual_error_bound` carries
    non-empty `evidence_refs`, and every non-blocked CT ≥ 2 record without a passed deterministic
-   verifier carries a numeric bound; RES-001 fires otherwise (`conformance/laas/laas.rego:248-260`).
+   verifier carries a numeric bound; RES-001 fires otherwise (`conformance/laas/laas.rego:249-261`).
    A non-null, non-numeric bound is also caught by the invalid-bound check in step 7.
 7. Verify that a record whose `residual_error_bound` is present, not `null`, and not a
-   number >= 0 raises RES-001 at any CT, blocked or not (`conformance/laas/laas.rego:296-300`).
-8. Confirm re-measurement is triggered (and evidence is refreshed in the trace) upon any
+   number >= 0 raises RES-001 at any CT, blocked or not (`conformance/laas/laas.rego:297-301`).
+8. Verify that, at a zero tolerance, a non-blocked record outside Bucket A whose
+   `residual_error_bound` is exactly 0 raises RES-001 (`conformance/laas/laas.rego:348-356`).
+9. Confirm re-measurement is triggered (and evidence is refreshed in the trace) upon any
    model, prompt, tool, or policy change.
 
 ---
@@ -983,7 +998,7 @@ The agent's self-reported tier is irrelevant; the gate's derivation stands (LAAS
 
 The effective CT is `effective_ct := max([_gate_ct, _agg_ct])`
 (`conformance/laas/laas.rego:48`), where `_gate_ct` is the gate-assigned CT or, if absent or
-not an integer in 0..4, the lattice `expected_ct` (`conformance/laas/laas.rego:274-276`).
+not an integer in 0..4, the lattice `expected_ct` (`conformance/laas/laas.rego:275-277`).
 The cumulative window prevents structuring: N individually low-CT actions that compose into
 a high-CT aggregate trigger re-tiering of subsequent actions (LAAS-AGG-1).
 
@@ -1011,6 +1026,8 @@ The measurement protocol (`docs/laas/proposal-v1.1.md §5`):
 
 The escape rate is the governing metric for Bucket B.
 Conformance asserts `measured_escape_rate ≤ tolerance` with traceable evidence.
+At a zero tolerance (CT4 by default) no finite-sample backtest can demonstrate the bound, so the
+residual clause is satisfied by the deterministic or human gate instead (`standard/LAAS.md §4.3`).
 LAAS is a standard of care, not a correctness guarantee (`standard/LAAS.md §1`).
 
 ### 5.4 Obligation Lifecycle and Conflict Resolution
@@ -1121,7 +1138,7 @@ checks ran by the right party with evidence, not that no error can occur
 ### Normative References
 
 - `standard/LAAS.md`: LLM-Agent Assurance Standard v1.1 (normative prose)
-- `conformance/laas/data.json`: LAAS bundle `laas-fin-1.1.2` (machine source of truth for
+- `conformance/laas/data.json`: LAAS bundle `laas-fin-2.0.0` (machine source of truth for
   thresholds and obligation registry)
 - `conformance/laas/laas.rego`: OPA policy, package `kellerai.laas.actions` (enforcing policy)
 

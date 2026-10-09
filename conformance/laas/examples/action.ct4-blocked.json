@@ -14,7 +14,7 @@
   },
   "gate": {
     "assigned_ct": 4,
-    "bundle_version": "laas-fin-1.1.2",
+    "bundle_version": "laas-fin-2.0.0",
     "bundle_signed": true,
     "out_of_process": true
   },

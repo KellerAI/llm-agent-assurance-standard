@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-CORE-DRAFT-1.0
 **Document type:** Base controlled-language profile (informative to LAAS, normative to profiles that adopt it)
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Status:** Draft, not approved
 
@@ -130,17 +130,17 @@ A bound without its sample count has no measurement basis under `STE-C-10`.
 A binomial upper bound over a finite sample is greater than `0`
 (`docs/laas/backtest.md:116`).
 A residual error bound of `0.0` for an open-world claim class is therefore never a measured
-value, at any tier.
+value, at any tier; the policy rejects it at a zero tolerance (`conformance/laas/laas.rego:348-356`).
 At CT4 the tolerance is `0` (`conformance/laas/data.json:15`), so the backtest verdict at CT4
 is `indeterminate` with the disposition `requires_deterministic_or_human_gate`.
 The control for the open-world claim class at CT4 is the human approver
-(`LAAS-OBL-HUM-001`).
+(`LAAS-OBL-HUM-001`, `standard/LAAS.md:108-114`).
 
 The trace field `residual_error_bound` follows the gate verifier.
 When the gate verifier is deterministic and returns `pass`, the gate treats the action as
-Bucket A and does not require the field (`conformance/laas/laas.rego:243-246`, `:255-260`).
+Bucket A and does not require the field (`conformance/laas/laas.rego:244-247`, `:256-261`).
 Otherwise the field carries the open-world bound, with its evidence identifier in
-`evidence_refs` (`conformance/laas/laas.rego:248-253`).
+`evidence_refs` (`conformance/laas/laas.rego:249-254`).
 
 A deterministic verifier returns `pass`, `fail`, or `indeterminate`.
 It does not return `abstain`, which is a confidence notion
@@ -180,8 +180,8 @@ CT3 or CT4 record, and its escape rate is measured like any other open-world cla
 
 Controlled-language conformance is a **precondition on the record**, not a new obligation.
 The gate already distinguishes blocking findings from reported ones:
-`conformance/laas/laas.rego:199` collects `error_violations` and
-`conformance/laas/laas.rego:204` collects `warning_violations`.
+`conformance/laas/laas.rego:200` collects `error_violations` and
+`conformance/laas/laas.rego:205` collects `warning_violations`.
 A language finding is recommended to enter that same structure.
 
 | Effective CT | Required level | Gate response to non-conformance |

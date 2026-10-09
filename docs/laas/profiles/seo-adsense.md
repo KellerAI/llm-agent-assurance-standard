@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-ADV-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/seo-adsense.json`](glossary/seo-adsense.json)
@@ -400,11 +400,11 @@ Evaluating per item is how a CT4 aggregate gets four thousand CT2 warnings and n
 
 A language finding is a finding about the record, not about the action, and it enters the
 same structure the policy already uses to separate `error_violations`
-(`conformance/laas/laas.rego:199`) from `warning_violations`
-(`conformance/laas/laas.rego:204`).
+(`conformance/laas/laas.rego:200`) from `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 The checker must not rewrite the record (see [`ste-core.md`](ste-core.md) §5).
-A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:108-111`).
+A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:119-122`).
 
 ## 6. Worked example
 
@@ -504,7 +504,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-ROBOTS-MATCH` runs before the file is deployed, not after. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic path matcher is a different *kind* of checker (`standard/LAAS.md:87`). A second language model reviewing the diff would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for path-prefix matching, a negative-test suite of known over-matching patterns it must catch, and a change-controlled version in the trace. |
-| `LAAS-OBL-RES-001` | `VRF-ROBOTS-MATCH` returned `fail`, so the action is not Bucket A to the gate (`conformance/laas/laas.rego:243-246`) and the record carries the open-world bound. The bound `0.004004` is above the CT4 tolerance of `0` (`data.json:15`). The backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). |
+| `LAAS-OBL-RES-001` | `VRF-ROBOTS-MATCH` returned `fail`, so the action is not Bucket A to the gate (`conformance/laas/laas.rego:244-247`) and the record carries the open-world bound. The bound `0.004004` is above the CT4 tolerance of `0` (`data.json:15`). The backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). |
 | `LAAS-OBL-HUM-001` | A human approver approves before deployment, and `escalation_approved` is `true`. |
 | `LAAS-OBL-AGG-001` | If this change is one of a sequence of crawl-directive edits in the window, the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
@@ -512,7 +512,7 @@ Required independent checks at CT4:
 Two obligations fail independently.
 `LAAS-OBL-IRR-001` fails because the verifier verdict is `fail`.
 `LAAS-OBL-RES-001` fails because `0.004004` exceeds the CT4 tolerance of `0`.
-The conformance predicate at `standard/LAAS.md:115-117` admits exactly one conforming path
+The conformance predicate at `standard/LAAS.md:126-129` admits exactly one conforming path
 for a failing verdict: the action is blocked and escalated.
 
 **Language conformance: `LC-3`.**

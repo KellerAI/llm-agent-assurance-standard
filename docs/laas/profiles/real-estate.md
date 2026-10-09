@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-RE-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/real-estate.json`](glossary/real-estate.json)
@@ -418,8 +418,8 @@ tier, and no threshold.
 
 A language finding is a finding about the record, not about the action, and it enters the
 same structure the policy already uses to separate `error_violations`
-(`conformance/laas/laas.rego:199`) from `warning_violations`
-(`conformance/laas/laas.rego:204`).
+(`conformance/laas/laas.rego:200`) from `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 The checker must not rewrite the record (see [`ste-core.md`](ste-core.md) §5).
 This constraint carries extra weight here.
@@ -429,7 +429,7 @@ The pattern is the finding. An operator needs to know that this actor produces
 occupant-description language, because that is a fact about the actor and about every listing
 it has drafted, not about this one listing.
 
-A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:108-111`).
+A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:119-122`).
 Both records stay in the chain.
 
 ## 6. Worked example
@@ -569,7 +569,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-OCCUPANT-DESC` runs before publication, not after. Running it after is worthless: the copy has syndicated. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic term matcher is a different *kind* of checker (`standard/LAAS.md:87`). A second language model reviewing the copy would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for the occupant-description list, a negative-test suite of known non-compliant listing phrases it must catch, and a change-controlled version in the trace. |
-| `LAAS-OBL-RES-001` | `VRF-OCCUPANT-DESC` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:243-246`, `:255-260`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
+| `LAAS-OBL-RES-001` | `VRF-OCCUPANT-DESC` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | The listing broker approves before publication, and `escalation_approved` is `true`. The licensed broker, not the agent, carries the advertising responsibility. |
 | `LAAS-OBL-VEN-001` | Syndication is third-party distribution. The record names the 14 portals and states the scope limit, rather than writing "and partner sites". |
 

@@ -86,11 +86,11 @@ opa eval -d conformance/laas/laas.rego -d conformance/laas/data.json \
   'data.kellerai.laas.actions.summary' --format pretty
 ```
 
-Expected results: `opa test conformance/laas/ -v` prints `PASS: 84/84`; `opa test conformance/ -v`
-prints `PASS: 155/155` (84 tests in `conformance/laas/laas_test.rego`, 40 in
+Expected results: `opa test conformance/laas/ -v` prints `PASS: 96/96`; `opa test conformance/ -v`
+prints `PASS: 167/167` (96 tests in `conformance/laas/laas_test.rego`, 40 in
 `conformance/trust_dial_test.rego`, 31 in `conformance/blast_radius_test.rego`); the sanitization
 script reports `OK`; `check.sh` (emitter → `opa eval`) ends with compliant `true`; `osi_check.sh`
-prints `PASS`; and the unit tests report `Ran 10 tests` and `OK`
+prints `PASS`; and the unit tests report `Ran 69 tests` and `OK`
 (invocation from `scripts/laas/test_osi_to_surface.py:4`).
 
 **What CI runs.** In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.

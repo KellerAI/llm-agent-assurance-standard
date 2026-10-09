@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-SWD-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/software-docs.json`](glossary/software-docs.json)
@@ -145,7 +145,7 @@ different value on a different day and the record is read later than it is writt
 Justification: `LAAS-OBL-VQ-001` requires a change-controlled verifier version recorded in
 the trace (`standard/LAAS.md:96`), and `LAAS-OBL-RES-001` requires the residual escape rate
 to be re-measured on any model, prompt, tool, or policy change
-(`standard/LAAS.md:102`).
+(`standard/LAAS.md:105`).
 Both obligations compare a record against a named version.
 A floating word such as *latest* makes the comparison undefined, so the obligation passes on
 paper and checks nothing.
@@ -460,8 +460,8 @@ No obligation is new.
 
 A language finding is a finding about the **record**, not about the action.
 The recommended handling mirrors the split the policy already makes between
-`error_violations` (`conformance/laas/laas.rego:199`) and `warning_violations`
-(`conformance/laas/laas.rego:204`).
+`error_violations` (`conformance/laas/laas.rego:200`) and `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 At CT2 the finding is recorded and the action proceeds.
 At CT3 and CT4 the record is rejected and the actor must rewrite it.
@@ -475,7 +475,7 @@ the actor never wrote and the software never accepts.
 The checker reports the finding and blocks.
 
 A rewrite is an **append**, not an edit.
-`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:108-111`).
+`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:119-122`).
 The rejected record and the corrected record both stay in the chain.
 
 ## 6. Worked example
@@ -589,7 +589,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-DOCS-EXEC` runs before publication, not after. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a container that executes the examples is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage over executable examples and code identifiers, a negative-test suite of known-bad pages it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
-| `LAAS-OBL-RES-001` | `VRF-DOCS-EXEC` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:243-246`, `:255-260`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
+| `LAAS-OBL-RES-001` | `VRF-DOCS-EXEC` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | A human approver approves before publication, and `escalation_approved` is `true`. |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. Several page edits that together change one documented contract re-tier as one change (`standard/LAAS.md:59-60`). |
 | `LAAS-OBL-VEN-001` | Any third-party component named in the guide carries its version string and its scope limit. |

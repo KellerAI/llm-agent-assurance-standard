@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-LEGAL-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/legal.json`](glossary/legal.json)
@@ -506,8 +506,8 @@ Each row states what this profile's rules add to an obligation that already exis
 
 A language finding is a finding about the **record**, not about the action.
 The recommended handling mirrors the split the policy already makes between
-`error_violations` (`conformance/laas/laas.rego:199`) and `warning_violations`
-(`conformance/laas/laas.rego:204`).
+`error_violations` (`conformance/laas/laas.rego:200`) and `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 At CT2 the finding is recorded and the action proceeds.
 At CT3 and CT4 the record is rejected and the actor must rewrite it.
@@ -520,7 +520,7 @@ risk is sharper than elsewhere: a checker that "corrects" a clause reference has
 which obligation the record describes.
 
 A rewrite is an **append**, not an edit.
-`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:108-111`).
+`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:119-122`).
 The rejected record and the corrected record both stay in the chain.
 
 ## 6. Worked example
@@ -631,7 +631,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-CLAUSE-DIFF` runs before execution, not after. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic text diff is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented coverage of the clause-change claim class, a negative-test suite of known cap-removal and indemnity-widening edits it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
-| `LAAS-OBL-RES-001` | `VRF-CLAUSE-DIFF` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:243-246`, `:255-260`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
+| `LAAS-OBL-RES-001` | `VRF-CLAUSE-DIFF` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | A human approver approves before execution, and `escalation_approved` is `true`. |
 | `LAAS-OBL-INP-001` | The returned redline is untrusted input from the counterparty, so the floor at `untrusted_input_min_ct` (`data.json:18`) applies before the tier is taken. |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. Amendment 3 follows amendments 1 and 2 to the same master services agreement, and the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |

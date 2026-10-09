@@ -51,6 +51,67 @@ _VALID_VERDICTS = {"pass", "fail", "abstain", "indeterminate"}
 _VALID_VERIFIER_TYPES = {"deterministic", "model", "human"}
 
 
+class EmitterInputError(ValueError):
+    """An input file (spec or bundle) is unreadable, malformed, or incomplete.
+
+    Raised instead of falling back to defaults: a bad bundle fails closed.
+    """
+
+
+def _int_digit_error(e: ValueError, where: str) -> EmitterInputError:
+    """Map json's integer digit-limit ValueError to an invalid-JSON error.
+
+    json.loads raises a plain ValueError, not JSONDecodeError, for an integer
+    longer than sys.get_int_max_str_digits(). Any other ValueError re-raises.
+    """
+    if type(e) is not ValueError or "integer string conversion" not in str(e):
+        raise e
+    return EmitterInputError(f"{where}: invalid JSON: {e}")
+
+
+def _object_at(parent: dict, key: str, where: str, prefix: str = "") -> dict:
+    """Return `parent[key]`; raise EmitterInputError unless it is a JSON object.
+
+    `where` names the input ("bundle <path>" / "spec <path>"); `prefix` is the
+    dotted path of `parent`, so messages name the full key.
+    """
+    if key not in parent:
+        raise EmitterInputError(f"{where}: missing key '{prefix}{key}'")
+    value = parent[key]
+    if not isinstance(value, dict):
+        raise EmitterInputError(
+            f"{where}: {prefix}{key} must be a JSON object, got {type(value).__name__}"
+        )
+    return value
+
+
+def _is_number(value: Any) -> bool:
+    """True for a JSON number or boolean: anything max() can compare to a CT.
+
+    Range and bool are deliberately not checked here; validate_emitted owns
+    the 0..4 check on the emitted tier.
+    """
+    return isinstance(value, (int, float))
+
+
+def _check_bundle(blob: Any, where: str) -> dict:
+    """Return the bundle's `laas` object; raise EmitterInputError unless the
+    top level and `laas` are objects and `laas.tier_lattice` is present.
+
+    Only the keys every run reads are checked here. The lattice's shape and
+    values and `laas.default_ct_when_undetermined` are checked by derive_ct
+    where it reads them, so a bad entry the spec never reaches still emits.
+    """
+    if not isinstance(blob, dict):
+        raise EmitterInputError(
+            f"{where}: expected a JSON object, got {type(blob).__name__}"
+        )
+    cfg = _object_at(blob, "laas", where)
+    if "tier_lattice" not in cfg:
+        raise EmitterInputError(f"{where}: missing key 'tier_lattice'")
+    return cfg
+
+
 # ---------------------------------------------------------------------------
 # Inputs: the live agent's effect surface + the gate's side-channels.
 # ---------------------------------------------------------------------------
@@ -83,25 +144,47 @@ class GateContext:
     verified, and whether this gate runs out-of-process (§7.7).
     """
 
-    bundle_id: str = "laas-fin-1.1.2"
-    bundle_version: str = "laas-fin-1.1.2"
+    bundle_id: str = "laas-fin-2.0.0"
+    bundle_version: str = "laas-fin-2.0.0"
     bundle_signed: bool = True
     out_of_process: bool = True
     lattice: dict = field(default_factory=lambda: dict(_DEFAULT_LATTICE))
     ct_when_undetermined: int = _DEFAULT_CT_WHEN_UNDETERMINED
+    # The data.json the lattice came from; names it in derive_ct's errors.
+    bundle_path: Optional[str] = None
 
     @classmethod
     def from_bundle(cls, data_json_path: str, **overrides: Any) -> "GateContext":
-        """Load the lattice from a signed obligation bundle (data.json)."""
-        with open(data_json_path, encoding="utf-8") as fh:
-            cfg = json.load(fh)["laas"]
+        """Load the lattice from a signed obligation bundle (data.json).
+
+        Raises EmitterInputError (naming the file) if the bundle cannot be
+        read, is not UTF-8, is not valid JSON, or lacks the keys
+        _check_bundle checks. derive_ct checks the lattice entries it reads.
+        """
+        try:
+            with open(data_json_path, encoding="utf-8") as fh:
+                blob = json.load(fh)
+        except (OSError, UnicodeDecodeError) as e:
+            reason = getattr(e, "strerror", None) or e
+            raise EmitterInputError(
+                f"cannot read bundle {data_json_path}: {reason}"
+            ) from e
+        except (json.JSONDecodeError, RecursionError) as e:
+            raise EmitterInputError(
+                f"bundle {data_json_path}: invalid JSON: {e}"
+            ) from e
+        except ValueError as e:
+            raise _int_digit_error(e, f"bundle {data_json_path}") from e
+        cfg = _check_bundle(blob, f"bundle {data_json_path}")
+        lattice = cfg["tier_lattice"]
         kwargs: dict[str, Any] = {
-            "bundle_id": cfg.get("bundle_id", "laas-fin-1.1.2"),
-            "bundle_version": cfg.get("bundle_id", "laas-fin-1.1.2"),
-            "lattice": cfg["tier_lattice"],
+            "bundle_id": cfg.get("bundle_id", "laas-fin-2.0.0"),
+            "bundle_version": cfg.get("bundle_id", "laas-fin-2.0.0"),
+            "lattice": lattice,
             "ct_when_undetermined": cfg.get(
                 "default_ct_when_undetermined", _DEFAULT_CT_WHEN_UNDETERMINED
             ),
+            "bundle_path": data_json_path,
         }
         kwargs.update(overrides)
         return cls(**kwargs)
@@ -172,10 +255,15 @@ class TraceAnchor:
 # ---------------------------------------------------------------------------
 # CT derivation (gate-side; §6.1). This is the ungameable core.
 # ---------------------------------------------------------------------------
+def _gate_where(gate: GateContext) -> str:
+    """Name the lattice's source in an EmitterInputError message."""
+    return f"bundle {gate.bundle_path}" if gate.bundle_path else "gate lattice"
+
+
 def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
     """Return (gate_derived_ct, resolved_surface_keys).
 
-    Matches laas.rego's `expected_ct` (laas.rego:30-44) for a boolean
+    Matches laas.rego's `expected_ct` (laas.rego:30-45) for a boolean
     `external_effect` only when `gate.lattice` equals the policy bundle's
     `tier_lattice` (data.json:7-9) and `gate.ct_when_undetermined` is 4
     (laas.rego:30). Both are the GateContext defaults; overriding either
@@ -191,28 +279,59 @@ def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
     one takes the lattice path while the policy also returns CT4. The
     policy mismatch is tracked as a follow-up; fail-closed emitter
     behaviour is not implemented here.
+
+    Raises EmitterInputError (naming the bundle and the dotted key) when an
+    external effect reaches a lattice entry that would crash it: a lattice
+    or axis that is not an object, an absent axis, an absent §6.2 worst key
+    it falls back to, a non-number default CT it returns, or a non-number
+    lattice value it compares. Entries it does not reach are not checked.
     """
     if not surface.external_effect:
         return 0, {"external_effect": False}
 
+    where = _gate_where(gate)
+    lattice = gate.lattice
+    if not isinstance(lattice, dict):
+        raise EmitterInputError(
+            f"{where}: laas.tier_lattice must be a JSON object, "
+            f"got {type(lattice).__name__}"
+        )
     resolved: dict[str, Any] = {"external_effect": True}
     axis_cts: list[int] = []
     undetermined = False
-    for axis in ("reversibility", "scope", "consequence"):
+    axes = ("reversibility", "scope", "consequence")
+    for axis in axes:
         key = getattr(surface, axis)
         if key is None:
             key = _UNKNOWN_DEFAULT[axis]
             undetermined = True
-        table = gate.lattice[axis]
+        table = _object_at(lattice, axis, where, "laas.tier_lattice.")
         if key not in table:
             # An unrecognized key is itself "undetermined" -> fail closed.
             key = _UNKNOWN_DEFAULT[axis]
             undetermined = True
+            if key not in table:
+                raise EmitterInputError(
+                    f"{where}: laas.tier_lattice.{axis} must include {key!r}"
+                )
         resolved[axis] = key
         axis_cts.append(table[key])
 
     if undetermined:
-        return gate.ct_when_undetermined, resolved
+        # The axis values are not compared on this path; only the default is.
+        ct = gate.ct_when_undetermined
+        if not _is_number(ct):
+            raise EmitterInputError(
+                f"{where}: laas.default_ct_when_undetermined must be a number, "
+                f"got {ct!r}"
+            )
+        return ct, resolved
+    for axis, ct in zip(axes, axis_cts):
+        if not _is_number(ct):
+            raise EmitterInputError(
+                f"{where}: laas.tier_lattice.{axis}.{resolved[axis]} must be "
+                f"a number, got {ct!r}"
+            )
     return max(axis_cts), resolved
 
 
@@ -354,6 +473,98 @@ def validate_emitted(record: dict) -> list[str]:
 # ---------------------------------------------------------------------------
 # CLI: read an effect-surface description (JSON) on stdin/-i, emit a record.
 # ---------------------------------------------------------------------------
+_SPEC_OBJECT_KEYS = (
+    "actor",
+    "aggregate",
+    "vendor",
+    "input",
+    "trace",
+    "human_approval",
+    "action",
+)
+
+
+def _require_scalar(value: Any, name: str, where: str) -> None:
+    """Reject a JSON array/object where the emitter needs a hashable value."""
+    if isinstance(value, (list, dict)):
+        raise EmitterInputError(
+            f"{where}: {name} must be a JSON scalar, got {type(value).__name__}"
+        )
+
+
+def _read_spec(path: Optional[str]) -> Any:
+    """Read and parse the spec from `path` (or stdin when None).
+
+    A spec that is unreadable, not UTF-8 or not valid JSON raises
+    EmitterInputError. The spec is read as the original emitter read it --
+    a file in text mode (CR and CRLF reach json.loads as LF), stdin through
+    sys.stdin -- so an invalid-JSON message reports the same line, column
+    and offset.
+    """
+    where = f"spec {path or '<stdin>'}"
+    try:
+        if path:
+            with open(path, encoding="utf-8") as fh:
+                raw = fh.read()
+        else:
+            raw = sys.stdin.read()
+    except OSError as e:
+        raise EmitterInputError(f"cannot read {where}: {e.strerror}") from e
+    except UnicodeDecodeError as e:
+        raise EmitterInputError(f"cannot read {where}: {e}") from e
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, RecursionError) as e:
+        raise EmitterInputError(f"{where}: invalid JSON: {e}") from e
+    except ValueError as e:
+        raise _int_digit_error(e, where) from e
+
+
+def _check_spec(spec: Any, where: str) -> dict:
+    """Check every spec key _build_from_spec reads; raise EmitterInputError
+    on the first one whose shape would otherwise crash it (fail closed).
+
+    `effect_surface.external_effect` is required but its type is not checked
+    (see derive_ct); an unrecognized axis scalar resolves to the worst key.
+    The axes must be scalars only when `external_effect` is truthy: derive_ct
+    does not read them otherwise.
+    """
+    if not isinstance(spec, dict):
+        raise EmitterInputError(
+            f"{where}: expected a JSON object, got {type(spec).__name__}"
+        )
+    surface = _object_at(spec, "effect_surface", where)
+    if "external_effect" not in surface:
+        raise EmitterInputError(
+            f"{where}: missing key 'effect_surface.external_effect'"
+        )
+    if surface["external_effect"]:
+        for axis in _UNKNOWN_DEFAULT:
+            _require_scalar(surface.get(axis), f"effect_surface.{axis}", where)
+    for key in _SPEC_OBJECT_KEYS:
+        if key in spec:
+            _object_at(spec, key, where)
+    window = spec.get("aggregate", {}).get("window_effect_ct", 0)
+    if not _is_number(window):
+        raise EmitterInputError(
+            f"{where}: aggregate.window_effect_ct must be a number, got {window!r}"
+        )
+    # A falsy verifier (null, {}, [], 0, "", false) means "no verifier": the
+    # placeholder is emitted. Only a non-empty non-object one is rejected.
+    verifier = spec.get("verifier")
+    if verifier and not isinstance(verifier, dict):
+        raise EmitterInputError(
+            f"{where}: verifier must be a JSON object, got {type(verifier).__name__}"
+        )
+    if verifier:
+        for key in ("id", "type", "verdict"):
+            if key not in verifier:
+                raise EmitterInputError(f"{where}: missing key 'verifier.{key}'")
+        for key in ("type", "verdict"):
+            _require_scalar(verifier[key], f"verifier.{key}", where)
+    return spec
+
+
 def _build_from_spec(spec: dict, gate: GateContext) -> dict:
     """Map a flat effect-surface spec (what a harness adapter would hand us)
     into the dataclass inputs and emit the record."""
@@ -415,27 +626,50 @@ def _build_from_spec(spec: dict, gate: GateContext) -> dict:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    """Run the emitter CLI.
+
+    Exit codes: 0 record emitted; 2 bad input -- argparse usage error,
+    unreadable/malformed/wrong-shape bundle, a bundle lattice entry or
+    default CT that derive_ct reaches in the wrong shape, or an
+    unreadable/non-UTF-8/malformed/wrong-shape spec, or a spec value too
+    deeply nested to serialise (one-line
+    "EMITTER INPUT ERROR:" on stderr), or an emitted record that fails
+    validate_emitted ("EMITTER VALIDATION FAILED:" on stderr).
+
+    Inputs are checked in the original emitter's order: spec JSON, then
+    the bundle, then the spec's keys, then derive_ct's lattice reads.
+    """
     p = argparse.ArgumentParser(description="LAAS v1.1 decision-record emitter")
     p.add_argument("-i", "--input", help="effect-surface spec JSON (default stdin)")
     p.add_argument("-b", "--bundle", help="data.json bundle to load the lattice from")
     p.add_argument("-o", "--output", help="write record here (default stdout)")
     args = p.parse_args(argv)
 
-    if args.input:
-        with open(args.input, encoding="utf-8") as fh:
-            raw = fh.read()
-    else:
-        raw = sys.stdin.read()
-    spec = json.loads(raw)
-    gate = GateContext.from_bundle(args.bundle) if args.bundle else GateContext()
-    record = _build_from_spec(spec, gate)
+    try:
+        raw_spec = _read_spec(args.input)
+        gate = GateContext.from_bundle(args.bundle) if args.bundle else GateContext()
+        spec = _check_spec(raw_spec, f"spec {args.input or '<stdin>'}")
+        record = _build_from_spec(spec, gate)
+    except EmitterInputError as e:
+        sys.stderr.write(f"EMITTER INPUT ERROR: {e}\n")
+        return 2
     problems = validate_emitted(record)
     if problems:
         sys.stderr.write(
             "EMITTER VALIDATION FAILED:\n  " + "\n  ".join(problems) + "\n"
         )
         return 2
-    out = json.dumps(record, indent=2)
+    try:
+        out = json.dumps(record, indent=2)
+    except RecursionError as e:
+        # Only spec values sit deeper in the record than in their input
+        # (effect_surface.tool, top-level id), so the spec is the cause.
+        source = args.input or "<stdin>"
+        sys.stderr.write(
+            f"EMITTER INPUT ERROR: spec {source}: "
+            f"too deeply nested to serialise the record: {e}\n"
+        )
+        return 2
     if args.output:
         with open(args.output, "w", encoding="utf-8") as fh:
             fh.write(out + "\n")

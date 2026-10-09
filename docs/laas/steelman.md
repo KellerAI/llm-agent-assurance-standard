@@ -23,13 +23,13 @@ This is LAAS's foundational claim, vindicated by precedent.
 LAAS's governance unit is the **(action, consequence-tier)** pair, and the tier is gate-derived, never self-asserted (`LAAS-OBL-TIER-001`; the gate computes CT0–CT4 from the observed effect surface).
 The article proves that "is this agent trusted?" is the wrong question — aviation already discarded its equivalent.
 The right question is the one LAAS asks: what has this action, on this task-class, earned?
-The objection that tiering is bureaucratic overhead dies here: ETOPS' staircase *expanded* twin-engine routes, and the envelope is revocable (`effective_ct := max([_gate_ct, _agg_ct])`, where `_gate_ct` is the gate-assigned tier or, if absent or invalid, the lattice tier (`conformance/laas/laas.rego:274–276`), and `_agg_ct` is the cumulative-window tier `aggregate.window_effect_ct`; `conformance/laas/laas.rego:48–50`), exactly as ETOPS authority contracts when reliability regresses.
+The objection that tiering is bureaucratic overhead dies here: ETOPS' staircase *expanded* twin-engine routes, and the envelope is revocable (`effective_ct := max([_gate_ct, _agg_ct])`, where `_gate_ct` is the gate-assigned tier or, if absent or invalid, the lattice tier (`conformance/laas/laas.rego:275–277`), and `_agg_ct` is the cumulative-window tier `aggregate.window_effect_ct`; `conformance/laas/laas.rego:48–50`), exactly as ETOPS authority contracts when reliability regresses.
 
 ## Pillar 2 — *Reliability You Can Bank*: the range is priced in measured failure data
 
 ETOPS range is earned only by demonstrating an In-flight Shutdown rate below progressively tighter thresholds (0.05 → 0.01 per 1,000 hours); banking earns model authority only by backtesting predicted loss bounds against outcomes, with authority auto-contracting when exceptions breach the traffic-light regime.
 LAAS is the same instrument for actions.
-`LAAS-OBL-RES-001` requires a backtested residual escape rate within a declared per-tier tolerance (2% at CT2, 0.5% at CT3, 0% at CT4) — the IFSD-rate discipline, transposed.
+`LAAS-OBL-RES-001` requires a backtested residual escape rate within a declared per-tier tolerance (2% at CT2, 0.5% at CT3, 0% at CT4) — the IFSD-rate discipline, transposed. At CT4's zero tolerance no finite-sample backtest can demonstrate the bound, so the deterministic pass or the human gate meets the residual clause instead (`standard/LAAS.md:108-114`).
 This forecloses the most common objection to LAAS ("99% model accuracy is good enough; your tiers are paranoid"): aviation does not grant range on a good quarter, it grants it on a low and stable measured rate over enough hours to exclude luck.
 LAAS's escape-rate-with-tolerance and cumulative blast-radius aggregation (`LAAS-OBL-AGG-001`) are precisely the priced, continuously-monitored, auto-revocable authority both industries already trust.
 

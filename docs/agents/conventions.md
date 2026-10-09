@@ -130,7 +130,7 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 84/84` for `conformance/laas/` and `PASS: 155/155` for all of `conformance/`.
+Expected: `PASS: 96/96` for `conformance/laas/` and `PASS: 167/167` for all of `conformance/`.
 
 In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
 

@@ -29,7 +29,7 @@ commit an irreversible high-consequence action before any human is aware it was 
 LAAS addresses this gap by gating each action at a Consequence Tier derived from its observed
 effect surface and by requiring independent pre-commit verification, proportionate to that tier,
 before commitment. The machine source of truth for all thresholds referenced below is the LAAS
-conformance bundle `laas-fin-1.1.2` (`conformance/laas/data.json`), enforced by the OPA policy
+conformance bundle `laas-fin-2.0.0` (`conformance/laas/data.json`), enforced by the OPA policy
 `conformance/laas/laas.rego`, package `kellerai.laas.actions`.
 
 ## Supervisory Expectations
@@ -73,7 +73,7 @@ evaluate against a single machine-readable bundle.
    distinct-lineage option applies only below the human-approval floor tier; at that tier a model
    verifier does not satisfy independence, and a deterministic or human verifier is required. A
    verifier that fails the same way as the actor is not a check. (LAAS-OBL-IND-001; correlation
-   ceiling in `conformance/laas/data.json`; `conformance/laas/laas.rego:225-230`.)
+   ceiling in `conformance/laas/data.json`; `conformance/laas/laas.rego:226-231`.)
 
 7. **Verifier qualification.** A verifier gating high-tier actions shall be qualified: documented
    coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a
@@ -85,7 +85,10 @@ evaluate against a single machine-readable bundle.
    declare a maximum acceptable residual escape rate per tier, estimate it by backtesting on a
    held-out, adversarially-stressed evaluation set with a stated confidence interval, and re-measure
    on any change to model, prompt, tool, or policy. The measured rate shall not exceed the declared
-   tolerance, which shall not exceed the LAAS minimums. This is the ongoing-monitoring and
+   tolerance, which shall not exceed the LAAS minimums. Where the declared tolerance is zero, no
+   finite-sample backtest can demonstrate it; the residual requirement is then met by the
+   deterministic verifier or the human gate, and a recorded bound of exactly 0 is not a backtest
+   bound (`standard/LAAS.md:108-114`). This is the ongoing-monitoring and
    outcome-analysis analogue under SR 11-7. (LAAS-OBL-RES-001; tolerances by tier in
    `conformance/laas/data.json`, key `escape_rate_tolerance_by_ct`.)
 
@@ -124,7 +127,7 @@ following evidence:
   below the lattice-derived value, including for undetermined inputs (which should default to the
   highest tier), and that a record lacking a valid gate-assigned tier (an integer 0..4) is flagged
   (one TIER-001) with its gate tier falling back to the lattice tier
-  (`conformance/laas/laas.rego:262-283`); the enforced tier is the maximum of that fallback and
+  (`conformance/laas/laas.rego:263-284`); the enforced tier is the maximum of that fallback and
   the cumulative-window tier, so it can exceed the lattice tier (`conformance/laas/laas.rego:48`).
 - **Verifier independence and qualification.** For high-tier actions, evidence that the verifier is
   independent of the actor (deterministic, distinct lineage with bounded error-correlation, or

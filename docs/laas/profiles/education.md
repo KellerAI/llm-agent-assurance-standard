@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-EDU-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/education.json`](glossary/education.json)
@@ -41,7 +41,7 @@ A corrected grade of record is not: the original grade stays in the transcript h
 student has read it, and any third party the transcript reached has read it too.
 
 The word *pass* is the second hazard, and it is specific to LAAS.
-`pass` is a verdict value in the decision record (`standard/LAAS.md:135`).
+`pass` is a verdict value in the decision record (`standard/LAAS.md:147`).
 `pass` is also a grade in a pass/fail course.
 A record that contains both senses of `pass` in free text makes the verifier finding
 unreadable by the party who most needs to read it.
@@ -100,7 +100,7 @@ rule without relaxing it.
 |----|------|---------------------|
 | `STE-EDU-01` | Write in the active voice and name the deciding party. Do not write "the grade was changed". | A grade change is a decision by an accountable party. The passive voice removes the party while the appeal question is exactly which party decided. |
 | `STE-EDU-02` | Never write the bare word *grade*. Write `raw score`, `weighted score`, `final grade`, or `grade of record`. | The four differ in reversibility and in scope. See §1.1. |
-| `STE-EDU-03` | Never write *pass* or *fail* as a grading outcome. Write `credit awarded` or `credit not awarded`. Reserve `pass` and `fail` for the `verdict` values at `standard/LAAS.md:135`. | A record cannot carry two meanings for the word that states the verifier's verdict. |
+| `STE-EDU-03` | Never write *pass* or *fail* as a grading outcome. Write `credit awarded` or `credit not awarded`. Reserve `pass` and `fail` for the `verdict` values at `standard/LAAS.md:147`. | A record cannot carry two meanings for the word that states the verifier's verdict. |
 | `STE-EDU-04` | State every score as a number, a maximum, and the named scale. Write `raw score 42 of 50 on scale POINTS-50`. | A score without a maximum is not a quantity, and `LAAS-OBL-RES-001` compares quantities. |
 | `STE-EDU-05` | Name the rubric by identifier and version, and name the `rubric criterion` scored. Do not write "per the rubric". | A verifier can re-score a named criterion of a named rubric version. It cannot re-score a category. |
 | `STE-EDU-06` | State a `plagiarism similarity score` as a percentage with the named matching service and the exclusion settings. Never write the word *plagiarism* as a conclusion. | Similarity is a measurement. Plagiarism is a finding by a named decision-maker after a process. |
@@ -265,7 +265,7 @@ Each row states the replacement.
 | Forbidden | Why it is dangerous | Write instead |
 |-----------|--------------------|---------------|
 | *grade* (bare noun) | Means a raw score, a weighted score, a final grade, or a grade of record. The four differ in reversibility. | `raw score`, `weighted score`, `final grade`, or `grade of record` |
-| *pass*, *fail* (as grades) | Collide with the `verdict` values at `standard/LAAS.md:135`. | `credit awarded`, `credit not awarded` |
+| *pass*, *fail* (as grades) | Collide with the `verdict` values at `standard/LAAS.md:147`. | `credit awarded`, `credit not awarded` |
 | *score* (bare) | Means a raw score, a weighted score, or a plagiarism similarity score. | The qualified noun, with its maximum and scale |
 | *credit* (bare) | Means `credit hour`, awarded credit, or attribution of a source. | `credit hour`, `credit awarded`, or `cite` |
 | *plagiarism* (as a conclusion) | Names a finding that only a decision process can make. | `plagiarism similarity score` with the matching service, or the decided `academic integrity case` |
@@ -478,8 +478,8 @@ sees and advisory for everything else.
 
 A language finding is a finding about the **record**, not about the action.
 The recommended handling mirrors the split the policy already makes between
-`error_violations` (`conformance/laas/laas.rego:199`) and `warning_violations`
-(`conformance/laas/laas.rego:204`).
+`error_violations` (`conformance/laas/laas.rego:200`) and `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 At CT2 the finding is recorded and the action proceeds.
 At CT3 and CT4 the record is rejected and the actor must rewrite it.
@@ -493,7 +493,7 @@ A checker that repairs prose has authored a claim the actor did not make, and th
 longer records what the actor asserted.
 
 A rewrite is an **append**, not an edit.
-`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:108-111`).
+`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:119-122`).
 The rejected record and the corrected record both stay in the chain.
 The sequence of a hedged draft followed by a conforming rewrite is itself an audit signal,
 and in a domain with a formal appeal process it is also evidence a student may request.
@@ -608,7 +608,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-GRADE-ARITH` runs before the release, not after the registrar posts. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic re-computation is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented coverage of the claim class (rubric criterion at a stated rubric level), a negative-test suite of known mis-weighted gradebooks it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
-| `LAAS-OBL-RES-001` | `VRF-GRADE-ARITH` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:243-246`, `:255-260`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
+| `LAAS-OBL-RES-001` | `VRF-GRADE-ARITH` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-INP-001` | Each submission is untrusted input. `untrusted_input_min_ct` is 3 (`data.json:18`). |
 | `LAAS-OBL-VEN-001` | The matching service is named with its version and its exclusion settings, and the similarity score is not treated as a finding. |
 | `LAAS-OBL-HUM-001` | The instructor of record approves before release, and `escalation_approved` is `true`. |

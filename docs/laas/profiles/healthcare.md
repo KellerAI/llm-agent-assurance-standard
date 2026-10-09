@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-HLTH-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.2`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/healthcare.json`](glossary/healthcare.json)
@@ -407,8 +407,8 @@ Neither changes a LAAS obligation, a tier, or a threshold.
 
 A language finding is a finding about the record, not about the action, and it enters the
 same structure the policy already uses to separate `error_violations`
-(`conformance/laas/laas.rego:199`) from `warning_violations`
-(`conformance/laas/laas.rego:204`).
+(`conformance/laas/laas.rego:200`) from `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 The checker must not rewrite the record (see [`ste-core.md`](ste-core.md) §5).
 This constraint is stronger here than elsewhere.
@@ -417,7 +417,7 @@ readings the notation rule exists to prevent, and it has chosen it without clini
 authority.
 The correct behaviour is to reject the record and require the actor to restate the dose.
 
-A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:108-111`).
+A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:119-122`).
 The rejected record stays in the chain.
 In a clinical setting this is also a patient-safety record: a pattern of ambiguous dose
 notation from one actor is a signal about that actor, and erasing the drafts erases the
@@ -529,9 +529,9 @@ Required independent checks at CT4:
 | Obligation | What it requires here |
 |------------|----------------------|
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-DOSE-RANGE` runs before the order is signed. |
-| `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic dose-range checker is a different *kind* of checker (`standard/LAAS.md:87`). A second LLM reading the same order would not qualify at CT4 at any measured error correlation: model-lineage independence is valid only up to CT3 (`standard/LAAS.md:88`; `conformance/laas/laas.rego:225-230`). |
+| `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic dose-range checker is a different *kind* of checker (`standard/LAAS.md:87`). A second LLM reading the same order would not qualify at CT4 at any measured error correlation: model-lineage independence is valid only up to CT3 (`standard/LAAS.md:88`; `conformance/laas/laas.rego:226-231`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for dose-range checks, a negative-test suite of known tenfold and route errors it must catch, and a change-controlled version in the trace. |
-| `LAAS-OBL-RES-001` | `VRF-DOSE-RANGE` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:243-246`, `:255-260`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
+| `LAAS-OBL-RES-001` | `VRF-DOSE-RANGE` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | Dr Okonkwo approves the transcribed order before it becomes active. `standard/LAAS.md:89` makes the human required *in addition* to the deterministic verifier, not instead of it. |
 | `LAAS-OBL-INP-001` | The verbal order is untrusted input until it is confirmed against VO-2026-11884. `untrusted_input_min_ct` is `3` (`data.json:18`). |
 

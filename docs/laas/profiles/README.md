@@ -89,7 +89,7 @@ Two constraints apply at every tier.
 A checker reports findings and blocks; it never rewrites the record, because a checker that
 repairs prose has authored a claim the actor did not make.
 A rewrite is an **append**, not an edit — `LAAS-OBL-TRC-001` requires an append-only trace
-(`standard/LAAS.md:108-111`), and the sequence of a hedged draft followed by a conforming
+(`standard/LAAS.md:119-122`), and the sequence of a hedged draft followed by a conforming
 rewrite is itself an audit signal.
 
 ## Glossary file shape
