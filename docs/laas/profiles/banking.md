@@ -259,22 +259,37 @@ It separates the entry from the money and states both.
 ```text
 <actor_id> <verb>ed the action because <one reason, one sentence>.
 The control that applies is <control identifier>.
-The measured residual error bound is <number> on <named evaluation set>, measured on <date>.
+The exact-verified claim class is <claim class>. The gate verifier for it is <verifier_id>.
+The open-world claim class is <claim class, or none>.
+The backtest observed <k> escapes in <n> samples on <named evaluation set>, measured on <date>.
+The residual error bound is <number>, the one-sided <confidence> upper bound by the <Wilson|Clopper-Pearson> method.
 The tolerance for CT<n> is <number> from conformance/laas/data.json.
-The residual bound is <at or below|above> the tolerance.
+The backtest verdict is <pass|fail|indeterminate>. The evidence is <evidence_id>.
 The rollback plan is: <step 1>. <step 2>. <step 3>. The named actor is <party>. The time bound is <duration>.
 ```
 
+The residual-risk lines follow [`ste-core.md`](ste-core.md) §3.3.
+Write `none` for the open-world claim class only when the gate verifier checks every claim
+the action depends on, and then omit the four backtest sentences.
+At CT4 the tolerance is `0`, and no finite backtest demonstrates it
+(`docs/laas/backtest.md:116`), so the backtest verdict at CT4 is `indeterminate`.
+
 Filled:
+
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
 
 ```text
 agent.paybot.v4 released the payment instruction because the sanctions screening hit on the
 beneficiary name was disposed of as a false positive by case SCR-2026-0913.
 The control that applies is SANC-CTL-004.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial set, measured on
-2026-07-02.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is sanctions list matching. The gate verifier for it is
+VRF-SANC-EXACT.
+The open-world claim class is the false-positive disposition of a sanctions screening hit.
+The backtest observed 0 escapes in 750 samples on the CT4 held-out adversarial set,
+measured on 2026-07-02.
+The residual error bound is 0.003594, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_e754bf46aceb29fb.
 The rollback plan is: the payment operations desk requests a recall message on TARGET2. The
 desk contacts Halvard Industriteknikk AS for consent to return. The desk records the outcome
 against TRN-88213. The named actor is the payment operations desk. The time bound is 4 hours.
@@ -292,7 +307,8 @@ A plan that depends on consent is not a rollback. Saying so is the point.
 The independence basis is <different kind of checker|distinct model lineage with measured
 error correlation <number>|human>.
 <verifier_id> checked <the claim, in one sentence>.
-The verdict is <pass|fail|abstain|indeterminate>.
+The verdict is <pass|fail|indeterminate> for a deterministic verifier.
+The verdict is <pass|fail|abstain|indeterminate> for a model or human verifier.
 The evidence is <evidence_ref>.
 ```
 
@@ -408,6 +424,8 @@ Both are in the same trace, and the human read the prose.
 
 ### 6.2 Conforming record
 
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
+
 ```text
 ACTION
 agent.paybot.v4 released 1 payment instruction.
@@ -429,10 +447,14 @@ beneficiary name was disposed of as a false positive by case SCR-2026-0913.
 The available balance on account 4471-00982 at 2026-07-26T09:14:02Z is EUR 6,880,412.55.
 The available balance exceeds the total by EUR 2,680,412.55.
 The control that applies is SANC-CTL-004.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial set, measured on
-2026-07-02.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is sanctions list matching. The gate verifier for it is
+VRF-SANC-EXACT.
+The open-world claim class is the false-positive disposition of a sanctions screening hit.
+The backtest observed 0 escapes in 750 samples on the CT4 held-out adversarial set,
+measured on 2026-07-02.
+The residual error bound is 0.003594, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_e754bf46aceb29fb.
 The rollback plan is: the payment operations desk requests a recall message on TARGET2. The
 desk contacts Halvard Industriteknikk AS for consent to return. The desk records the outcome
 against TRN-88213. The named actor is the payment operations desk. The time bound is 4 hours.
@@ -461,7 +483,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-SANC-EXACT` runs before release, not after. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic checker is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage, a negative-test suite of known sanctioned parties it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
-| `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0.0` (`data.json:15`). |
+| `LAAS-OBL-RES-001` | `VRF-SANC-EXACT` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:243-246`, `:255-260`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | A human approver approves before release, and `escalation_approved` is `true`. |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. If this release is one of several to the same beneficiary, the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 

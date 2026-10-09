@@ -132,7 +132,7 @@ claim about confidential information are different claim classes with different 
 If the record does not distinguish them, the verifier cannot state which class it covered,
 and qualification cannot be demonstrated. `LAAS-OBL-TRC-001` adds the second reason: an
 append-only trace fixes the bytes, and a term whose scope drifts between records changes the
-meaning of an earlier record without an append (`ste-core.md:181`).
+meaning of an earlier record without an append (`ste-core.md:242`).
 
 **Deviation 2 — citation notation uses a fixed form and is exempt from the parenthesis ban.**
 
@@ -155,7 +155,7 @@ anywhere else in a normative field remains a `STE-C-11` violation. The permitted
 
 *Justification.* `LAAS-OBL-IND-001` makes the independence of a verifier a load-bearing
 claim, and an independent verifier can only contest a claim it can check
-(`ste-core.md:186`). A citation that does not resolve to one text is not checkable, so the
+(`ste-core.md:247`). A citation that does not resolve to one text is not checkable, so the
 verifier's finding covers nothing. `LAAS-OBL-TRC-001` requires the same citation to resolve
 to the same text when the trace is read years later, which is why the version or the
 execution date is mandatory rather than optional.
@@ -348,13 +348,24 @@ It states that reversal needs the counterparty, and it names the counterparty.
 <actor_id> <verb>ed the action because <one reason, one sentence>.
 The authority for the change is <citation>.
 The governing law is <law>. The forum is <forum>.
-The measured residual error bound is <number> on <named evaluation set>, measured on <date>.
+The exact-verified claim class is <claim class>. The gate verifier for it is <verifier_id>.
+The open-world claim class is <claim class, or none>.
+The backtest observed <k> escapes in <n> samples on <named evaluation set>, measured on <date>.
+The residual error bound is <number>, the one-sided <confidence> upper bound by the <Wilson|Clopper-Pearson> method.
 The tolerance for CT<n> is <number> from conformance/laas/data.json.
-The residual bound is <at or below|above> the tolerance.
+The backtest verdict is <pass|fail|indeterminate>. The evidence is <evidence_id>.
 The rollback plan is: <step 1>. <step 2>. <step 3>. The named actor is <party>. The time bound is <duration>.
 ```
 
+The residual-risk lines follow [`ste-core.md`](ste-core.md) §3.3.
+Write `none` for the open-world claim class only when the gate verifier checks every claim
+the action depends on, and then omit the four backtest sentences.
+At CT4 the tolerance is `0`, and no finite backtest demonstrates it
+(`docs/laas/backtest.md:116`), so the backtest verdict at CT4 is `indeterminate`.
+
 Filled:
+
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
 
 ```text
 agent.contractbot.v2 executed the amendment because the renewal term at MSA-2024-0417 cl. 3.2
@@ -362,10 +373,14 @@ expires on 2026-08-31 and the counterparty returned the execution version unchan
 The authority for the change is board resolution BR-2025-11 cl. 4(b).
 The governing law is the law of England and Wales. The forum is the courts of England and
 Wales, MSA-2024-0417 cl. 22.1.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial clause set, measured
-on 2026-06-19.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the location of each change in MSA-2024-0417. The gate
+verifier for it is VRF-CLAUSE-DIFF.
+The open-world claim class is the effect of each changed clause on the liability position.
+The backtest observed 0 escapes in 300 samples on the CT4 held-out adversarial clause set,
+measured on 2026-06-19.
+The residual error bound is 0.008938, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_86bcfce27a3cf97f.
 The rollback plan is: the legal operations team prepares a further amendment that restores
 cl. 14.2. The team requests execution by Orsted Marine Services AS. The team records the
 outcome against MAT-2026-0441. The named actor is the legal operations team. The time bound
@@ -383,7 +398,8 @@ entity. A plan that depends on consent is not a rollback. Saying so is the point
 The independence basis is <different kind of checker|distinct model lineage with measured
 error correlation <number>|human>.
 <verifier_id> checked <the claim, in one sentence>.
-The verdict is <pass|fail|abstain|indeterminate>.
+The verdict is <pass|fail|indeterminate> for a deterministic verifier.
+The verdict is <pass|fail|abstain|indeterminate> for a model or human verifier.
 The evidence is <evidence_ref>.
 ```
 
@@ -394,6 +410,7 @@ VRF-CLAUSE-DIFF is a deterministic verifier.
 The independence basis is different kind of checker.
 VRF-CLAUSE-DIFF checked that the execution version differs from MSA-2024-0417 only at
 cl. 11.3 and cl. 14.2, and that no Defined Term in cl. 1.1 changed.
+VRF-CLAUSE-DIFF did not check the liability position.
 The verdict is pass.
 The evidence is ev_clause_diff_0441.
 ```
@@ -543,6 +560,8 @@ approval at CT4 is exactly the control `LAAS-OBL-HUM-001` requires.
 
 ### 6.2 Conforming record
 
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
+
 ```text
 DEFINED TERMS
 Group is defined at MSA-2024-0417 cl. 1.1 (definition of Group).
@@ -574,10 +593,14 @@ The governing law is the law of England and Wales. The forum is the courts of En
 Wales, MSA-2024-0417 cl. 22.1.
 The notice under cl. 18.1 must reach Orsted Marine Services AS by
 2026-08-14T23:59:00+01:00, 10 business days from the execution date.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial clause set, measured
-on 2026-06-19.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the location of each change in MSA-2024-0417. The gate
+verifier for it is VRF-CLAUSE-DIFF.
+The open-world claim class is the effect of each changed clause on the liability position.
+The backtest observed 0 escapes in 300 samples on the CT4 held-out adversarial clause set,
+measured on 2026-06-19.
+The residual error bound is 0.008938, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_86bcfce27a3cf97f.
 The rollback plan is: the legal operations team prepares a further amendment that restores
 cl. 14.2. The team requests execution by Orsted Marine Services AS. The team records the
 outcome against MAT-2026-0441. The named actor is the legal operations team. The time bound
@@ -589,6 +612,7 @@ VRF-CLAUSE-DIFF is a deterministic verifier.
 The independence basis is different kind of checker.
 VRF-CLAUSE-DIFF checked that the execution version differs from MSA-2024-0417 only at
 cl. 11.3 and cl. 14.2, and that no Defined Term in cl. 1.1 changed.
+VRF-CLAUSE-DIFF did not check the liability position.
 The verdict is pass.
 The evidence is ev_clause_diff_0441.
 ```
@@ -607,7 +631,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-CLAUSE-DIFF` runs before execution, not after. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic text diff is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented coverage of the clause-change claim class, a negative-test suite of known cap-removal and indemnity-widening edits it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
-| `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0` (`data.json:15`). |
+| `LAAS-OBL-RES-001` | `VRF-CLAUSE-DIFF` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:243-246`, `:255-260`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | A human approver approves before execution, and `escalation_approved` is `true`. |
 | `LAAS-OBL-INP-001` | The returned redline is untrusted input from the counterparty, so the floor at `untrusted_input_min_ct` (`data.json:18`) applies before the tier is taken. |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. Amendment 3 follows amendments 1 and 2 to the same master services agreement, and the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |

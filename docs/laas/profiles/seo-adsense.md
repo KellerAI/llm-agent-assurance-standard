@@ -270,24 +270,39 @@ omits.
 
 ```text
 <actor_id> <verb>ed the action because <one reason, one sentence>.
-The measured residual error bound is <number> on <named evaluation set>, measured on <date>.
+The exact-verified claim class is <claim class>. The gate verifier for it is <verifier_id>.
+The open-world claim class is <claim class, or none>.
+The backtest observed <k> escapes in <n> samples on <named evaluation set>, measured on <date>.
+The residual error bound is <number>, the one-sided <confidence> upper bound by the <Wilson|Clopper-Pearson> method.
 The tolerance for CT<n> is <number> from conformance/laas/data.json.
-The residual bound is <at or below|above> the tolerance.
+The backtest verdict is <pass|fail|indeterminate>. The evidence is <evidence_id>.
 The rollback plan is: <step 1>. <step 2>. The named actor is <party>.
 Recovery depends on <named third party>. The observed recovery interval is <interval>.
 Recovery is not guaranteed.
 ```
 
+The residual-risk lines follow [`ste-core.md`](ste-core.md) §3.3.
+Write `none` for the open-world claim class only when the gate verifier checks every claim
+the action depends on, and then omit the four backtest sentences.
+At CT4 the tolerance is `0`, and no finite backtest demonstrates it
+(`docs/laas/backtest.md:116`), so the backtest verdict at CT4 is `indeterminate`.
+
 Filled:
+
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
 
 ```text
 agent.seobot.v7 disallowed the path prefix /products/ because the faceted-navigation
 parameters under that prefix generated 2,100,000 crawled URLs against 48,210 canonical
 product pages in the 7 days to 2026-07-25.
-The measured residual error bound is 0.004 on the CT4 held-out adversarial crawl-directive
-set, measured on 2026-06-30.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is above the tolerance.
+The exact-verified claim class is the match of the disallow rule against the canonical
+product URLs. The gate verifier for it is VRF-ROBOTS-MATCH.
+The open-world claim class is the completeness of the canonical product URL list.
+The backtest observed 0 escapes in 673 samples on the CT4 held-out adversarial
+crawl-directive set, measured on 2026-06-30.
+The residual error bound is 0.004004, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_349a9ab37bd58ffc.
 The rollback plan is: the web platform team removes the disallow rule from the robots.txt
 file. The team submits the product sitemap to each search engine. The named actor is the web
 platform team.
@@ -295,8 +310,9 @@ Recovery depends on the recrawl schedule of each search engine. The observed rec
 interval for this origin is 21 to 60 days. Recovery is not guaranteed.
 ```
 
-This filled example fails `LAAS-OBL-RES-001`: the measured bound of `0.004` is above the CT4
-tolerance of `0.0` (`conformance/laas/data.json:15`).
+This filled example fails `LAAS-OBL-RES-001`: the backtest bound of `0.004004` for the
+open-world claim class is above the CT4 tolerance of `0` (`conformance/laas/data.json:15`).
+No finite backtest demonstrates a tolerance of `0` (`docs/laas/backtest.md:116`).
 It is shown failing on purpose.
 The conforming outcome is not to soften the sentence — it is for the gate to block the
 action and escalate.
@@ -308,7 +324,8 @@ action and escalate.
 The independence basis is <different kind of checker|distinct model lineage with measured
 error correlation <number>|human>.
 <verifier_id> checked <the claim, in one sentence>.
-The verdict is <pass|fail|abstain|indeterminate>.
+The verdict is <pass|fail|indeterminate> for a deterministic verifier.
+The verdict is <pass|fail|abstain|indeterminate> for a model or human verifier.
 The evidence is <evidence_ref>.
 ```
 
@@ -428,6 +445,8 @@ The language defect and the technical defect are the same defect.
 
 ### 6.2 Conforming record
 
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
+
 ```text
 ACTION
 agent.seobot.v7 disallowed 1 path in the robots.txt file at https://example-retail.eu.
@@ -448,10 +467,14 @@ RATIONALE AND RESIDUAL RISK
 agent.seobot.v7 disallowed the path prefix /products/ because the faceted-navigation
 parameters under that prefix generated 2,100,000 crawled URLs against 48,210 canonical
 product pages in the 7 days to 2026-07-25.
-The measured residual error bound is 0.004 on the CT4 held-out adversarial crawl-directive
-set, measured on 2026-06-30.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is above the tolerance.
+The exact-verified claim class is the match of the disallow rule against the canonical
+product URLs. The gate verifier for it is VRF-ROBOTS-MATCH.
+The open-world claim class is the completeness of the canonical product URL list.
+The backtest observed 0 escapes in 673 samples on the CT4 held-out adversarial
+crawl-directive set, measured on 2026-06-30.
+The residual error bound is 0.004004, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_349a9ab37bd58ffc.
 The rollback plan is: the web platform team removes the disallow rule from the robots.txt
 file. The team submits the product sitemap to each search engine. The named actor is the web
 platform team.
@@ -481,14 +504,14 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-ROBOTS-MATCH` runs before the file is deployed, not after. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic path matcher is a different *kind* of checker (`standard/LAAS.md:87`). A second language model reviewing the diff would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for path-prefix matching, a negative-test suite of known over-matching patterns it must catch, and a change-controlled version in the trace. |
-| `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0.0` (`data.json:15`). The measured `0.004` is above tolerance. |
+| `LAAS-OBL-RES-001` | `VRF-ROBOTS-MATCH` returned `fail`, so the action is not Bucket A to the gate (`conformance/laas/laas.rego:243-246`) and the record carries the open-world bound. The bound `0.004004` is above the CT4 tolerance of `0` (`data.json:15`). The backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). |
 | `LAAS-OBL-HUM-001` | A human approver approves before deployment, and `escalation_approved` is `true`. |
 | `LAAS-OBL-AGG-001` | If this change is one of a sequence of crawl-directive edits in the window, the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
 **Outcome: the action is blocked.**
 Two obligations fail independently.
 `LAAS-OBL-IRR-001` fails because the verifier verdict is `fail`.
-`LAAS-OBL-RES-001` fails because `0.004` exceeds the CT4 tolerance of `0.0`.
+`LAAS-OBL-RES-001` fails because `0.004004` exceeds the CT4 tolerance of `0`.
 The conformance predicate at `standard/LAAS.md:115-117` admits exactly one conforming path
 for a failing verdict: the action is blocked and escalated.
 
