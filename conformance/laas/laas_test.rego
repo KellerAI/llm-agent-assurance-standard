@@ -1056,3 +1056,25 @@ test_zt_negative_bound_single_fire if {
 	_has_msg(inp, "LAAS-OBL-RES-001", "residual_error_bound must be a number >= 0")
 	not _has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_frag)
 }
+
+# guard: only a valid bound is compared to the tolerance; a string bound fires R3 only.
+test_zt_invalid_bound_never_compared if {
+	inp := _r3_with_bound("x")
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 2
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _r3_phrase)
+	not _has_msg_containing(inp, "LAAS-OBL-RES-001", "exceeds tolerance")
+}
+
+# guard: the zero-bound rule needs a zero tolerance; ct 2 (tolerance 0.02) never fires it.
+test_zt_zero_bound_nonzero_tolerance_no_new_rule if {
+	inp := json.patch(_base_ct2, [
+		{"op": "replace", "path": "/verifier/verdict", "value": "fail"},
+		{"op": "replace", "path": "/residual_error_bound", "value": 0},
+	])
+	ct := effective_ct with input as inp with data.laas as _cfg
+	ct == 2
+	tol := residual_tolerance with input as inp with data.laas as _cfg
+	tol > 0
+	not _has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_frag)
+}

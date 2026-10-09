@@ -188,8 +188,9 @@ violations contains obl(
 ) if {
 	# compares residual_error_bound to the tolerance; undefined when the bound is
 	# null/absent or the tier has no tolerance. Missing-bound and missing-evidence
-	# cases are handled by the spec-alignment rules at :248-260.
-	_valid_bound > residual_tolerance
+	# cases are handled by the spec-alignment rules at :249-261. Exempt at a zero
+	# tolerance for a Bucket-A or human-gated action (:318-356).
+	_exceeds_tolerance
 }
 
 # ---------------------------------------------------------------------------
@@ -285,7 +286,7 @@ violations contains obl(
 # ---- Residual bound validity (bead laas-szm, ruling R3) ----
 # A supplied residual_error_bound must be a number >= 0; null means absent (R3a).
 # Any other non-number or a negative bound fires
-# RES-001 and is never compared to the tolerance (guard at :192).
+# RES-001 and is never compared to the tolerance (guard at :345).
 _bound_valid if {
 	is_number(input.residual_error_bound)
 	input.residual_error_bound >= 0
@@ -313,3 +314,43 @@ _norm_agg_ct := to_number(format_int(_agg_raw, 10)) if {
 	is_number(_agg_raw)
 	_agg_raw == floor(_agg_raw)
 } else := _agg_raw
+
+# ---- Zero-tolerance tier (laas-o4c; docs/laas/backtest.md:116) ----
+# A binomial upper bound over a finite sample is greater than 0, so no backtest
+# demonstrates a tolerance of 0. At such a tier the bound is evidence for the
+# deterministic or human gate, not a pass condition.
+
+_zero_tolerance if residual_tolerance == 0
+
+_human_gated if {
+	input.verifier.type == "human"
+	verifier_passed
+	human_approved
+}
+
+_zero_tolerance_gated if {
+	_zero_tolerance
+	_bucket_a
+}
+
+_zero_tolerance_gated if {
+	_zero_tolerance
+	_human_gated
+}
+
+# The RES-001 tolerance comparison (:185-194). Only a valid bound is compared
+# (R3, :286-301), and not at a zero tolerance on a Bucket-A or human-gated action.
+_exceeds_tolerance if {
+	not _zero_tolerance_gated
+	_valid_bound > residual_tolerance
+}
+
+# A bound of exactly 0 is not a finite-sample backtest bound. At a zero tolerance
+# it is the one value the comparison would accept, so it is rejected. Negative and
+# non-numeric bounds are rejected by R3 only.
+violations contains obl("LAAS-OBL-RES-001", sprintf("residual_error_bound %v at ct %d is not a finite-sample backtest bound; such a bound is greater than 0", [_valid_bound, effective_ct])) if {
+	_zero_tolerance
+	not blocked
+	not _bucket_a
+	_valid_bound == 0
+}
