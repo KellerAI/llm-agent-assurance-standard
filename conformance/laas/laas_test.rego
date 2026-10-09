@@ -937,13 +937,17 @@ test_szm_r2b_float_sentinel if {
 }
 
 # CT4 tolerance is 0, so bound 0.01 must trip RES-001 for 4 and 4.0 alike.
+# The verifier verdict is "fail" so the fixture is not Bucket A: the zero-tolerance
+# tier (laas-o4c) skips the comparison for Bucket A actions.
+_r2b_non_a := json.patch(_base_ct2, [{"op": "replace", "path": "/verifier/verdict", "value": "fail"}])
+
 test_szm_r2b_float_window_res001 if {
 	m := "residual escape rate 0.01 exceeds tolerance 0 for ct 4"
-	_has_msg(_r2b_int_window(_base_ct2, 4), "LAAS-OBL-RES-001", m)
-	inp := _r2b_float_window(_base_ct2, 4)
+	_has_msg(_r2b_int_window(_r2b_non_a, 4), "LAAS-OBL-RES-001", m)
+	inp := _r2b_float_window(_r2b_non_a, 4)
 	_has_msg(inp, "LAAS-OBL-RES-001", m)
 	vf := violations with input as inp with data.laas as _cfg
-	vi := violations with input as _r2b_int_window(_base_ct2, 4) with data.laas as _cfg
+	vi := violations with input as _r2b_int_window(_r2b_non_a, 4) with data.laas as _cfg
 	vf == vi
 }
 
@@ -972,4 +976,83 @@ test_szm_r2b_pin_nonintegral_window if {
 	s := summary with input as inp with data.laas as _cfg
 	s.effective_ct == 2.5
 	s.compliant == false
+}
+
+# ---- Zero-tolerance tier (laas-o4c) ----
+
+_verifier_human := {"id": "h", "type": "human", "model_lineage": "na", "qualified": true, "verdict": "pass"}
+
+_zt_frag := "is not a finite-sample backtest bound"
+
+_zt_exceeds := "exceeds tolerance 0 for ct 4"
+
+_zt_human(bound) := json.patch(_base_ct4, [
+	{"op": "replace", "path": "/verifier", "value": _verifier_human},
+	{"op": "replace", "path": "/residual_error_bound", "value": bound},
+])
+
+test_zt_human_gated_achieved_bound_compliant if {
+	s := summary with input as _zt_human(0.006718) with data.laas as _cfg
+	s.compliant == true
+}
+
+test_zt_human_gated_zero_bound_rejected if {
+	inp := object.union(_base_ct4, {"verifier": _verifier_human})
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_frag)
+	s := summary with input as inp with data.laas as _cfg
+	s.compliant == false
+}
+
+test_zt_bucket_a_achieved_bound_compliant if {
+	inp := json.patch(_base_ct4, [{"op": "replace", "path": "/residual_error_bound", "value": 0.008938}])
+	s := summary with input as inp with data.laas as _cfg
+	s.compliant == true
+}
+
+test_zt_bucket_a_zero_bound_no_new_rule if {
+	not _has_msg_containing(_base_ct4, "LAAS-OBL-RES-001", _zt_frag)
+}
+
+test_zt_human_unapproved_bound_compared if {
+	inp := json.patch(_zt_human(0.006718), [{"op": "replace", "path": "/human_approval", "value": {"approved": false}}])
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_exceeds)
+}
+
+test_zt_blocked_zero_bound_no_new_rule if {
+	inp := json.patch(_zt_human(0), [{"op": "replace", "path": "/action_blocked", "value": true}])
+	not _has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_frag)
+}
+
+test_zt_failed_deterministic_bound_compared if {
+	inp := json.patch(_base_ct4, [
+		{"op": "replace", "path": "/verifier/verdict", "value": "fail"},
+		{"op": "replace", "path": "/residual_error_bound", "value": 0.003},
+		{"op": "replace", "path": "/action_blocked", "value": true},
+	])
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_exceeds)
+}
+
+# guard: verifier_passed is part of the human-gated skip.
+test_zt_human_failed_bound_compared if {
+	inp := json.patch(_zt_human(0.006718), [{"op": "replace", "path": "/verifier/verdict", "value": "fail"}])
+	inp.human_approval.approved == true
+	inp.action_blocked == false
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_exceeds)
+}
+
+# guard: the human-gated skip requires verifier.type == "human".
+test_zt_model_approved_bound_compared if {
+	inp := json.patch(_base_ct4, [
+		{"op": "replace", "path": "/verifier", "value": object.union(_verifier_det, {"type": "model", "verdict": "pass"})},
+		{"op": "replace", "path": "/residual_error_bound", "value": 0.006718},
+	])
+	inp.human_approval.approved == true
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_exceeds)
+}
+
+# guard: a negative bound fires only R3, never the zero-bound rule.
+test_zt_negative_bound_single_fire if {
+	inp := _zt_human(-0.1)
+	_has_msg(inp, "LAAS-OBL-RES-001", "residual_error_bound must be a number >= 0")
+	not _has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_frag)
 }
