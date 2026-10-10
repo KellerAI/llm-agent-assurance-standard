@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-CON-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/contracting.json`](glossary/contracting.json)
@@ -307,13 +307,24 @@ material. It is the sentence a non-conforming record always omits.
 <actor_id> <verb>ed the action because <one reason, one sentence>.
 The calculation method is <named method>. The design conditions are <values with units>.
 The computed result is <numeral and unit>. The selected rating is <numeral and unit>.
-The measured residual error bound is <number> on <named evaluation set>, measured on <date>.
+The exact-verified claim class is <claim class>. The gate verifier for it is <verifier_id>.
+The open-world claim class is <claim class, or none>.
+The backtest observed <k> escapes in <n> samples on <named evaluation set>, measured on <date>.
+The residual error bound is <number>, the one-sided <confidence> upper bound by the <Wilson|Clopper-Pearson> method.
 The tolerance for CT<n> is <number> from conformance/laas/data.json.
-The residual bound is <at or below|above> the tolerance.
+The backtest verdict is <pass|fail|indeterminate>. The evidence is <evidence_id>.
 The rollback plan is: <step 1>. <step 2>. The named actor is <party>. The time bound is <duration>.
 ```
 
+The residual-risk lines follow [`ste-core.md`](ste-core.md) §3.3.
+Write `none` for the open-world claim class only when the gate verifier checks every claim
+the action depends on, and then omit the four backtest sentences.
+At CT4 the tolerance is `0`, and no finite backtest demonstrates it
+(`docs/laas/backtest.md:116`), so the backtest verdict at CT4 is `indeterminate`.
+
 Filled:
+
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
 
 ```text
 agent.fieldbot.v5 procured the equipment because the existing furnace failed a heat-exchanger
@@ -325,18 +336,23 @@ The computed result is 51,400 BTU/h heating load and 38,900 BTU/h cooling load.
 The selected rating is 60,000 BTU/h input heating and 42,000 BTU/h rated cooling capacity.
 The electrical load added is 24.6 A at 240 V single phase. The existing electrical panel is
 rated 200 A with 62 A of calculated load. The added load is within the panel rating.
-The measured residual error bound is 0.003 on the CT4 held-out adversarial sizing set,
-measured on 2026-06-18.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is above the tolerance.
+The exact-verified claim class is the load calculation and the equipment selection from the
+recorded building inputs. The gate verifier for it is VRF-MANUAL-J.
+The open-world claim class is the building inputs recorded from the site survey.
+The backtest observed 0 escapes in 899 samples on the CT4 held-out adversarial site-survey
+set, measured on 2026-06-18.
+The residual error bound is 0.003000, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_8c673fa058dd58d0.
 The rollback plan is: the purchasing coordinator cancels purchase order PO-2026-9931 with the
 supplier. The coordinator confirms the restocking terms in writing. The named actor is the
 purchasing coordinator. The time bound is 4 hours from release.
 Recovery does not include the custom evaporator coil.
 ```
 
-This filled example fails `LAAS-OBL-RES-001`: the measured bound of `0.003` is above the CT4
-tolerance of `0.0` (`conformance/laas/data.json:15`).
+This filled example fails `LAAS-OBL-RES-001`: the backtest bound of `0.003000` for the
+open-world claim class is above the CT4 tolerance of `0` (`conformance/laas/data.json:15`).
+No finite backtest demonstrates a tolerance of `0` (`docs/laas/backtest.md:116`).
 It is shown failing on purpose. The conforming outcome is not to soften the sentence — it is
 for the gate to block the action and escalate.
 
@@ -347,7 +363,8 @@ for the gate to block the action and escalate.
 The independence basis is <different kind of checker|distinct model lineage with measured
 error correlation <number>|human>.
 <verifier_id> checked <the claim, in one sentence>.
-The verdict is <pass|fail|abstain|indeterminate>.
+The verdict is <pass|fail|indeterminate> for a deterministic verifier.
+The verdict is <pass|fail|abstain|indeterminate> for a model or human verifier.
 The evidence is <evidence_ref>.
 ```
 
@@ -426,8 +443,8 @@ tier, and no threshold.
 
 A language finding is a finding about the record, not about the action, and it enters the
 same structure the policy already uses to separate `error_violations`
-(`conformance/laas/laas.rego:199`) from `warning_violations`
-(`conformance/laas/laas.rego:204`).
+(`conformance/laas/laas.rego:200`) from `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 The checker must not rewrite the record (see [`ste-core.md`](ste-core.md) §5).
 This matters acutely for units. A checker that "corrects" `48,000 BTU` to `48,000 BTU/h` has
@@ -435,7 +452,7 @@ guessed. If the agent actually meant a daily energy figure, the correction has m
 capacity claim nobody made and the record now reads as verified. Reject and require the actor
 to restate.
 
-A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:108-111`).
+A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:119-122`).
 Both records stay in the chain. A pattern of unit defects from one actor is a fact about that
 actor and about every job it has touched.
 
@@ -482,6 +499,8 @@ happens the selection is wrong — see §6.2.
 
 ### 6.2 Conforming record
 
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
+
 ```text
 ACTION
 agent.fieldbot.v5 procured 1 equipment set for work order WO-2026-4417 at 218 Kestrel Lane,
@@ -518,10 +537,14 @@ The manifold gas pressure specified on the nameplate is 3.5 inches of water colu
 natural gas.
 The adopted code is the 2021 International Mechanical Code as amended by Clearwater County
 ordinance 2023-14.
-The measured residual error bound is 0.003 on the CT4 held-out adversarial sizing set,
-measured on 2026-06-18.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is above the tolerance.
+The exact-verified claim class is the load calculation and the equipment selection from the
+recorded building inputs. The gate verifier for it is VRF-MANUAL-J.
+The open-world claim class is the building inputs recorded from the site survey.
+The backtest observed 0 escapes in 899 samples on the CT4 held-out adversarial site-survey
+set, measured on 2026-06-18.
+The residual error bound is 0.003000, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_8c673fa058dd58d0.
 The rollback plan is: the purchasing coordinator cancels purchase order PO-2026-9931 with the
 supplier. The coordinator confirms the restocking terms in writing. The named actor is the
 purchasing coordinator. The time bound is 4 hours from release.
@@ -558,15 +581,15 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-MANUAL-J` runs before the purchase order is released. After release the coil is unrecoverable. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic recomputation is a different *kind* of checker (`standard/LAAS.md:87`). A second language model estimating tonnage would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for Manual J load computation and Manual S selection, a negative-test suite of known oversizing errors it must catch, and a change-controlled version in the trace. |
-| `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0.0` (`data.json:15`). The measured `0.003` is above tolerance. |
+| `LAAS-OBL-RES-001` | `VRF-MANUAL-J` returned `fail`, so the action is not Bucket A to the gate (`conformance/laas/laas.rego:244-247`) and the record carries the open-world bound. The bound `0.003000` is above the CT4 tolerance of `0` (`data.json:15`). The backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). |
 | `LAAS-OBL-HUM-001` | The responsible licensed mechanical contractor approves before release, and `escalation_approved` is `true`. |
 | `LAAS-OBL-VEN-001` | The supplier's non-return terms are a vendor scope limit. The record names the supplier and states the terms rather than writing "may not be returnable". |
 
 **Outcome: the action is blocked.**
 Two obligations fail independently.
 `LAAS-OBL-IRR-001` fails because the verifier verdict is `fail`.
-`LAAS-OBL-RES-001` fails because `0.003` exceeds the CT4 tolerance of `0.0`.
-The conformance predicate at `standard/LAAS.md:115-117` admits exactly one conforming path
+`LAAS-OBL-RES-001` fails because `0.003000` exceeds the CT4 tolerance of `0`.
+The conformance predicate at `standard/LAAS.md:126-129` admits exactly one conforming path
 for a failing verdict: the action is blocked and escalated.
 
 **Language conformance: `LC-3`**, with the §3.3 notation block applying unconditionally.

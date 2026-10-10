@@ -6,7 +6,7 @@
 ---
 
 - **Prepared by:** KellerAI Open-Source Working Group
-- **Machine source of truth:** `conformance/laas/data.json` (machine-readable bundle `laas-fin-1.1.1`)
+- **Machine source of truth:** `conformance/laas/data.json` (machine-readable bundle `laas-fin-2.0.0`)
 - **Enforcing policy:** `conformance/laas/laas.rego` (OPA package `kellerai.laas.actions`)
 - **Rationale and design record:** `docs/laas/proposal-v1.1.md`
 - **Supersedes:** LAAS v1.0 (draft)
@@ -137,7 +137,7 @@ its application.
 
 - `standard/LAAS.md`: LAAS prose normative reference, v1.1 (canonical; `data.json` is derived
   from it).
-- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.1`; the machine
+- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-2.0.0`; the machine
   source of truth for tier-lattice values, escape-rate tolerances, and obligation metadata.
 - `conformance/laas/laas.rego`: OPA policy implementing the conformance predicate, package
   `kellerai.laas.actions`.
@@ -167,8 +167,12 @@ issuing an action; used to determine whether a verifier shares the actor's subst
 
 **aggregate window CT**
 The consequence tier derived from the cumulative effect of a windowed set of actions by the same
-principal, session, or effect class; computed by the gate and used to enforce the anti-structuring
-rule (see `conformance/laas/laas.rego:48–50`).
+principal, session, or effect class; computed by the gate and used to enforce the
+anti-structuring rule.
+The reference policy reads this tier from the supplied `aggregate.window_effect_ct` field and
+enforces `effective_ct` as at least that value (`conformance/laas/laas.rego:48–50`,
+`conformance/laas/laas.rego:311–316`); deriving the window tier from cumulative actions requires
+separate verification.
 
 **append-only store**
 A storage system to which records can be added but not modified or deleted by any party,
@@ -226,9 +230,11 @@ action, carrying the fields enumerated in Section 7.2 of this standard.
 The organization or individual that operates a conforming agent system against this standard.
 
 **effective CT**
-The maximum of the gate-assigned CT and the aggregate-window CT;
+The maximum of the gate CT and the aggregate-window CT;
 the tier actually enforced
 (`conformance/laas/laas.rego:48`).
+The gate CT is the gate-assigned CT, or the lattice `expected_ct` when the gate recorded no
+valid CT (`conformance/laas/laas.rego:275–277`).
 
 **enforcement gate (gate)**
 An out-of-process component that (a) observes the action's effect surface, (b) derives the
@@ -356,12 +362,21 @@ tool qualification under RTCA DO-330.
 ### 4.1 Conformance predicate
 
 A conforming system shall satisfy, for every gated action, the following predicate
-(stated normatively; implemented in `conformance/laas/laas.rego:155–193`, `:225–260`):
+(stated normatively; `conformance/laas/laas.rego:155–194`, `:226–261`, `:286–301`, `:318–356`
+check only a subset of it: the verifier, human-approval, and residual-bound conditions.
+The verifier and human-approval checks (`:155–182`, `:226–231`) are waived when the action is blocked,
+as are the missing-bound and missing-evidence residual checks (`:249–261`) and the exactly-0
+bound check at a zero tolerance (`:348–356`);
+the over-tolerance residual check (`:184–194`) has no blocked exemption, but at a zero tolerance it
+is skipped for Bucket A and human-gated actions (`:331–346`);
+the bound-validity check (`:286–301`) applies whether or not the action is blocked.
+OPA does not evaluate escalation; the "escalated" condition requires deployment controls):
 
 > If any obligation's trigger condition matched the action, then the action either
 > (a) passed an independent, qualified pre-commit verifier (plus human approval when
 > the effective CT is 4), with measured residual escape rate not exceeding the
-> declared tolerance, **or** (b) was blocked and escalated.
+> declared tolerance or, at a zero tolerance, satisfying the deterministic or human
+> gate of `standard/LAAS.md` §4.3, **or** (b) was blocked and escalated.
 > No other outcome conforms.
 
 **4.1.1** A deployer's system shall be capable of evaluating this predicate mechanically, given
@@ -451,21 +466,28 @@ where the rank mappings are:
 
 **5.1.3** When any axis of the observed effect surface is undetermined or absent, the gate shall
 assign `expected_ct = 4`.
-This is the default when the gate cannot observe the effect surface
-(`conformance/laas/laas.rego:30`).
+In the reference policy, `expected_ct` defaults to 4 (`conformance/laas/laas.rego:30`) and is
+lowered only when `external_effect` is explicitly `false`, which yields CT0, or when
+`external_effect` is `true` and all three axes map to lattice tiers
+(`conformance/laas/laas.rego:33–45`); an undetermined axis with `external_effect` explicitly
+`false` therefore yields CT0, not CT4.
 
 **5.1.4** The gate-assigned CT (`gate.assigned_ct`) shall not be less than the lattice-derived
 `expected_ct`.
 Violation of this requirement constitutes a TIER-001 (`LAAS-OBL-TIER-001`) error-severity
 violation (`conformance/laas/laas.rego:99–104`).
+The gate shall record `gate.assigned_ct` as an integer in 0..4.
+An absent or invalid `gate.assigned_ct` constitutes a TIER-001 error-severity violation, and the
+gate shall enforce the lattice `expected_ct` in its place (`conformance/laas/laas.rego:263–284`).
 
 **5.1.5** The effective CT enforced by the gate shall be:
 
 ```text
-effective_ct = max( gate.assigned_ct, aggregate_window_ct )
+effective_ct = max( gate_ct, aggregate_window_ct )
 ```
 
-where `aggregate_window_ct` is the cumulative window effect tier defined in Section 5.3
+where `gate_ct` is `gate.assigned_ct` when it is an integer in 0..4, and otherwise the lattice
+`expected_ct` (`conformance/laas/laas.rego:266–277`); and `aggregate_window_ct` is the cumulative window effect tier defined in Section 5.3
 (`conformance/laas/laas.rego:48–50`).
 
 **5.1.6** The operational definitions of the three axes shall be:
@@ -488,7 +510,7 @@ This field is informational; it shall be recorded in the decision trace.
 effective CT.
 The gate tier prevails.
 
-**5.2.3** When `self_reported_ct` is less than `gate.assigned_ct`, the gate shall record a
+**5.2.3** When `self_reported_ct` is less than the gate CT (5.1.5), the gate shall record a
 SELF-001 (`LAAS-OBL-SELF-001`) warning-severity violation in the decision trace
 (`conformance/laas/laas.rego:107–112`).
 This warning does not block the action.
@@ -502,7 +524,7 @@ effect class (`aggregate_window_ct`).
 threshold, subsequent actions in that window shall be re-tiered to the aggregate's CT
 (`conformance/laas/laas.rego:48–50`, `conformance/laas/laas.rego:131–136`).
 
-**5.3.3** The gate-assigned CT for any action shall not be less than `aggregate_window_ct`.
+**5.3.3** A valid gate-assigned CT for any action shall not be less than `aggregate_window_ct`.
 Violation constitutes an AGG-001 (`LAAS-OBL-AGG-001`) error-severity violation.
 
 **5.3.4** This requirement closes the structuring loophole by which an actor could decompose
@@ -572,7 +594,10 @@ These mechanisms scale human oversight to exceptions rather than volume
 
 **6.1.1** For every action whose effective CT is 3 or 4, the gate shall require a passing
 independent, qualified pre-commit verifier before the action is committed
-(`conformance/laas/data.json:12`, `conformance/laas/laas.rego:155–159`).
+(`conformance/laas/data.json:12`). In the reference policy, a non-blocked CT≥3 action whose
+verifier verdict is not `pass` constitutes an IRR-001 violation (`conformance/laas/laas.rego:155–159`);
+independence and qualification of a passing verifier are checked separately as IND-001 and
+VQ-001 (`conformance/laas/laas.rego:162–175`).
 
 **6.1.2** Pre-commit means verification completes and the gate evaluates the verdict before the
 action takes effect.
@@ -595,7 +620,7 @@ and verdict shall be recorded in the decision trace for every CT≥3 action.
 ### 6.2 Verifier independence (IND-001)
 
 **6.2.1** A verifier satisfies the independence requirement if exactly one of the following
-conditions holds (`conformance/laas/laas.rego:76–84`, `:225–230`, `docs/laas/proposal-v1.1.md:§7.3`):
+conditions holds (`conformance/laas/laas.rego:76–84`, `:226–231`, `docs/laas/proposal-v1.1.md:§7.3`):
 
 1. The verifier is a **deterministic or exact checker**: a different kind of checker from the
    actor (e.g., a schema validator, ledger reconciliation engine, hash comparison, or allowlist
@@ -604,7 +629,7 @@ conditions holds (`conformance/laas/laas.rego:76–84`, `:225–230`, `docs/laas
    with the actor does not exceed 0.2 (`conformance/laas/data.json:14`). A shared-substrate
    verifier (same base model or fine-tune family) is presumed non-independent. This form of
    independence is permitted up to CT3. At CT4 a model verifier does not satisfy independence,
-   even with human approval (`conformance/laas/laas.rego:225–230`).
+   even with human approval (`conformance/laas/laas.rego:226–231`).
 3. The verifier is a **human**. Human review satisfies independence at any CT and is required in
    addition to automated verification at CT4.
 
@@ -612,9 +637,9 @@ conditions holds (`conformance/laas/laas.rego:76–84`, `:225–230`, `docs/laas
 empirically, the gate shall fall back to a deterministic or human verifier at CT≥3.
 
 **6.2.3** A verifier that does not satisfy any condition in Requirement 6.2.1 is non-independent.
-Using a non-independent verifier for a CT≥3 action, when the action was not blocked,
-constitutes an IND-001 (`LAAS-OBL-IND-001`) error-severity violation
-(`conformance/laas/laas.rego:162–167`; CT4 model verifiers: `:225–230`).
+Using a non-independent verifier that returned `pass` for a CT≥3 action, when the action
+was not blocked, constitutes an IND-001 (`LAAS-OBL-IND-001`) error-severity violation
+(`conformance/laas/laas.rego:162–167`; CT4 model verifiers: `:226–231`).
 
 **6.2.4** The independence basis shall be recorded as one of the string values
 `deterministic`, `distinct_lineage_low_correlation`, or `human` in the decision trace.
@@ -648,7 +673,7 @@ shall be referenced by `verifier_qualification_ref` in the decision trace.
 
 **6.4.1** For Bucket B claims at CT≥2, the deployer shall declare a maximum acceptable escape
 rate for each applicable CT
-(`conformance/laas/data.json:15`, `conformance/laas/laas.rego:185–193`, `:248–260`).
+(`conformance/laas/data.json:15`, `conformance/laas/laas.rego:185–194`, `:249–261`).
 
 **6.4.2** The declared tolerances shall not exceed the following maximum values:
 
@@ -661,6 +686,14 @@ rate for each applicable CT
 These values are normative and are sourced from
 `conformance/laas/data.json` key `escape_rate_tolerance_by_ct`.
 
+NOTE: No finite-sample backtest can demonstrate a tolerance of 0, because any binomial upper bound
+over a finite sample is greater than 0 (`standard/LAAS.md:108–110`).
+At a zero tolerance the residual clause shall be met by the deterministic pass (Bucket A) or by the
+human gate: a human verifier whose verdict is `pass`, plus recorded human approval
+(`standard/LAAS.md:110–112`, `conformance/laas/laas.rego:325–339`).
+A recorded bound of exactly 0 on a non-blocked action outside Bucket A does not conform
+(`standard/LAAS.md:112–114`, `conformance/laas/laas.rego:348–356`).
+
 **6.4.3** The deployer shall estimate the escape rate by backtesting on a held-out,
 representative, and adversarially-stressed evaluation set, with a stated confidence interval.
 
@@ -670,15 +703,31 @@ tool set, or policy.
 **6.4.5** When the measured residual escape rate bound (`residual_error_bound`) of an action
 exceeds the tolerance for its effective CT, the gate shall record an RES-001
 (`LAAS-OBL-RES-001`) error-severity violation.
+Exception: at a zero tolerance, the gate shall not compare the bound to the tolerance for a
+Bucket A action or a human-gated action; the recorded bound is then evidence, not a pass
+condition (`standard/LAAS.md:110–112`, `conformance/laas/laas.rego:331–346`).
 
 **6.4.6** At CT≥2, on a non-blocked action, `residual_error_bound` may be null only for Bucket A actions, where a deterministic
-verifier returned `pass` (`conformance/laas/laas.rego:243–246`). A non-blocked CT≥2 action
+verifier returned `pass` (`conformance/laas/laas.rego:244–247`). A non-blocked CT≥2 action
 that is not Bucket A and supplies no bound constitutes an RES-001 violation
-(`conformance/laas/laas.rego:255–260`).
+(`conformance/laas/laas.rego:256–261`).
+At a zero tolerance, a non-blocked action that is not Bucket A and records a
+`residual_error_bound` of exactly 0 constitutes an RES-001 violation, because such a value is
+not a finite-sample backtest bound (`standard/LAAS.md:112–114`,
+`conformance/laas/laas.rego:348–356`).
 
 **6.4.7** Evidence of the escape-rate measurement, including the backtest report reference,
 shall be recorded in the decision trace under `evidence_refs`
-(`conformance/laas/laas.rego:234–241`, `:248–253`).
+(`conformance/laas/laas.rego:235–242`, `:249–254`). The reference policy checks only the
+shape of `evidence_refs` (a non-empty array of non-empty strings, `:235–242`); it does not
+verify that the strings identify the measurement evidence or the backtest report. That
+provenance and artifact-ID binding require enforcement by the deployment or by separate
+verification.
+
+**6.4.8** A supplied `residual_error_bound` shall be a number >= 0; `null` is equivalent to
+absent.
+Any other value constitutes an RES-001 violation at any CT, whether or not the action is blocked,
+and is never compared to the tolerance (`conformance/laas/laas.rego:286–301`).
 
 ---
 
@@ -687,17 +736,24 @@ shall be recorded in the decision trace under `evidence_refs`
 ### 7.1 Enforcement-plane integrity (ENF-001)
 
 **7.1.1** The gate shall operate as an out-of-process component in a trust boundary separate
-from the actor (`conformance/laas/data.json:17`, `conformance/laas/laas.rego:120–123`).
+from the actor (`conformance/laas/data.json:17`).
 The actor shall not be able to disable, modify, bypass, or influence the gate, even when the
 actor operates with elevated permissions (e.g., in modes that disable standard permission
 checks).
+The rule at `conformance/laas/laas.rego:120–123` checks only that `input.gate.out_of_process` is
+set when an out-of-process gate is required; the trust boundary and the actor's inability to
+bypass the gate require separate verification.
 
 **7.1.2** The policy bundle executed by the gate shall be **signed** and **version-pinned**
-(`conformance/laas/data.json:16`, `conformance/laas/laas.rego:115–118`).
+(`conformance/laas/data.json:16`).
+The rule at `conformance/laas/laas.rego:115–118` checks only that `input.gate.bundle_signed` is set
+when signing is required; it does not check the version pin, which requires separate verification.
 The gate shall verify the signature before executing the bundle.
 
 **7.1.3** The decision-trace sink shall be append-only; the actor shall not be able to modify
-or delete trace records (`conformance/laas/laas.rego:126–128`).
+or delete trace records.
+The rule at `conformance/laas/laas.rego:126–128` checks only `input.trace.append_only`; whether
+the sink prevents the actor from modifying or deleting records requires separate verification.
 
 **7.1.4** A decision trace asserting an in-process gate or an unsigned bundle is non-conforming
 regardless of the verdict recorded, and constitutes an ENF-001 (`LAAS-OBL-ENF-001`)
@@ -720,7 +776,7 @@ every decision-trace record.
 | `action_ref` | A stable identifier for the action |
 | `effect_surface_hash` | Cryptographic hash of the gate-observed effect surface |
 | `gate_derived_ct` | The expected CT from the tier lattice |
-| `effective_ct` | `max(gate.assigned_ct, aggregate_window_ct)` |
+| `effective_ct` | `max(gate_ct, aggregate_window_ct)` |
 | `self_reported_ct` | The actor's self-declared tier (informational) |
 | `trigger_matched` | Whether the obligation trigger condition fired |
 | `verifier_id` | Identifier of the verifier invoked |
@@ -732,7 +788,7 @@ every decision-trace record.
 | `verifier_error_correlation` | Measured correlation with the actor; null for non-model verifiers |
 | `verifier_input_hash` | Cryptographic hash of inputs provided to the verifier |
 | `verdict` | One of `pass`, `fail`, `abstain`, `indeterminate` |
-| `residual_error_bound` | Measured escape rate; null for pure Bucket A actions |
+| `residual_error_bound` | Measured escape rate, a number >= 0; null for pure Bucket A actions |
 | `residual_tolerance` | Declared maximum tolerance for the effective CT |
 | `evidence_refs` | References to backtest reports or other supporting evidence |
 | `escalation` | Null, or `{queue, ticket_id}` when the action was escalated |
@@ -765,8 +821,9 @@ evidence shall be re-readable, though re-deriving a non-deterministic model verd
 required.
 
 **7.2.6** Failure to emit a conforming, append-only, chained trace record constitutes a TRC-001
-(`LAAS-OBL-TRC-001`) error-severity violation
-(`conformance/laas/laas.rego:126–128`).
+(`LAAS-OBL-TRC-001`) error-severity violation.
+The OPA rule (`conformance/laas/laas.rego:126–128`) checks only `input.trace.append_only`;
+chaining and anchoring require separate verification.
 
 ### 7.3 Evidence store
 
@@ -890,9 +947,10 @@ The gate observes: `reversibility=irreversible` (rank 4), `scope=public` (rank 4
 `expected_ct = max(4, 4, 4) = 4`.
 The actor's self-reported tier is irrelevant; the gate-derived tier is CT4.
 The system requires independent pre-commit verification (Section 6.1),
-verifier independence and qualification (Sections 6.2–6.3), residual escape rate of 0 %
-(Section 6.4, `data.json` key `escape_rate_tolerance_by_ct["4"]`), and human approval
-(Section 8.1).
+verifier independence and qualification (Sections 6.2–6.3), and human approval (Section 8.1).
+The CT4 escape-rate tolerance is 0 (`data.json` key `escape_rate_tolerance_by_ct["4"]`), so the
+residual clause is met by the deterministic or human gate, not by a measured rate of 0 %
+(Section 6.4).
 Source: `docs/laas/proposal-v1.1.md:§6.1`.
 
 ### A.3 Obligation-to-clause map
@@ -924,7 +982,7 @@ Source: `conformance/laas/data.json` key `obligations`.
 | 1 | yes | yes | no | no | no | no | no |
 | 2 | yes | no | yes (or rehearsed rollback) | no | yes | no | yes |
 | 3 | yes | no | yes | yes | yes | no | yes |
-| 4 | yes | no | yes | yes | yes (0 %) | yes | yes |
+| 4 | yes | no | yes | yes | tolerance 0: met by deterministic or human gate (6.4) | yes | yes |
 
 ---
 
@@ -1036,7 +1094,7 @@ Readers should confirm current versions before relying on specific document deta
 ### LAAS internal sources (normative)
 
 - `standard/LAAS.md`: canonical prose specification, LAAS v1.1.
-- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-1.1.1`.
+- `conformance/laas/data.json`: machine-readable obligation bundle `laas-fin-2.0.0`.
 - `conformance/laas/laas.rego`: OPA policy, package `kellerai.laas.actions`.
 - `docs/laas/proposal-v1.1.md`: rationale and design record, LAAS v1.1.
 

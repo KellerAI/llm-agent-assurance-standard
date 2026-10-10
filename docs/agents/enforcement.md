@@ -22,6 +22,7 @@ How the conventions in **llm-agent-assurance-standard** are enforced — what is
 
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`, `conformance/blast_radius.rego:15`.
+External conformance workflow: `.github/workflows/conformance.yml:4-5`, `.github/workflows/ci.yml:37`.
 
 The pre-commit hook is managed by `lefthook`.
 Install it once with `lefthook install`; it then runs the sanitization gate before every commit.
@@ -90,9 +91,9 @@ checks that the tier assignment, verification, and enforcement are correct.
   the CT lattice, and enforcement thresholds (`conformance/laas/data.json:1–34`).
 - **Entry points:** `violations` (set of `{obligation, severity, msg}`),
   `summary` (`bundle`, `expected_ct`, `effective_ct`, `errors`, `warnings`, `compliant`;
-  `bundle` at `laas.rego:216`),
+  `bundle` at `laas.rego:217`),
   `compliant` (bool — true when no error-severity violations exist),
-  and `error_ids` (set of obligation IDs with error-severity violations; rule at `laas.rego:209`)
+  and `error_ids` (set of obligation IDs with error-severity violations; rule at `laas.rego:210`)
   (`laas.rego:11–14`).
 - **CT classification** — tier is the lattice max of three axes; an unknown or
   undetermined surface defaults to CT4 (`laas.rego:30`; `data.json:11`):
@@ -107,9 +108,15 @@ checks that the tier assignment, verification, and enforcement are correct.
   - **CT4** — irreversible or high-consequence; requires independent
     verification **plus** human approval; default when surface is undetermined
     (`data.json:13`).
-- **Effective tier:** max of the gate-assigned CT and the cumulative window CT,
+- **Effective tier:** max of the gate tier and the cumulative window CT,
   preventing structuring attacks (`laas.rego:48`).
+  The cumulative window CT is supplied by the caller (the policy does not compute it);
+  the max rule only consumes it, so preventing structuring also depends on that supplied value
+  (`input.aggregate.window_effect_ct`, `laas.rego:311`).
+  The gate tier is `gate.assigned_ct`, or the lattice CT when `assigned_ct` is absent or not an integer 0..4
+  (`laas.rego:266–277`).
 - **Fail-safe default:** `default expected_ct := 4` (`laas.rego:30`).
+  An absent or invalid `assigned_ct` falls back to the lattice CT and raises TIER-001 (`laas.rego:263–284`).
 
 ### LaaS obligation families
 
@@ -117,40 +124,58 @@ Each obligation maps to a violation rule in `laas.rego`; severities are
 recorded in `conformance/laas/data.json:19–32`.
 
 - **`LAAS-OBL-TIER-001`** — CT is gate-derived from the observed effect surface;
-  a gate-assigned tier below the lattice-derived tier is an error
+  a valid gate-assigned tier below the lattice-derived tier is an error
   (`laas.rego:99–104`; `data.json:20`).
+  It also fires when the gate did not record an integer `assigned_ct` in 0..4,
+  and the lattice tier is then enforced (`laas.rego:279–284`; `data.json:20`).
 - **`LAAS-OBL-SELF-001`** — a self-reported tier may not lower the gate-derived
-  tier; the gate always prevails (warning, `laas.rego:107–112`; `data.json:21`).
+  tier; the gate always prevails
+  (compared against the lattice CT when `assigned_ct` is invalid;
+  warning, `laas.rego:107–112`; `data.json:21`).
 - **`LAAS-OBL-ENF-001`** — enforcement-plane integrity: the policy bundle must
   be signed and the gate must run out-of-process (`laas.rego:115–123`; `data.json:22`).
-- **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained
-  (`laas.rego:126–128`; `data.json:23`).
-- **`LAAS-OBL-AGG-001`** — the assigned tier must not be below the cumulative
+  OPA checks only the recorded `gate.bundle_signed` and `gate.out_of_process` flags;
+  the actual signature and process boundary require separate verification.
+- **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained.
+  The cited OPA rule checks only the `append_only` flag; it does not reference
+  the chain hash or Merkle anchor, so chaining needs separate verification or a
+  deployment control (`laas.rego:126–128`; `data.json:23`).
+- **`LAAS-OBL-AGG-001`** — a valid assigned tier must not be below the cumulative
   window CT; guards against structuring (`laas.rego:131–136`; `data.json:24`).
+  An invalid `assigned_ct` is handled by TIER-001 (`laas.rego:279–284`).
 - **`LAAS-OBL-INP-001`** — untrusted input must raise the tier to the configured
   floor (CT≥3 by default) or the action must be blocked
   (`laas.rego:139–146`; `data.json:18,25`).
 - **`LAAS-OBL-VEN-001`** — third-party or vendor dependencies require attribution
   and scope limits (`laas.rego:149–152`; `data.json:26`).
 - **`LAAS-OBL-IRR-001`** — CT≥3 actions require a passing independent pre-commit
-  verifier unless the action is blocked (`laas.rego:155–159`; `data.json:27`).
+  verifier unless the action is blocked. OPA's IRR-001 rule checks only that a
+  non-blocked CT≥3 verifier verdict is `pass` (`laas.rego:155–159`; `data.json:27`);
+  independence and qualification are checked by IND-001 and VQ-001 below.
 - **`LAAS-OBL-IND-001`** — the pre-commit verifier must be independent: deterministic,
   human, or a model of a different lineage with error-correlation ≤ 0.2
-  (`laas.rego:76–84`, `:162–167`). At CT4 a passed model verifier always violates it;
-  a deterministic or human verifier is required (`laas.rego:225–230`; `data.json:13,14,28`).
+  (`laas.rego:76–84`, `:162–167`). At CT4 a passed model verifier on a non-blocked
+  action violates it;
+  a deterministic or human verifier is required (`laas.rego:226–231`; `data.json:13,14,28`).
 - **`LAAS-OBL-VQ-001`** — the verifier must be qualified (DO-330 analogue)
   (`laas.rego:170–175`; `data.json:29`).
 - **`LAAS-OBL-RES-001`** — the Bucket-B residual escape rate must be within
-  tolerance for the effective tier (`laas.rego:185–193`). At CT≥2 on a non-blocked
-  action, a numeric bound also needs non-empty `evidence_refs` (`laas.rego:248–253`),
+  tolerance for the effective tier (`laas.rego:185–194`). At CT≥2 on a non-blocked
+  action, a numeric bound also needs non-empty `evidence_refs` (`laas.rego:249–254`),
   and a Bucket-B action (no passed deterministic verifier) must supply a bound
-  (`laas.rego:255–260`; `data.json:15,30`).
+  (`laas.rego:256–261`; `data.json:15,30`).
+  A supplied `residual_error_bound` that is not a number >= 0 also fires RES-001 at any CT, blocked or not
+  (`laas.rego:286–301`).
+  A `null` bound counts as absent, and an invalid bound is never compared to the tolerance.
+  At a zero tolerance (CT4 by default, `data.json:15`) the over-tolerance comparison is skipped for a Bucket-A or
+  human-gated action, and a non-blocked action outside Bucket A that records a bound of exactly 0 violates RES-001
+  (`laas.rego:318–356`; `standard/LAAS.md:108–114`).
 - **`LAAS-OBL-HUM-001`** — CT4 actions require human approval unless the action
   is blocked (`laas.rego:178–182`; `data.json:13,31`).
 
 ### Audit trail — `violations` and `summary`
 
-Every evaluation produces a `summary` record (`laas.rego:215–222`) containing
+Every evaluation produces a `summary` record (`laas.rego:216–223`) containing
 `bundle`, `expected_ct`, `effective_ct`, `errors`, `warnings`, and `compliant`.
 The `violations` set carries the full obligation ID, severity, and a diagnostic
 message for each firing rule.

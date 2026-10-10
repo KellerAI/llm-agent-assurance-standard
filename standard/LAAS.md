@@ -54,7 +54,7 @@ v1.1 §6.2.
 | 1  | Self-check (exact verifier if one exists) + trace |
 | 2  | Independent automated check **or** rehearsed rollback + bounded residual + trace |
 | 3  | **Mandatory independent, qualified pre-commit verification** + residual ≤ tolerance + rollback plan + trace |
-| 4  | CT3 controls **+ human approval** + abstention default + full evidence |
+| 4  | CT3 controls (residual clause per §4.3 at a zero tolerance) **+ human approval** + abstention default + full evidence |
 
 The cumulative effect of a sequence MUST be tiered too: if a windowed aggregate crosses a
 threshold, subsequent actions are re-tiered to the aggregate's tier (anti-structuring).
@@ -97,10 +97,21 @@ suite of known-bad inputs it must catch, and a change-controlled version recorde
 
 ### 4.3 Escape rate (normative)
 
-For the open-world ("Bucket B") class, the operator declares a maximum **escape rate** (residual
-undetected-error rate) per CT (`data.json → escape_rate_tolerance_by_ct`), estimates it by
-backtesting on a held-out adversarial set, and re-measures on any model/prompt/tool/policy change.
-Conformance requires measured escape rate ≤ tolerance, with evidence referenced in the trace.
+An action is in **Bucket A** when a deterministic verifier checks its claim and returns pass. Every
+other action is in the open-world **Bucket B**.
+
+For Bucket B, the operator declares a maximum **escape rate** (residual undetected-error rate) per
+CT (`data.json → escape_rate_tolerance_by_ct`), estimates it by backtesting on a held-out
+adversarial set, and re-measures on any model/prompt/tool/policy change. Conformance requires
+measured escape rate ≤ tolerance, with evidence referenced in the trace.
+
+**Zero tolerance.** Where the declared tolerance for the effective CT is 0 (CT4 by default), no
+finite-sample backtest can demonstrate it: any binomial upper bound over a finite sample is greater
+than 0 (`docs/laas/backtest.md:116`). At a zero tolerance the residual clause is satisfied by the
+deterministic pass (Bucket A) or by the human gate — a human verifier whose verdict is pass, plus
+recorded human approval. The recorded bound is then evidence, not a pass condition. A recorded bound
+of exactly 0 on a non-blocked action outside Bucket A is not a finite-sample backtest bound and does
+not conform. This rule keys on a zero tolerance, not on CT4 as such.
 
 ## 5. Decision trace (normative)
 
@@ -113,8 +124,9 @@ tokenized; the searchable index is separable from sensitive payloads.
 The **conformance predicate** (encoded in `laas.rego`) is, in plain terms:
 
 > If an obligation's trigger matched, then either the action **passed** an independent, qualified
-> verifier (plus human approval at CT4, plus residual ≤ tolerance) **or** the action was
-> **blocked** and escalated. Nothing else conforms.
+> verifier (plus human approval at CT4, plus residual ≤ tolerance or, at a zero tolerance, the
+> §4.3 deterministic or human gate) **or** the action was **blocked** and escalated. Nothing else
+> conforms.
 
 ## 6. Conformance & attestation
 

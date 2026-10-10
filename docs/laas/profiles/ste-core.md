@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-CORE-DRAFT-1.0
 **Document type:** Base controlled-language profile (informative to LAAS, normative to profiles that adopt it)
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Status:** Draft, not approved
 
@@ -107,6 +107,45 @@ Each row gives the required replacement.
 | *etc.*, *and so on*, *among others* | Unbounded scope | The complete list, or the count and the selection rule |
 | *we*, *the team*, *the system* (as actor) | Unattributed actor | The `actor_id`, or the named component |
 
+### 3.3 Claim classes in the residual-risk statement
+
+A deterministic verifier is exact only for the claim it checks, and only relative to its inputs.
+A dose-range checker proves that a dose is inside the formulary range.
+It does not prove that the dose is the dose the clinician ordered.
+A `pass` covers the claim the verifier checked and no other claim in the record.
+
+Every residual-risk statement therefore names two claim classes.
+The exact-verified claim class is the claim the gate verifier checks.
+The open-world claim class is every other claim the action depends on.
+Write `none` for the open-world claim class only when the gate verifier checks every such
+claim.
+
+The open-world claim class carries a backtest result in the form that
+`docs/laas/backtest.md` §4 emits.
+State the escape count, the sample count, the evaluation set, and the measurement date.
+State the bound, the confidence level, and the interval method.
+State the tolerance, the backtest verdict, and the evidence identifier.
+A bound without its sample count has no measurement basis under `STE-C-10`.
+
+A binomial upper bound over a finite sample is greater than `0`
+(`docs/laas/backtest.md:116`).
+A residual error bound of `0.0` for an open-world claim class is therefore never a measured
+value, at any tier; the policy rejects it at a zero tolerance (`conformance/laas/laas.rego:348-356`).
+At CT4 the tolerance is `0` (`conformance/laas/data.json:15`), so the backtest verdict at CT4
+is `indeterminate` with the disposition `requires_deterministic_or_human_gate`.
+The control for the open-world claim class at CT4 is the human approver
+(`LAAS-OBL-HUM-001`, `standard/LAAS.md:108-114`).
+
+The trace field `residual_error_bound` follows the gate verifier.
+When the gate verifier is deterministic and returns `pass`, the gate treats the action as
+Bucket A and does not require the field (`conformance/laas/laas.rego:244-247`, `:256-261`).
+Otherwise the field carries the open-world bound, with its evidence identifier in
+`evidence_refs` (`conformance/laas/laas.rego:249-254`).
+
+A deterministic verifier returns `pass`, `fail`, or `indeterminate`.
+It does not return `abstain`, which is a confidence notion
+(`docs/laas/proposal-v1.1.md:140`).
+
 ## 4. Language-conformance levels
 
 A profile is checked at one of four levels.
@@ -124,12 +163,25 @@ An actor asserting that its own prose is conformant is the constrained party gra
 itself, which is the failure mode `standard/LAAS.md:33` names.
 `LC-1` is acceptable only where the tier makes the record low-stakes.
 
+This repository ships no reference checker for `LC-2`.
+A record that claims `LC-2` or `LC-3` names the checker and its version in the trace.
+
+Two kinds of forbidden entry need two kinds of checker.
+A notation entry, or an entry without a sense condition, is a string match.
+A deterministic term matcher checks it, and that matcher is a different kind of checker
+(`standard/LAAS.md` §4.1).
+An entry conditioned on the sense of a word, such as *material* (informal) or *reverse*
+(as undo), needs a checker that resolves the sense.
+That checker is a model.
+It is a verifier of the record, so it is qualified under `LAAS-OBL-VQ-001` before it gates a
+CT3 or CT4 record, and its escape rate is measured like any other open-world claim class.
+
 ## 5. Recommended gate policy
 
 Controlled-language conformance is a **precondition on the record**, not a new obligation.
 The gate already distinguishes blocking findings from reported ones:
-`conformance/laas/laas.rego:199` collects `error_violations` and
-`conformance/laas/laas.rego:204` collects `warning_violations`.
+`conformance/laas/laas.rego:200` collects `error_violations` and
+`conformance/laas/laas.rego:205` collects `warning_violations`.
 A language finding is recommended to enter that same structure.
 
 | Effective CT | Required level | Gate response to non-conformance |
@@ -167,6 +219,15 @@ A checker that rewrites the record to make it conform has taken over authorship,
 resulting record no longer describes what the actor claimed.
 A conforming checker reports findings and blocks. It does not edit.
 
+**The rewrite count is an audit signal.**
+An actor can rewrite a rejected record until the checker accepts it.
+That loop makes conformance the target, and the accepted record then describes what passes
+the checker rather than what the actor did.
+The trace keeps every rejected record (`LAAS-OBL-TRC-001`).
+Report the count of rejected records before the accepted record for each action.
+Review the first rejected record against the accepted record when a claim changed between
+them, and not only its wording.
+
 ## 6. How controlled language strengthens the existing obligations
 
 No obligation below is new.
@@ -185,7 +246,7 @@ Each row states what the controlled language adds to an obligation that already 
 | `LAAS-OBL-IRR-001` | A rollback plan written in the conditional (`STE-C-08`) is not a plan. The rule makes the absence visible. |
 | `LAAS-OBL-IND-001` | `independence_basis` is a free-text field carrying a load-bearing claim. Controlled terms make it checkable against the three bases at `standard/LAAS.md:87-89`. |
 | `LAAS-OBL-VQ-001` | Claim-class coverage requires a stable claim class. This is the strongest dependency in the table. |
-| `LAAS-OBL-RES-001` | `STE-C-10` forces a quantity with a unit and a basis, which is the only form a residual bound can be compared against `escape_rate_tolerance_by_ct` (`data.json:15`). |
+| `LAAS-OBL-RES-001` | `STE-C-10` forces a quantity with a unit and a basis, which is the only form a residual bound can be compared against `escape_rate_tolerance_by_ct` (`data.json:15`). §3.3 adds the sample count, the confidence level, the interval method, and the claim class the bound covers. |
 | `LAAS-OBL-HUM-001` | An ambiguous approval package makes CT4 human approval uninformed. See §5. |
 
 ## 7. Profile document format

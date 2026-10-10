@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-RE-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/real-estate.json`](glossary/real-estate.json)
@@ -298,24 +298,39 @@ It is the sentence a non-conforming record always omits.
 ```text
 <actor_id> <verb>ed the action because <one reason, one sentence>.
 The written criteria that apply are <criteria identifier>, published <date>.
-The measured residual error bound is <number> on <named evaluation set>, measured on <date>.
+The exact-verified claim class is <claim class>. The gate verifier for it is <verifier_id>.
+The open-world claim class is <claim class, or none>.
+The backtest observed <k> escapes in <n> samples on <named evaluation set>, measured on <date>.
+The residual error bound is <number>, the one-sided <confidence> upper bound by the <Wilson|Clopper-Pearson> method.
 The tolerance for CT<n> is <number> from conformance/laas/data.json.
-The residual bound is <at or below|above> the tolerance.
+The backtest verdict is <pass|fail|indeterminate>. The evidence is <evidence_id>.
 The rollback plan is: <step 1>. <step 2>. The named actor is <party>.
 Recovery depends on <named third party>. Recovery is not guaranteed.
 ```
 
+The residual-risk lines follow [`ste-core.md`](ste-core.md) §3.3.
+Write `none` for the open-world claim class only when the gate verifier checks every claim
+the action depends on, and then omit the four backtest sentences.
+At CT4 the tolerance is `0`, and no finite backtest demonstrates it
+(`docs/laas/backtest.md:116`), so the backtest verdict at CT4 is `indeterminate`.
+
 Filled:
+
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
 
 ```text
 agent.listbot.v3 listed the property because Ellery Voss executed a listing agreement with
 Northgate Realty on 2026-07-24.
 The written criteria that apply are the Northgate advertising standard ADV-STD-2026-01,
 published 2026-01-15.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial listing-copy set,
-measured on 2026-07-09.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the occupant-description terms in section 3.3. The gate
+verifier for it is VRF-OCCUPANT-DESC.
+The open-world claim class is occupant description that section 3.3 does not list.
+The backtest observed 0 escapes in 900 samples on the CT4 held-out adversarial listing-copy
+set, measured on 2026-07-09.
+The residual error bound is 0.002997, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_8025a3ad759042f7.
 The rollback plan is: the listing broker withdraws the listing from the Cascade Regional
 listing service. The broker submits a removal request to each of the 14 syndication portals.
 The named actor is the listing broker.
@@ -330,7 +345,8 @@ guaranteed.
 The independence basis is <different kind of checker|distinct model lineage with measured
 error correlation <number>|human>.
 <verifier_id> checked <the claim, in one sentence>.
-The verdict is <pass|fail|abstain|indeterminate>.
+The verdict is <pass|fail|indeterminate> for a deterministic verifier.
+The verdict is <pass|fail|abstain|indeterminate> for a model or human verifier.
 The evidence is <evidence_ref>.
 ```
 
@@ -402,8 +418,8 @@ tier, and no threshold.
 
 A language finding is a finding about the record, not about the action, and it enters the
 same structure the policy already uses to separate `error_violations`
-(`conformance/laas/laas.rego:199`) from `warning_violations`
-(`conformance/laas/laas.rego:204`).
+(`conformance/laas/laas.rego:200`) from `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 The checker must not rewrite the record (see [`ste-core.md`](ste-core.md) §5).
 This constraint carries extra weight here.
@@ -413,7 +429,7 @@ The pattern is the finding. An operator needs to know that this actor produces
 occupant-description language, because that is a fact about the actor and about every listing
 it has drafted, not about this one listing.
 
-A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:108-111`).
+A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:119-122`).
 Both records stay in the chain.
 
 ## 6. Worked example
@@ -458,6 +474,8 @@ the profile exists to prevent.
 
 ### 6.2 Conforming record
 
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
+
 ```text
 ACTION
 agent.listbot.v3 listed 1 property for property identifier APN-047-221-018 on the Cascade
@@ -495,10 +513,14 @@ The written criteria that apply are the Northgate advertising standard ADV-STD-2
 published 2026-01-15.
 The inspection contingency deadline is 10 business days from acceptance. Acceptance has not
 occurred. The deadline is undetermined until acceptance is delivered.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial listing-copy set,
-measured on 2026-07-09.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the occupant-description terms in section 3.3. The gate
+verifier for it is VRF-OCCUPANT-DESC.
+The open-world claim class is occupant description that section 3.3 does not list.
+The backtest observed 0 escapes in 900 samples on the CT4 held-out adversarial listing-copy
+set, measured on 2026-07-09.
+The residual error bound is 0.002997, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_8025a3ad759042f7.
 The rollback plan is: the listing broker withdraws the listing from the Cascade Regional
 listing service. The broker submits a removal request to each of the 14 syndication portals.
 The named actor is the listing broker.
@@ -547,7 +569,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-OCCUPANT-DESC` runs before publication, not after. Running it after is worthless: the copy has syndicated. |
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic term matcher is a different *kind* of checker (`standard/LAAS.md:87`). A second language model reviewing the copy would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for the occupant-description list, a negative-test suite of known non-compliant listing phrases it must catch, and a change-controlled version in the trace. |
-| `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0.0` (`data.json:15`). |
+| `LAAS-OBL-RES-001` | `VRF-OCCUPANT-DESC` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | The listing broker approves before publication, and `escalation_approved` is `true`. The licensed broker, not the agent, carries the advertising responsibility. |
 | `LAAS-OBL-VEN-001` | Syndication is third-party distribution. The record names the 14 portals and states the scope limit, rather than writing "and partner sites". |
 

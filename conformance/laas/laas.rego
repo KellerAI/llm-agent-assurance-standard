@@ -45,9 +45,9 @@ expected_ct := m if {
 }
 
 # tier the gate must actually enforce: never below the cumulative window (v1.1 Sec 6.4)
-effective_ct := max([input.gate.assigned_ct, _agg_ct])
+effective_ct := max([_gate_ct, _agg_ct])
 
-_agg_ct := object.get(input, ["aggregate", "window_effect_ct"], 0)
+_agg_ct := _norm_agg_ct
 
 # residual-escape tolerance for the effective tier, if one is defined
 residual_tolerance := t if {
@@ -98,17 +98,17 @@ _severity(id) := s if {
 # TIER-001: the gate-assigned tier must be at least the lattice-derived tier.
 violations contains obl(
 	"LAAS-OBL-TIER-001",
-	sprintf("gate assigned_ct %d is below lattice-derived ct %d", [input.gate.assigned_ct, expected_ct]),
+	sprintf("gate assigned_ct %d is below lattice-derived ct %d", [_valid_assigned_ct, expected_ct]),
 ) if {
-	input.gate.assigned_ct < expected_ct
+	_valid_assigned_ct < expected_ct
 }
 
 # SELF-001 (warning): a self-reported tier below the gate tier is flagged; the gate prevails.
 violations contains obl(
 	"LAAS-OBL-SELF-001",
-	sprintf("self_reported_ct %d is below gate ct %d (gate prevails)", [input.action.self_reported_ct, input.gate.assigned_ct]),
+	sprintf("self_reported_ct %d is below gate ct %d (gate prevails)", [input.action.self_reported_ct, _gate_ct]),
 ) if {
-	input.action.self_reported_ct < input.gate.assigned_ct
+	input.action.self_reported_ct < _gate_ct
 }
 
 # ENF-001: enforcement-plane integrity (v1.1 Sec 7.7 / finding 5.2).
@@ -130,9 +130,9 @@ violations contains obl("LAAS-OBL-TRC-001", "decision trace is not append-only")
 # AGG-001: the assigned tier must not be below the cumulative window (v1.1 Sec 6.4 / finding 4.3).
 violations contains obl(
 	"LAAS-OBL-AGG-001",
-	sprintf("assigned_ct %d is below cumulative-window ct %d (structuring guard)", [input.gate.assigned_ct, _agg_ct]),
+	sprintf("assigned_ct %d is below cumulative-window ct %d (structuring guard)", [_valid_assigned_ct, _agg_ct]),
 ) if {
-	input.gate.assigned_ct < _agg_ct
+	_valid_assigned_ct < _agg_ct
 }
 
 # INP-001: untrusted input must raise the tier to the floor, or be blocked (v1.1 Sec 8.3 / finding 4.5).
@@ -188,8 +188,9 @@ violations contains obl(
 ) if {
 	# compares residual_error_bound to the tolerance; undefined when the bound is
 	# null/absent or the tier has no tolerance. Missing-bound and missing-evidence
-	# cases are handled by the spec-alignment rules at :248-260.
-	input.residual_error_bound > residual_tolerance
+	# cases are handled by the spec-alignment rules at :249-261. Exempt at a zero
+	# tolerance for a Bucket-A or human-gated action (:318-356).
+	_exceeds_tolerance
 }
 
 # ---------------------------------------------------------------------------
@@ -257,4 +258,99 @@ violations contains obl("LAAS-OBL-RES-001", sprintf("Bucket-B action at ct %d la
 	not blocked
 	not _bucket_a
 	not _bound_present
+}
+
+# ---- Gate-assigned tier validity (bead laas-szm) ----
+# An assigned_ct that is not an integer in 0..4 is treated as absent (fail closed):
+# the gate tier falls back to the lattice tier and TIER-001 fires once.
+_assigned_ct_valid if {
+	is_number(input.gate.assigned_ct)
+	input.gate.assigned_ct == floor(input.gate.assigned_ct)
+	input.gate.assigned_ct >= 0
+	input.gate.assigned_ct <= 4
+}
+
+_valid_assigned_ct := _norm_assigned_ct if _assigned_ct_valid
+
+_gate_ct := _norm_assigned_ct if _assigned_ct_valid
+
+_gate_ct := expected_ct if not _assigned_ct_valid
+
+violations contains obl(
+	"LAAS-OBL-TIER-001",
+	sprintf("gate did not record an integer assigned_ct in 0..4; enforcing lattice ct %d", [expected_ct]),
+) if {
+	not _assigned_ct_valid
+}
+
+# ---- Residual bound validity (bead laas-szm, ruling R3) ----
+# A supplied residual_error_bound must be a number >= 0; null means absent (R3a).
+# Any other non-number or a negative bound fires
+# RES-001 and is never compared to the tolerance (guard at :345).
+_bound_valid if {
+	is_number(input.residual_error_bound)
+	input.residual_error_bound >= 0
+}
+
+_valid_bound := input.residual_error_bound if _bound_valid
+
+violations contains obl("LAAS-OBL-RES-001", "residual_error_bound must be a number >= 0") if {
+	"residual_error_bound" in object.keys(input)
+	input.residual_error_bound != null
+	not _bound_valid
+}
+
+# ---- Integral-float assigned_ct normalization (bead laas-szm, ruling R2a) ----
+# A valid assigned_ct of 2.0 must behave exactly like 2: OPA keeps the float
+# form, which breaks sprintf("%d") keys and messages, so convert to an integer.
+_norm_assigned_ct := to_number(format_int(input.gate.assigned_ct, 10)) if _assigned_ct_valid
+
+# ---- Integral-float window ct normalization (bead laas-szm, ruling R2b) ----
+# An integral-float aggregate.window_effect_ct (4.0) must behave exactly like 4;
+# a non-integral or non-number value is passed through unchanged.
+_agg_raw := object.get(input, ["aggregate", "window_effect_ct"], 0)
+
+_norm_agg_ct := to_number(format_int(_agg_raw, 10)) if {
+	is_number(_agg_raw)
+	_agg_raw == floor(_agg_raw)
+} else := _agg_raw
+
+# ---- Zero-tolerance tier (laas-o4c; docs/laas/backtest.md:116) ----
+# A binomial upper bound over a finite sample is greater than 0, so no backtest
+# demonstrates a tolerance of 0. At such a tier the bound is evidence for the
+# deterministic or human gate, not a pass condition.
+
+_zero_tolerance if residual_tolerance == 0
+
+_human_gated if {
+	input.verifier.type == "human"
+	verifier_passed
+	human_approved
+}
+
+_zero_tolerance_gated if {
+	_zero_tolerance
+	_bucket_a
+}
+
+_zero_tolerance_gated if {
+	_zero_tolerance
+	_human_gated
+}
+
+# The RES-001 tolerance comparison (:185-194). Only a valid bound is compared
+# (R3, :286-301), and not at a zero tolerance on a Bucket-A or human-gated action.
+_exceeds_tolerance if {
+	not _zero_tolerance_gated
+	_valid_bound > residual_tolerance
+}
+
+# A bound of exactly 0 is not a finite-sample backtest bound. At a zero tolerance
+# it is the one value the comparison would accept, so it is rejected. Negative and
+# non-numeric bounds are rejected by R3 only.
+violations contains obl("LAAS-OBL-RES-001", sprintf("residual_error_bound %v at ct %d is not a finite-sample backtest bound; such a bound is greater than 0", [_valid_bound, effective_ct])) if {
+	_zero_tolerance
+	not blocked
+	not _bucket_a
+	_valid_bound == 0
 }
