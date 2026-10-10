@@ -458,7 +458,8 @@ where the rank mappings are:
 
 **5.1.3** When any axis of the observed effect surface is undetermined or absent, the gate shall
 assign `expected_ct = 4`.
-In the reference policy, `expected_ct` defaults to 4 (`conformance/laas/laas.rego:30`) and is
+In the reference policy, `expected_ct` defaults to `default_ct_when_undetermined`, shipped as 4
+(`conformance/laas/laas.rego:30`, `:366-375`; `conformance/laas/data.json:11`), and is
 lowered only when `external_effect` is explicitly `false`, which yields CT0, or when
 `external_effect` is `true` and all three axes map to lattice tiers
 (`conformance/laas/laas.rego:33–45`); an undetermined axis with `external_effect` explicitly
