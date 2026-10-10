@@ -629,6 +629,39 @@ class TestEmitterCli(unittest.TestCase):
                     },
                 )
 
+    def test_external_effect_non_boolean_fails_closed(self):
+        # laas.rego gives CT0 only for boolean false and the lattice only for
+        # true; anything else is CT4 (laas.rego:30-39). The axes here have a
+        # lattice max of 2 in data.json, and the window is 0, so CT4 can only
+        # come from the undetermined default.
+        surface = {
+            "tool": "payments.transfer",
+            "reversibility": "reversible",
+            "scope": "multi",
+            "consequence": "low",
+        }
+        cases = {
+            "null": (None, 4),
+            'string "false"': ("false", 4),
+            "0": (0, 4),
+            "1": (1, 4),
+            "false": (False, 0),
+            "true": (True, 2),
+        }
+        for name, (value, expected) in cases.items():
+            with self.subTest(external_effect=name):
+                spec_obj = _fixture_spec()
+                spec_obj["effect_surface"] = dict(surface, external_effect=value)
+                spec_obj["aggregate"] = {"window_effect_ct": 0}
+                spec = self._write("ee.effect-surface.json", json.dumps(spec_obj))
+                proc = _run("-i", spec, "-b", _DATA_JSON)
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+                record = json.loads(proc.stdout)
+                self.assertEqual(record["gate"]["assigned_ct"], expected)
+                emitted = record["action"]["effect_surface"]["external_effect"]
+                self.assertIs(type(emitted), type(value))
+                self.assertEqual(emitted, value)
+
     def test_spec_newlines_read_as_text(self):
         # The original read a spec file in text mode, so CR and CRLF became
         # LF before json.loads, and read stdin through sys.stdin, which does
