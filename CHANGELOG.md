@@ -30,6 +30,17 @@ and this project adheres to
   - R3/R3a/R3b: a `residual_error_bound` that is present, not `null`, and not a number >= 0 fires `LAAS-OBL-RES-001` ("residual_error_bound must be a number >= 0") at any CT, blocked or not (`laas.rego:286-301`). `null` is treated as absent. Only a valid bound is compared to the tolerance (`laas.rego:345`). A negative or non-numeric bound was previously compared cross-type or passed silently.
   - R4/R4a: bundle id `laas-fin-1.1.2` and `data.json` version `1.1.2`.
   - Migration: emitters must record an integer `gate.assigned_ct` in 0..4 and a `residual_error_bound` that is a number >= 0 or `null`.
+- Documentation (patch, per `CONTRIBUTING.md:58`; bead laas-0mu): spec-discrepancy rulings SD-4 to SD-14 are applied to `standard/LAAS.md`, `docs/agents/enforcement.md`, the IEEE, ISO, NIST, and SR renderings, `docs/laas/steelman.md`, and nine profiles. No obligation, tier, threshold, or policy rule changes; `conformance/laas/laas.rego` and `data.json` are untouched, and `standard/LAAS.md` line numbering is unchanged. SD-7 was applied earlier; SD-15 and SD-16 need no change.
+  - SD-4: the policy output is the boolean `compliant` plus `error_ids`; `pass | fail | abstain | indeterminate` is the verifier verdict recorded by the emitter (`standard/LAAS.md:147-148`; `scripts/laas/emitter.py:50`).
+  - SD-5: the 12 obligations are the machine-checkable subset of the §3 regime (`standard/LAAS.md:66`).
+  - SD-6: precedence resolution is attributed to the deployer's gate, not `laas.rego` (`standard/LAAS.md:140`; IEEE 4.1.4).
+  - SD-8: `escalation_approved` is replaced by `human_approval.approved` as the HUM-001 field (`conformance/laas/laas.rego:67`, `:178-182`).
+  - SD-9: the CT tier wording in `docs/agents/enforcement.md:104-111` is derived from the lattice (`data.json:7-9`).
+  - SD-10: the append-only trace sink is a TRC-001 requirement, not ENF-001 (IEEE 7.1.3 and 7.2.3; `laas.rego:126-128`; `standard/LAAS.md:73`).
+  - SD-11: IRR-001 is independent pre-commit verification (`data.json:27`); the CT3 rollback plan is a regime duty (`standard/LAAS.md:56`), reflected in the profiles.
+  - SD-12: operating-envelope text is removed (IEEE §5.6, ISO §3.14, NIST §2.3 AOE).
+  - SD-13: recommended-practice items are marked informative and not evaluated by `laas.rego` (IEEE 8.2.2, 8.2.3; ISO 7.2).
+  - SD-14: `independence_basis` is informative; the policy keys independence on `verifier.type` (`laas.rego:76-84`; IEEE 6.2.4).
 
 ### Added
 

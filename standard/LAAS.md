@@ -63,7 +63,7 @@ threshold, subsequent actions are re-tiered to the aggregate's tier (anti-struct
 
 The authoritative, versioned list lives in `data.json → obligations`. Each carries an ID,
 severity, CT floor, precedence, and a reference to the rationale section. `error`-severity
-violations are blocking; `warning`-severity are reported.
+violations are blocking; `warning`-severity are reported. These 12 obligations are the machine-checkable subset of the §3 regime, enforced by `laas.rego`; the other regime elements (the CT1 self-check, the CT2 rehearsed-rollback alternative, the CT3 rollback plan, and the CT4 abstention default and full evidence) are deployer duties that the policy does not evaluate.
 
 | ID | Obligation | Sev | CT floor |
 |----|------------|-----|----------|
@@ -137,12 +137,12 @@ obligation set. This artifact graduates into a third-party certificate if an SDO
 ## 7. Lifecycle & precedence
 
 Obligations move `propose → active → deprecated → retired`; retired obligations leave the active
-set. When two obligations fire incompatibly, precedence is deterministic: highest CT wins; ties
+set. When two obligations fire incompatibly, the deployer's gate resolves precedence deterministically using each obligation's `precedence` value (`laas.rego` does not implement it); ties
 resolve to the most restrictive outcome (block). Each obligation's `precedence` is recorded in
 `data.json`, and the resolution order is itself written to the trace.
 
 ## 8. Conformance of *this* artifact
 
 A fresh agent, given only `data.json` and a candidate decision record, can derive the tier, locate
-the applicable obligations, evaluate the predicate, and emit `pass | fail | abstain | indeterminate`
-— with no human explanation. See [`conformance/laas/README.md`](../conformance/laas/README.md).
+the applicable obligations, and evaluate the predicate to the policy's boolean `compliant` and `error_ids` (`laas.rego:11–14`, `:210–223`); `pass | fail | abstain | indeterminate` is the verifier verdict
+recorded by the emitter (`scripts/laas/emitter.py:50`), not the policy output — with no human explanation. See [`conformance/laas/README.md`](../conformance/laas/README.md).

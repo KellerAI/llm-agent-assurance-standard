@@ -92,7 +92,7 @@ The rules below are additional and specific to this domain.
 | `STE-BANK-06` | State the date type: `posting date` or `value date`. Never write the bare word *date*. | The two dates differ, and the difference is the whole of interest calculation and of intraday liquidity. |
 | `STE-BANK-07` | Name the counterparty and the payment rail. Do not write "an external bank". | Scope on the `data.json:8` lattice depends on how far the effect reaches. An unnamed counterparty makes scope unassessable. |
 | `STE-BANK-08` | Write *material* only as the `consequence` lattice value from `conformance/laas/data.json:9`. Do not use *material* as ordinary English. | The word is simultaneously a LAAS enum value and an accounting term of art. Using it loosely corrupts the enum. |
-| `STE-BANK-09` | State the rollback plan as a sequence of completed-tense steps with a named actor and a time bound. Do not write it in the conditional. | `LAAS-OBL-IRR-001` requires a rollback plan at CT3. "We could book a reversal" is not a plan. |
+| `STE-BANK-09` | State the rollback plan as a sequence of completed-tense steps with a named actor and a time bound. Do not write it in the conditional. | The CT3 regime requires a rollback plan (`standard/LAAS.md:56`); `LAAS-OBL-IRR-001` requires independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). "We could book a reversal" is not a plan. |
 | `STE-BANK-10` | State the regulatory or policy control the action touches, by its identifier. Do not write "compliance rules". | A named control can be checked by an independent verifier. A category cannot. |
 | `STE-BANK-11` | Write one payment instruction per sentence in an action description. For a batch, state the count, the total, the currency, and the selection rule that defined the batch. | The selection rule is the claim a verifier can actually re-execute. The count alone is not reproducible. |
 | `STE-BANK-12` | Do not describe an amount, an exposure, or a limit with an adjective. State the number. | *Large*, *small*, *significant*, and *manageable* are the four words that hide every limit breach. |
@@ -484,7 +484,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic checker is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage, a negative-test suite of known sanctioned parties it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
 | `LAAS-OBL-RES-001` | `VRF-SANC-EXACT` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
-| `LAAS-OBL-HUM-001` | A human approver approves before release, and `escalation_approved` is `true`. |
+| `LAAS-OBL-HUM-001` | A human approver approves before release, and `human_approval.approved` is `true`. |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. If this release is one of several to the same beneficiary, the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
 **Language conformance: `LC-3`** — tool-checked, plus review of the free-text fields by the

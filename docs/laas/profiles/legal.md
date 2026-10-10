@@ -101,7 +101,7 @@ Two of them refine a core rule, and §2.1 states each refinement as an explicit 
 | `STE-LEGAL-09` | Record the privilege status of every document the action touches: `privileged`, `not privileged`, or `undetermined`. | Privilege loss is the domain's clearest irreversible effect. `undetermined` is a conforming answer and forces CT4; silence is not an answer at all. |
 | `STE-LEGAL-10` | Name the authority basis for the action: the signatory, the delegation instrument, and its clause. Do not write "authorised". | Authority is the fact that decides whether the company is bound. It is a citable instrument, not an adjective. |
 | `STE-LEGAL-11` | Write *material* only as the `consequence` lattice value from `conformance/laas/data.json:9`. For the contractual concept write `Material Adverse Change` or the defined threshold. | The word is simultaneously a LAAS enum value and a term of art. Using it loosely corrupts the enum. |
-| `STE-LEGAL-12` | State the rollback plan as a sequence of completed-tense steps with a named actor and a time bound. State plainly when rollback requires counterparty consent. | `LAAS-OBL-IRR-001` requires a rollback plan at CT3. A plan that depends on the counterparty is a negotiation, and the record must say so. |
+| `STE-LEGAL-12` | State the rollback plan as a sequence of completed-tense steps with a named actor and a time bound. State plainly when rollback requires counterparty consent. | The CT3 regime requires a rollback plan (`standard/LAAS.md:56`); `LAAS-OBL-IRR-001` requires independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). A plan that depends on the counterparty is a negotiation, and the record must say so. |
 
 ### 2.1 Stated deviations from the core rule base
 
@@ -496,7 +496,7 @@ Each row states what this profile's rules add to an obligation that already exis
 | `LAAS-OBL-AGG-001` | 0 | `STE-C-02` as adopted, plus `STE-LEGAL-03`, makes clause changes countable. A series of small amendments to the same master services agreement aggregates only if each record names its clauses. |
 | `LAAS-OBL-INP-001` | 0 | A redline received from a counterparty is untrusted input. `STE-LEGAL-03` requires the received version to be cited, so `untrusted_input_min_ct` (`data.json:18`, currently `3`) applies to an identified document. |
 | `LAAS-OBL-VEN-001` | 0 | `STE-LEGAL-10` states the authority basis, which is the scope limit on any party acting for another. |
-| `LAAS-OBL-IRR-001` | 3 | `STE-LEGAL-12` requires a rollback plan in completed-tense steps and requires the record to say when reversal needs counterparty consent. |
+| `LAAS-OBL-IRR-001` | 3 | Independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). `STE-LEGAL-12` supports the CT3 rollback-plan regime duty (`standard/LAAS.md:56`), which this obligation does not check. |
 | `LAAS-OBL-IND-001` | 3 | Deviation 2 makes the cited authority retrievable, which is the precondition for a verifier contesting the claim at all. |
 | `LAAS-OBL-VQ-001` | 3 | Deviation 1 gives the claim class a stable scope, so documented coverage under `standard/LAAS.md:95-96` is provable. |
 | `LAAS-OBL-RES-001` | 2 | `STE-C-10` as adopted forces a quantity, a unit, and a measurement basis, which is the only form a measured residual bound can be compared against `escape_rate_tolerance_by_ct` (`data.json:15`). The escape rate is a rate, not a money amount; `STE-LEGAL-08` fixes the separate money figure that the `consequence` axis ranks. |
@@ -632,7 +632,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic text diff is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented coverage of the clause-change claim class, a negative-test suite of known cap-removal and indemnity-widening edits it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
 | `LAAS-OBL-RES-001` | `VRF-CLAUSE-DIFF` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
-| `LAAS-OBL-HUM-001` | A human approver approves before execution, and `escalation_approved` is `true`. |
+| `LAAS-OBL-HUM-001` | A human approver approves before execution, and `human_approval.approved` is `true`. |
 | `LAAS-OBL-INP-001` | The returned redline is untrusted input from the counterparty, so the floor at `untrusted_input_min_ct` (`data.json:18`) applies before the tier is taken. |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. Amendment 3 follows amendments 1 and 2 to the same master services agreement, and the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 

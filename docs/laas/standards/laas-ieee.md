@@ -53,7 +53,6 @@ verification; zero trust.
   - [5.3 Cumulative blast-radius aggregation (AGG-001)](#53-cumulative-blast-radius-aggregation-agg-001)
   - [5.4 Untrusted-input tier elevation (INP-001)](#54-untrusted-input-tier-elevation-inp-001)
   - [5.5 Regime requirements by tier](#55-regime-requirements-by-tier)
-  - [5.6 Authorized Operating Envelope](#56-authorized-operating-envelope)
 - [6. Verification Requirements](#6-verification-requirements)
   - [6.1 Independent pre-commit verification (IRR-001)](#61-independent-pre-commit-verification-irr-001)
   - [6.2 Verifier independence (IND-001)](#62-verifier-independence-ind-001)
@@ -179,11 +178,6 @@ A storage system to which records can be added but not modified or deleted by an
 including the actor; integrity is maintained by content-addressing and, where applicable,
 periodic Merkle anchoring.
 
-**Authorized Operating Envelope (AOE)**
-The operator-declared set of permissions, tool classes, data domains, action classes, and CT
-ceilings within which the agent may operate; analogous to the Operational Design Domain in
-autonomous-vehicle standards.
-
 **backtest**
 An empirical evaluation of a verifier or system against a held-out, representative, and
 adversarially-stressed set of inputs, yielding an estimated escape rate with a stated confidence
@@ -247,7 +241,7 @@ fail on the same inputs; for a model verifier to satisfy independence, its error
 with the actor shall not exceed 0.2 (`conformance/laas/data.json:14`).
 
 **escalation**
-The act of routing a blocked or out-of-envelope action to a human review queue or equivalent
+The act of routing a blocked action to a human review queue or equivalent
 authority, with the queue identifier and resulting ticket recorded in the decision trace.
 
 **escape rate**
@@ -266,6 +260,8 @@ permission for a specific CT4 action or action class to proceed.
 **independence basis**
 The documented reason a verifier satisfies the independence requirement; one of `deterministic`,
 `distinct_lineage_low_correlation`, or `human`.
+This value set is informative: the reference policy determines independence from `verifier.type`
+(`conformance/laas/laas.rego:76–84`) and does not read an independence basis.
 
 **independent verifier (verifier)**
 A component that checks an action's correctness or safety properties without sharing the actor's
@@ -315,10 +311,6 @@ The breadth of parties affected by an action; classified as `single`, `multi`, `
 The consequence tier asserted by the actor in the action descriptor; informational only;
 may not lower the gate-derived tier.
 
-**standing envelope**
-A pre-authorized action class with explicit limits registered by a human operator, within which
-the gate enforces bounds and escalates only out-of-envelope actions.
-
 **verdict**
 The outcome of verifier evaluation; one of `pass`, `fail`, `abstain`, or `indeterminate`.
 
@@ -333,7 +325,6 @@ tool qualification under RTCA DO-330.
 
 | Acronym | Expansion |
 |---------|-----------|
-| AOE | Authorized Operating Envelope |
 | CT | Consequence Tier |
 | CT0–CT4 | Consequence Tier levels 0 through 4 |
 | DAL | Design Assurance Level (DO-178C) |
@@ -391,9 +382,10 @@ Post-hoc evaluation does not satisfy this requirement.
 A `warning`-severity violation shall be recorded in the decision trace and reported but does
 not, by itself, make the action non-conforming.
 
-**4.1.4** When two or more obligations fire with incompatible outcomes, the gate shall resolve
-the conflict deterministically: the obligation with the highest CT floor takes precedence; ties
-resolve to the most restrictive outcome (`block`).
+**4.1.4** When two or more obligations fire with incompatible outcomes, the deployer's gate shall
+resolve the conflict deterministically using each obligation's `precedence` value; ties resolve to
+the most restrictive outcome (`block`). The reference policy (`conformance/laas/laas.rego`) does
+not implement precedence resolution.
 The resolution order shall be recorded in the decision trace.
 Obligation precedence values are defined in `conformance/laas/data.json:19–32`.
 
@@ -570,21 +562,12 @@ An unrehearsed rollback does not satisfy the CT2 regime requirement
 (`docs/laas/proposal-v1.1.md:§6.3`).
 
 **5.5.3** At CT4, abstention shall be the default when the gate cannot confirm a passing verifier
-and an approved human escalation.
+and human approval (`human_approval.approved`).
 
-### 5.6 Authorized Operating Envelope
-
-**5.6.1** Operators should define an Authorized Operating Envelope enumerating the permissions,
-tool classes, data domains, action classes, and CT ceiling within which the agent may operate.
-
-**5.6.2** An action outside the AOE shall result in a first-class `abstain` verdict and
-escalation; it shall not be committed.
-
-**5.6.3** At CT4, operators may register standing pre-authorized envelopes with explicit limits.
-The gate shall enforce those limits and escalate only out-of-envelope actions.
-Operators may also use batched approval for queued in-envelope actions.
-These mechanisms scale human oversight to exceptions rather than volume
-(`docs/laas/proposal-v1.1.md:§6.3`).
+NOTE (informative): LAAS defines no operating-envelope concept; the policy requires
+`human_approval.approved == true` on each non-blocked CT4 record
+(`conformance/laas/laas.rego:67`, `:178–182`).
+Operator envelopes or batching are deployment mechanisms outside the standard.
 
 ---
 
@@ -614,7 +597,8 @@ constitutes an IRR-001 (`LAAS-OBL-IRR-001`) error-severity violation.
 **6.1.5** For CT4 actions, the human approval requirement of Section 8.1 shall be satisfied
 in addition to the verifier requirement of this section.
 
-**6.1.6** The verifier's identity, type, independence basis, qualification reference, input hash,
+**6.1.6** The verifier's identity, type, independence basis (informative, see 6.2.4),
+qualification reference, input hash,
 and verdict shall be recorded in the decision trace for every CT≥3 action.
 
 ### 6.2 Verifier independence (IND-001)
@@ -641,8 +625,9 @@ Using a non-independent verifier that returned `pass` for a CT≥3 action, when 
 was not blocked, constitutes an IND-001 (`LAAS-OBL-IND-001`) error-severity violation
 (`conformance/laas/laas.rego:162–167`; CT4 model verifiers: `:226–231`).
 
-**6.2.4** The independence basis shall be recorded as one of the string values
-`deterministic`, `distinct_lineage_low_correlation`, or `human` in the decision trace.
+**6.2.4** (Informative.) The independence basis should be recorded in the decision trace;
+`deterministic`, `distinct_lineage_low_correlation`, and `human` are recommended values.
+The reference policy keys independence on `verifier.type` (`conformance/laas/laas.rego:76–84`).
 
 ### 6.3 Verifier qualification (VQ-001)
 
@@ -656,8 +641,8 @@ was not blocked, constitutes an IND-001 (`LAAS-OBL-IND-001`) error-severity viol
 2. **A negative-test suite**: a set of known-bad inputs that the verifier must catch; the
    verifier shall fail (return `fail`) on all members of the negative-test suite.
 3. **A change-controlled version**: a stable version identifier for the verifier, recorded in
-   the trace as `verifier_qualification_ref`, such that a change to the verifier triggers
-   re-qualification.
+   the trace as `verifier_qualification_ref`; a change to the verifier should trigger
+   re-qualification (recommended practice; not evaluated by `laas.rego`).
 
 **6.3.3** Qualification depth should scale with CT: higher consequence tiers warrant broader
 coverage and larger negative-test suites (`docs/laas/proposal-v1.1.md:§7.5`).
@@ -750,10 +735,7 @@ The rule at `conformance/laas/laas.rego:115–118` checks only that `input.gate.
 when signing is required; it does not check the version pin, which requires separate verification.
 The gate shall verify the signature before executing the bundle.
 
-**7.1.3** The decision-trace sink shall be append-only; the actor shall not be able to modify
-or delete trace records.
-The rule at `conformance/laas/laas.rego:126–128` checks only `input.trace.append_only`; whether
-the sink prevents the actor from modifying or deleting records requires separate verification.
+**7.1.3** (Moved: the append-only trace-sink requirement is a TRC-001 requirement; see 7.2.3.)
 
 **7.1.4** A decision trace asserting an in-process gate or an unsigned bundle is non-conforming
 regardless of the verdict recorded, and constitutes an ENF-001 (`LAAS-OBL-ENF-001`)
@@ -782,7 +764,7 @@ every decision-trace record.
 | `verifier_id` | Identifier of the verifier invoked |
 | `verifier_type` | One of `deterministic`, `model`, `human` |
 | `verifier_independent` | Boolean: whether the verifier satisfies Section 6.2 |
-| `independence_basis` | One of `deterministic`, `distinct_lineage_low_correlation`, `human` |
+| `independence_basis` | Informative; recommended values `deterministic`, `distinct_lineage_low_correlation`, `human` (not read by `laas.rego`, which keys on `verifier_type`) |
 | `verifier_qualified` | Boolean: whether the verifier satisfies Section 6.3 |
 | `verifier_qualification_ref` | Reference to the qualification record |
 | `verifier_error_correlation` | Measured correlation with the actor; null for non-model verifiers |
@@ -792,7 +774,7 @@ every decision-trace record.
 | `residual_tolerance` | Declared maximum tolerance for the effective CT |
 | `evidence_refs` | References to backtest reports or other supporting evidence |
 | `escalation` | Null, or `{queue, ticket_id}` when the action was escalated |
-| `escalation_approved` | Boolean: whether a human approved the escalated action |
+| `escalation_approved` | Boolean: whether a human approved the escalated action (not read by `laas.rego`) |
 | `action_blocked` | Boolean: whether the gate blocked the action |
 | `actor_id` | Stable identifier for the actor |
 | `policy_bundle_version` | Version of the bundle in force at evaluation time |
@@ -806,6 +788,12 @@ every decision-trace record.
 
 **7.2.3** Records shall be written to an append-only, content-addressed store that the actor
 cannot rewrite.
+The decision-trace sink shall be append-only; the actor shall not be able to modify or delete
+trace records.
+The rule at `conformance/laas/laas.rego:126–128` checks only `input.trace.append_only`; whether
+the sink prevents the actor from modifying or deleting records requires separate verification.
+This append-only requirement is part of TRC-001 (`LAAS-OBL-TRC-001`; `standard/LAAS.md:73`,
+`conformance/laas/data.json:23`), not ENF-001.
 
 **7.2.4** Each actor shall maintain its own hash chain using `actor_chain_prev_hash`, linking
 each record to the prior record in that actor's trace.
@@ -863,19 +851,14 @@ approval, unless the action is blocked (`conformance/laas/data.json:13`,
 `conformance/laas/laas.rego:178–182`).
 
 **8.1.2** Human approval shall be recorded in the decision trace as
-`human_approval.approved: true` and `escalation_approved: true`.
+`human_approval.approved: true` (`conformance/laas/laas.rego:67`, `:178–182`).
 
 **8.1.3** A CT4 action that is neither covered by human approval nor blocked constitutes an
 HUM-001 (`LAAS-OBL-HUM-001`) error-severity violation.
 
-**8.1.4** Operators may satisfy the human approval requirement through standing pre-authorized
-envelopes (Section 5.6.3).
-The gate shall enforce declared limits and escalate out-of-envelope actions for per-action
-human review.
+**8.1.4** (Removed.)
 
-**8.1.5** Batched human approval of queued in-envelope actions is permitted.
-The gate shall record the approval batch reference in the decision trace for each covered
-action.
+**8.1.5** (Removed.)
 
 **8.1.6** A human verifier satisfying the approval requirement at CT4 also satisfies the
 verifier independence requirement of Section 6.2 for that action.
@@ -889,13 +872,14 @@ third-party API to produce or inform an action, the decision trace shall carry:
 2. **scope limits**: explicit bounds on the scope within which the vendor component is
    authorized to contribute to the action.
 
-**8.2.2** Errors attributable to vendor model outputs shall count against the deployer's
-escape-rate budget for the applicable CT.
+**8.2.2** (Recommended practice; not evaluated by `laas.rego`.) Errors attributable to vendor
+model outputs should count against the deployer's escape-rate budget for the applicable CT.
 The deployer remains responsible for conformance; vendor indemnities do not reduce the
 deployer's escape-rate obligation.
 
-**8.2.3** Untrusted third-party dependencies shall fail closed: when the gate cannot verify
-the trustworthiness or scope limit of a dependency, it shall block the action and escalate.
+**8.2.3** (Recommended practice; not evaluated by `laas.rego`.) Untrusted third-party
+dependencies should fail closed: when the gate cannot verify the trustworthiness or scope limit
+of a dependency, it should block the action and escalate.
 
 **8.2.4** Failure to record vendor attribution and scope limits when a vendor dependency is
 used constitutes a VEN-001 (`LAAS-OBL-VEN-001`) error-severity violation
@@ -980,7 +964,7 @@ Source: `conformance/laas/data.json` key `obligations`.
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | 0 | yes | no | no | no | no | no | no |
 | 1 | yes | yes | no | no | no | no | no |
-| 2 | yes | no | yes (or rehearsed rollback) | no | yes | no | yes |
+| 2 | yes | no | yes (or rehearsed rollback) | no | yes | no | alternative to ind. verifier (rehearsed) |
 | 3 | yes | no | yes | yes | yes | no | yes |
 | 4 | yes | no | yes | yes | tolerance 0: met by deterministic or human gate (6.4) | yes | yes |
 
@@ -1002,7 +986,7 @@ All four standards share a common governing structure across five mechanics.
 | Bound undetected error | Structural coverage (MC/DC) | Backtesting | Safety Performance Indicators | Escape rate per CT (Sec 6.4) |
 | Independent verification | Objectives "with independence" (verifier ≠ author) | Effective challenge | Independent safety assessment | No self-grading; lineage + low correlation (Sec 6.2) |
 | Trace to evidence | Bidirectional trace + data package | Validation docs | GSN + evidence | Decision-trace JSONL, hash-chained (Sec 7.2) |
-| Declared envelope + abstain | Config/operational envelope | Approved use | ODD | AOE (Sec 5.6) |
+| Declared envelope + abstain | Config/operational envelope | Approved use | ODD | CT4 abstention default (Sec 5.5) |
 
 ### B.2 Specific analogues
 
@@ -1027,7 +1011,7 @@ All four standards share a common governing structure across five mechanics.
 #### UL 4600 (Underwriters Laboratories)
 
 - Standard of care, not pass/fail ↔ this standard is a standard of care (Section 1.2).
-- Operational Design Domain (ODD) + abstention ↔ Authorized Operating Envelope (Section 5.6).
+- Operational Design Domain (ODD) + abstention ↔ CT4 abstention default (Section 5.5).
 - Safety Performance Indicators ↔ residual escape rate (Section 6.4).
 - ISO 21448 (SOTIF) "no failure, still wrong" ↔ Bucket B open-world bounding and independent
   review (Section 6.4, `docs/laas/proposal-v1.1.md:§5`).
@@ -1036,7 +1020,7 @@ All four standards share a common governing structure across five mechanics.
 
 - **Scope:** DO-178C and ARP6983/ED-324 are explicitly scoped to frozen, supervised ML in
   embedded avionics; they do not address generative LLMs or online agents. UL 4600 addresses
-  autonomous vehicles; its ODD concept is a direct ancestor of the AOE. SR 11-7/SR 26-2
+  autonomous vehicles; its ODD concept is a direct ancestor of the LAAS CT4 abstention default. SR 11-7/SR 26-2
   addresses model risk in financial services but does not define a per-action runtime gate.
 - **Machine-actionability:** this standard ships as a two-layer artifact (normative prose plus
   machine-evaluable OPA policy) that a fresh agent can evaluate without human explanation.

@@ -77,8 +77,9 @@ evaluate against a single machine-readable bundle.
 
 7. **Verifier qualification.** A verifier gating high-tier actions shall be qualified: documented
    coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a
-   change-controlled version recorded in the trace. A verifier modified after its last qualification
-   is treated as unqualified until re-qualified. This is the validator-qualification analogue under
+   change-controlled version recorded in the trace. As recommended practice (informative; not
+   evaluated by `conformance/laas/laas.rego`), a verifier modified after its last qualification
+   should be treated as unqualified until re-qualified. This is the validator-qualification analogue under
    SR 11-7 and DO-330. (LAAS-OBL-VQ-001.)
 
 8. **Bounded residual escape rate.** For open-world (Bucket B) claims, the institution shall
@@ -93,24 +94,25 @@ evaluate against a single machine-readable bundle.
    `conformance/laas/data.json`, key `escape_rate_tolerance_by_ct`.)
 
 9. **Human approval at the highest tier.** Every action at the human-approval floor tier shall
-   obtain explicit human approval before commitment, unless blocked, with abstention the default on
-   timeout. Institutions may register standing pre-authorized envelopes with explicit limits so that
-   human attention scales with exceptions rather than volume. (LAAS-OBL-HUM-001;
-   floor in `conformance/laas/data.json`.)
+   obtain explicit human approval, recorded on its decision record (`human_approval.approved`;
+   `conformance/laas/laas.rego:178-182`), before commitment, unless blocked. As recommended
+   practice (informative), abstention should be the default on approval timeout.
+   (LAAS-OBL-HUM-001; floor in `conformance/laas/data.json`.)
 
 10. **Vendor accountability.** Where an action is produced or informed by a vendor model or
     third-party tool, the institution shall record vendor provenance and confirm the vendor's scope
-    is limited to the authorized envelope; errors attributable to the vendor count against the
-    institution's own escape-rate budget. The deploying institution owns the risk of models it buys.
-    (LAAS-OBL-VEN-001.)
+    is limited (LAAS-OBL-VEN-001; `conformance/laas/laas.rego:149-152`). As recommended practice
+    (informative; not evaluated by the policy), errors attributable to the vendor should count
+    against the institution's own escape-rate budget, and untrusted vendor dependencies should
+    fail closed. The deploying institution owns the risk of models it buys.
 
 11. **Enforcement-plane integrity.** The gate shall run out-of-process in a trust boundary the agent
     cannot disable, bypass, or modify, even under elevated permissions; the policy bundle shall be
-    cryptographically signed and version-pinned; and the decision-trace sink shall be append-only.
+    cryptographically signed and version-pinned.
     A control the constrained party can switch off is not a control. (LAAS-OBL-ENF-001.)
 
-12. **Decision-trace evidence.** The gate shall emit, for every gated action, an append-only,
-    hash-chained decision-trace record capturing the derived tier, verifier identity and verdict,
+12. **Decision-trace evidence.** The decision-trace sink shall be append-only, and the gate shall
+    emit, for every gated action, a hash-chained decision-trace record capturing the derived tier, verifier identity and verdict,
     independence and qualification basis, residual bound, and approval or block. Per-actor hash
     chains are periodically anchored to a shared Merkle root. Personally identifiable information and
     material non-public information shall be tokenized and the searchable index separated from
@@ -163,7 +165,7 @@ risk profile of their agent deployments, on a phased basis:
 - **Phase 3, input and vendor controls.** Add untrusted-input classification and vendor attribution.
 - **Phase 4, independent verification.** Qualify verifiers and wire them to the high-tier gate.
 - **Phase 5, escape rate and human approval.** Run initial backtests, declare per-tier tolerances,
-  and implement the human-approval path with standing envelopes.
+  and implement the per-action human-approval path.
 
 Institutions should be prepared to discuss their implementation roadmap and current state with their
 supervisory teams.
