@@ -211,7 +211,7 @@ The CLI wraps the surface in `osi_emit_decision_record`, which calls the canonic
 `emitter.emit_decision_record`. The resulting JSON is written to stdout or `--out`.
 The record carries `input.trusted`, `gate.assigned_ct`, and
 `aggregate.window_effect_ct` (`scripts/laas/test_osi_to_surface.py:166-188`).
-The emitter always writes `aggregate.window_effect_ct` (`scripts/laas/emitter.py:414`):
+The emitter always writes `aggregate.window_effect_ct` (`scripts/laas/emitter.py:421`):
 it is 0 for a signed model and `untrusted_input_min_ct` for an unsigned one.
 The CLI also supplies a deterministic, qualified, passing verifier (`VRF-OSI-DET`), so
 the proof script can show a compliant CT4 write
@@ -224,7 +224,7 @@ When `--unsigned` is passed, the adapter sets `aggregate.window_effect_ct` to
 (default `conformance/laas/data.json`) (`scripts/laas/osi_to_surface.py:239-241`,
 `:314`).
 The emitter then assigns `CT = max(derived_ct, window_effect_ct)`, flooring the
-assigned CT to at least that value (`scripts/laas/emitter.py:384`).
+assigned CT to at least that value (`scripts/laas/emitter.py:391`).
 
 ---
 

@@ -342,6 +342,12 @@ def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
 
 
 def _surface_hash(resolved: dict) -> str:
+    """Return the §7.2/§7.4 `effect_surface_hash` of derive_ct's resolved keys.
+
+    sha256 over canonical JSON (sorted keys, no whitespace). `resolved` equals
+    the record's `action.effect_surface` without `tool`, so a trace reader can
+    recompute the hash from the record alone. The policy does not read it.
+    """
     canonical = json.dumps(resolved, sort_keys=True, separators=(",", ":"))
     return "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
 
@@ -361,6 +367,7 @@ def emit_decision_record(
     input_prov: Optional[InputProvenance] = None,
     trace: Optional[TraceAnchor] = None,
     residual_error_bound: Optional[float] = None,
+    evidence_refs: Optional[list[str]] = None,
     action_blocked: bool = False,
     escalation_approved: bool = False,
     action_id: Optional[str] = None,
@@ -428,7 +435,14 @@ def emit_decision_record(
         "residual_error_bound": residual_error_bound,
         "action_blocked": action_blocked,
         "escalation_approved": escalation_approved,
+        # §7.4 trace field; not read by the policy.
+        "effect_surface_hash": _surface_hash(resolved),
     }
+    # RES-001 reads top-level evidence_refs. Emitted only when supplied:
+    # the emitter never fabricates evidence, and the policy decides whether
+    # the refs (or their absence) comply.
+    if evidence_refs is not None:
+        record["evidence_refs"] = list(evidence_refs)
 
     # Verifier block: required by the policy whenever effective_ct >= 3
     # (IRR/IND/VQ-001). For CT<3 a verifier may be absent; we emit an
@@ -569,6 +583,17 @@ def _check_spec(spec: Any, where: str) -> dict:
                 raise EmitterInputError(f"{where}: missing key 'verifier.{key}'")
         for key in ("type", "verdict"):
             _require_scalar(verifier[key], f"verifier.{key}", where)
+    # null means absent. [] and [""] pass: whether the refs satisfy RES-001
+    # is the policy's call (laas.rego:235-242), not the emitter's.
+    refs = spec.get("evidence_refs")
+    must = f"{where}: evidence_refs must be a JSON array of strings, got"
+    if refs is not None and not isinstance(refs, list):
+        raise EmitterInputError(f"{must} {type(refs).__name__}")
+    for ref in refs or ():
+        if not isinstance(ref, str):
+            raise EmitterInputError(
+                f"{must} an array with a {type(ref).__name__} element"
+            )
     return spec
 
 
@@ -626,6 +651,7 @@ def _build_from_spec(spec: dict, gate: GateContext) -> dict:
             merkle_anchor=tr.get("merkle_anchor"),
         ),
         residual_error_bound=spec.get("residual_error_bound"),
+        evidence_refs=spec.get("evidence_refs"),
         action_blocked=spec.get("action_blocked", False),
         escalation_approved=spec.get("escalation_approved", False),
         action_id=spec.get("action", {}).get("id") or spec.get("id"),
