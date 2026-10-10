@@ -156,3 +156,29 @@ When you change it:
 Publishable files (`standard/**`, `conformance/**`, `docs/**`, `README.md`) change through a PR.
 A PR states what changed and how the change was verified.
 Staging files — anything matched by `.gitignore` — need no PR and can be edited directly.
+
+## Capability Roster
+
+When a task needs a specialist capability, prefer the canonical plugin for the
+domain. The roster lists KellerAI's defaults; adopters may substitute rows.
+
+| Domain | Canonical capability | Secondary |
+| ------ | -------------------- | --------- |
+| Session mining | `thoughtbox` | — |
+| Capability analysis | `kellerai-repo-audit` | — |
+| Repo architecture & scaffolding | `kellerai-repo-audit` | `kellerai-skill-creator` |
+| Conformance & policy | `opa-rego` | `kellerai-grc` |
+| CI/CD authoring | `git-workflow-tools` | `beads-workflow` |
+| Governance & traceability | `kellerai-feature-spec` | `thoughtbox` |
+| Documentation | `documentation-audit` | `claude-md-management` |
+
+<!-- BEGIN LOCAL AGENT MODERNIZATION v:1 -->
+
+## Shared agent scope and worktrees
+
+- `AGENTS.md` is the shared project instruction entrypoint. Put shared agent resources in `.agents/`; retain Claude-specific settings, hooks, and plugins in `.claude/`.
+- Keep project rules in repository or nested `AGENTS.md` files. Keep machine-local configuration outside tracked shared instructions; do not copy credentials or runtime state into `.agents/`.
+- New manually managed worktrees use `<main-checkout>/.worktrees/<branch-slug>`. Verify the exact path is ignored before creation. Preserve existing worktrees and the roots used by Codex/Claude managed worktree tools.
+- Before changing tracker storage or commands, verify the intended store and supported CLI. Preserve issue IDs, existing data, uncommitted files, and registered worktrees. Instruction modernization does not authorize storage conversion or checkout relocation.
+
+<!-- END LOCAL AGENT MODERNIZATION -->

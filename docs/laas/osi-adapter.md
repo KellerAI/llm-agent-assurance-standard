@@ -232,7 +232,7 @@ assigned CT to at least that value (`scripts/laas/emitter.py:378`).
 
 The `custom_extension` schema is **informally versioned**. No formal change-control
 process has been established for it yet. This is a documented open question
-(`AGENTS.md:155-156`, "Open questions" item 1).
+(`AGENTS.md:130-131`, "Open questions" item 1).
 
 The schema identifier is:
 

@@ -22,6 +22,7 @@ How the conventions in **llm-agent-assurance-standard** are enforced — what is
 
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`, `conformance/blast_radius.rego:15`.
+External conformance workflow: `.github/workflows/conformance.yml:4-5`, `.github/workflows/ci.yml:37`.
 
 The pre-commit hook is managed by `lefthook`.
 Install it once with `lefthook install`; it then runs the sanitization gate before every commit.
