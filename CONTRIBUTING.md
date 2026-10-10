@@ -12,7 +12,7 @@ Agents should start at [`AGENTS.md`](AGENTS.md) — it and [`docs/agents/`](docs
   Changes reach `main` only through `dev` → `qa` → `main`.
   CI enforces this tier model (`.github/workflows/validate-branch-tier.yml:10-13`):
   `main` accepts pull requests only from `qa/**`, `qa` only from `dev/**`,
-  and `dev` only from `external/**`, `dependabot/**`, or a branch opened by a CODEOWNER (`.github/workflows/validate-branch-tier.yml:50-54`, `:67`).
+  and `dev` only from `external/**`, `dependabot/**`, or a branch opened by `son-of-anton-ai` (`.github/workflows/validate-branch-tier.yml:37-41`, `:54`).
   Never commit to `main` directly, and never open a pull request from your fork's `main`.
 
 ## Branches and commits
