@@ -33,6 +33,7 @@ and this project adheres to
 
 ### Added
 
+- `docs/adr/ADR-003-ct4-human-reviewer-field.md` (bead laas-69c), Accepted 2026-10-10 (minor, documentation only: an additive document with no contract impact, per `CONTRIBUTING.md:57`). Records maintainer rulings D1, D2, D3, and D5: Option B attributes the existing `LAAS-OBL-HUM-001` `human_approval` record, a two-person rule applies, the fields are required at CT4, and the change rides the unreleased `laas-fin-2.0.0` major. D4, D6, and D7 stay open. No obligation, tier, threshold, or policy rule changes; implementation is follow-up work.
 - 12 `test_zt_*` tests in `conformance/laas/laas_test.rego` for zero-tolerance `LAAS-OBL-RES-001`, including guard pins; the `test_szm_r2b_float_window_res001` fixture is made non-Bucket-A (`laas_test.rego:944`); suite 96/96; `opa test conformance/` 167/167. Mutation check: 9 of 10 hand mutants are killed; the survivor (`== 0` to `<= 0`) is equivalent because `_valid_bound` is undefined below 0.
 - 25 tests in `conformance/laas/laas_test.rego` for SD-1 to SD-3 (suite 44/44; `opa test conformance/` 115/115); 6 of them pin the rules' guards (`blocked`, verifier-passed, `evidence_refs` type checks, and tolerance scope). The `_base_ct4` fixture gains `evidence_refs` (`laas_test.rego:67`).
 - Documentation is updated to the new behaviour and bundle id: `conformance/laas/README.md`, `docs/agents/enforcement.md` and `glossary.md`, the `docs/laas` emitter, backtest, and osi-adapter docs, the IEEE, ISO, NIST, and SR renderings, and the profiles.
