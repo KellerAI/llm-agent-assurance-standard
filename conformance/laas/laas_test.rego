@@ -1078,3 +1078,39 @@ test_zt_zero_bound_nonzero_tolerance_no_new_rule if {
 	tol > 0
 	not _has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_frag)
 }
+
+# ---- laas-ddo: undetermined tier reads data.laas.default_ct_when_undetermined ----
+
+_inp_undetermined := json.patch(_base_ct4, [{"op": "remove", "path": "/action/effect_surface"}])
+
+test_ddo_default_ct_read_from_data if {
+	ct := expected_ct with input as _inp_undetermined
+		with data.laas as object.union(_cfg, {"default_ct_when_undetermined": 3})
+	ct == 3
+}
+
+test_ddo_default_ct_zero_read_from_data if {
+	ct := expected_ct with input as _inp_undetermined
+		with data.laas as object.union(_cfg, {"default_ct_when_undetermined": 0})
+	ct == 0
+}
+
+test_ddo_default_ct_missing_key_is_ct4 if {
+	ct := expected_ct with input as _inp_undetermined
+		with data.laas as object.remove(_cfg, {"default_ct_when_undetermined"})
+	ct == 4
+}
+
+test_ddo_default_ct_invalid_values_are_ct4 if {
+	every v in [7, -1, "4", 2.5, null, true] {
+		ct := expected_ct with input as _inp_undetermined
+			with data.laas as object.union(_cfg, {"default_ct_when_undetermined": v})
+		ct == 4
+	}
+}
+
+test_ddo_default_ct_integral_float_accepted if {
+	ct := expected_ct with input as _inp_undetermined
+		with data.laas as object.union(_cfg, {"default_ct_when_undetermined": 2.0})
+	ct == 2
+}

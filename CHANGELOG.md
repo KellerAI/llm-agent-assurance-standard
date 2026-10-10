@@ -10,6 +10,7 @@ and this project adheres to
 
 ### Changed
 
+- `default_ct_when_undetermined` is now read by the policy (minor, per `CONTRIBUTING.md:57`: additive and backward-compatible; bead laas-ddo, maintainer ruling 2026-10-10). An undetermined tier (absent, `null`, or non-boolean `external_effect`, or an incomplete lattice surface) now yields `data.laas.default_ct_when_undetermined` instead of a hardcoded CT4 (`conformance/laas/laas.rego:30`, `:366-374`); `_ct_determined` mirrors the read-only and lattice rules (`laas.rego:377-385`). A key that is absent or not an integer in 0..4 fails closed to CT4; an integral float such as `2.0` is normalized to an integer (`laas.rego:368-374`). The shipped value stays `4` (`conformance/laas/data.json:11`), so every decision under the shipped bundle is unchanged and the bundle id stays `laas-fin-2.0.0` (`data.json:3-4`). New tests: `laas_test.rego:1082-1116`; `opa test conformance/laas/` now reports `PASS: 101/101` and `opa test conformance/` `PASS: 172/172` (counts updated in `AGENTS.md`, `README.md`, `conformance/laas/README.md`, and `docs/agents/conventions.md`).
 - **Breaking (major, per `CONTRIBUTING.md:56`; release number chosen at release time).** Zero-tolerance `LAAS-OBL-RES-001` (bead laas-o4c); bundle `laas-fin-1.1.2` becomes `laas-fin-2.0.0`, version `2.0.0` (`conformance/laas/data.json:3-4`):
   - At a zero escape-rate tolerance (CT4 by default, `data.json:15`) the over-tolerance comparison is skipped for a Bucket-A or human-gated action (`laas.rego:318-356`; comparison `laas.rego:343-346`). A non-blocked, non-Bucket-A action that records `residual_error_bound` exactly `0` now fires `LAAS-OBL-RES-001` (`laas.rego:348-356`). The rule keys on a zero tolerance, not on CT4 as such.
   - Normative: `standard/LAAS.md` §4.3 defines Bucket A and Bucket B and the zero-tolerance rule (`standard/LAAS.md:100-114`); the §5 predicate (`standard/LAAS.md:126-129`) and the CT4 row (`standard/LAAS.md:57`) are amended. Human approval at CT4 (`LAAS-OBL-HUM-001`) is unchanged.
@@ -35,7 +36,7 @@ and this project adheres to
   - SD-5: the 12 obligations are the machine-checkable subset of the §3 regime (`standard/LAAS.md:66`).
   - SD-6: precedence resolution is attributed to the deployer's gate, not `laas.rego` (`standard/LAAS.md:140`; IEEE 4.1.4).
   - SD-8: `escalation_approved` is replaced by `human_approval.approved` as the HUM-001 field (`conformance/laas/laas.rego:67`, `:178-182`).
-  - SD-9: the CT tier wording in `docs/agents/enforcement.md:103-111` is derived from the lattice (`data.json:7-9`).
+  - SD-9: the CT tier wording in `docs/agents/enforcement.md:105-113` is derived from the lattice (`data.json:7-9`).
   - SD-10: the append-only trace sink is a TRC-001 requirement, not ENF-001 (IEEE 7.1.3 and 7.2.3; `laas.rego:126-128`; `standard/LAAS.md:73`).
   - SD-11: IRR-001 is independent pre-commit verification (`data.json:27`); the CT3 rollback plan is a regime duty (`standard/LAAS.md:56`), reflected in the profiles.
   - SD-12: operating-envelope text is removed (IEEE §5.6, ISO §3.14, NIST §2.3 AOE).

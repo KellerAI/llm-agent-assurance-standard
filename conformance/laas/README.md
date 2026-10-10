@@ -39,7 +39,7 @@ data.kellerai.laas.actions.compliant   # bool — true iff zero error-severity v
 ## Run it
 
 ```bash
-# Syntax check + test suite (expect all green — currently 96/96 PASS)
+# Syntax check + test suite (expect all green — currently 101/101 PASS)
 opa check laas.rego laas_test.rego
 opa test . -v
 
@@ -60,7 +60,7 @@ obligation or rule in `laas.rego` that consumes it.
 
 | Field path | Obligation ID | What the policy checks |
 |---|---|---|
-| `action.effect_surface.external_effect` | `LAAS-OBL-TIER-001` | Boolean `false` → CT0 (`laas.rego:34`); `true` → tier lattice (`laas.rego:39`); absent, `null`, or non-boolean (e.g. `"false"`) → CT4 fail-closed (`laas.rego:30`) |
+| `action.effect_surface.external_effect` | `LAAS-OBL-TIER-001` | Boolean `false` → CT0 (`laas.rego:34`); `true` → tier lattice (`laas.rego:39`); absent, `null`, or non-boolean (e.g. `"false"`) → `default_ct_when_undetermined` (CT4, `data.json:11`; absent or not an integer in 0..4 → CT4 fail-closed; `laas.rego:30`, `laas.rego:366-374`) |
 | `action.effect_surface.reversibility` | `LAAS-OBL-TIER-001` | First axis of the lattice; `"irreversible"` maps to 4 |
 | `action.effect_surface.scope` | `LAAS-OBL-TIER-001` | Second axis; `"public"` maps to 4 |
 | `action.effect_surface.consequence` | `LAAS-OBL-TIER-001` | Third axis; `"high"` maps to 4 |
@@ -108,6 +108,6 @@ Supporting lines: `.github/workflows/ci.yml:33-34` (sanitization gate),
 `.github/workflows/blast-radius-pulse.yml:60` (`bash scripts/pulse.sh`, which runs `opa eval` at
 `scripts/pulse.sh:242`).
 
-> Re-verified on OPA 1.18.2 (2026-10-09): `opa check` and `opa test` (96/96 PASS). The
+> Re-verified on OPA 1.18.2 (2026-10-10): `opa check` and `opa test` (101/101 PASS). The
 > conformance predicate references only declared trace fields, so it is mechanically evaluable —
 > see `standard/LAAS.md` §5.
