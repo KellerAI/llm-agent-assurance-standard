@@ -75,15 +75,15 @@ Always branch; never open a pull request from your fork's `main`.
 
 ### Branch tiers (`validate-branch-tier`)
 
-The `validate-branch-tier` workflow checks every pull request's source branch against its target (`.github/workflows/validate-branch-tier.yml:10-13`, rules at `:50-54`):
+The `validate-branch-tier` workflow checks every pull request's source branch against its target (`.github/workflows/validate-branch-tier.yml:10-13`, rules at `:37-41`):
 
-- `main` accepts pull requests only from `qa` or `qa/…` branches (`:51`).
-- `qa` accepts pull requests only from `dev` or `dev/…` branches (`:52`).
-- `dev` accepts pull requests from `external/…` and `dependabot/…` branches (`:53`),
-  or from any branch when the pull request author is listed in `.github/CODEOWNERS` (`.github/workflows/validate-branch-tier.yml:33-47`, `:67`).
-- A target with no rule (any other branch) is not checked (`:56-59`).
+- `main` accepts pull requests only from `qa` or `qa/…` branches (`:38`).
+- `qa` accepts pull requests only from `dev` or `dev/…` branches (`:39`).
+- `dev` accepts pull requests from `external/…` and `dependabot/…` branches (`:40`),
+  or from any branch when the pull request author is `son-of-anton-ai`, compared case-insensitively (`.github/workflows/validate-branch-tier.yml:33-34`, `:54`).
+- A target with no rule (any other branch) is not checked (`:43-46`).
 
-Agent branches such as `claude/<scope>` pass the `dev` check only when a CODEOWNER opens the pull request.
+Agent branches such as `claude/<scope>` pass the `dev` check only when `son-of-anton-ai` opens the pull request; a CODEOWNER opening it does not pass.
 
 ### External branch names (`validate-branch-name`)
 
