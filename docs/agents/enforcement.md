@@ -96,10 +96,12 @@ checks that the tier assignment, verification, and enforcement are correct.
   and `error_ids` (set of obligation IDs with error-severity violations; rule at `laas.rego:210`)
   (`laas.rego:11–14`).
 - **CT classification** — tier is the lattice max of three axes; an unknown or
-  undetermined surface defaults to CT4 (`laas.rego:30`; `data.json:11`):
+  undetermined surface defaults to `default_ct_when_undetermined` (CT4 as shipped;
+  `laas.rego:30`, `:366–374`; `data.json:11`):
   - **CT0** — no external effect; read-only or fully sandboxed. Assigned only when
     `external_effect` is boolean `false` (`laas.rego:33–35`); an absent, `null`, or
-    non-boolean value gives CT4 (`laas.rego:30`).
+    non-boolean value gives `default_ct_when_undetermined` (CT4 as shipped;
+    `laas.rego:30`, `:366–374`).
   - **CT1** — reversible, single-system internal write
     (reversibility rank 1, scope rank 1; `data.json:7–9`).
   - **CT2** — reversible or low-consequence external effect.
@@ -115,7 +117,10 @@ checks that the tier assignment, verification, and enforcement are correct.
   (`input.aggregate.window_effect_ct`, `laas.rego:311`).
   The gate tier is `gate.assigned_ct`, or the lattice CT when `assigned_ct` is absent or not an integer 0..4
   (`laas.rego:266–277`).
-- **Fail-safe default:** `default expected_ct := 4` (`laas.rego:30`).
+- **Fail-safe default:** an undetermined surface takes `default_ct_when_undetermined`
+  (`laas.rego:30`; `data.json:11`, shipped 4). A missing value, or one that is not an integer
+  in 0..4, fails closed to CT4 (`_default_ct`, `laas.rego:366–374`). `_ct_determined`
+  (`laas.rego:377–385`) mirrors the two determined `expected_ct` rules.
   An absent or invalid `assigned_ct` falls back to the lattice CT and raises TIER-001 (`laas.rego:263–284`).
 
 ### LaaS obligation families
