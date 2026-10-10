@@ -35,7 +35,7 @@ and this project adheres to
   - SD-5: the 12 obligations are the machine-checkable subset of the §3 regime (`standard/LAAS.md:66`).
   - SD-6: precedence resolution is attributed to the deployer's gate, not `laas.rego` (`standard/LAAS.md:140`; IEEE 4.1.4).
   - SD-8: `escalation_approved` is replaced by `human_approval.approved` as the HUM-001 field (`conformance/laas/laas.rego:67`, `:178-182`).
-  - SD-9: the CT tier wording in `docs/agents/enforcement.md:104-111` is derived from the lattice (`data.json:7-9`).
+  - SD-9: the CT tier wording in `docs/agents/enforcement.md:103-111` is derived from the lattice (`data.json:7-9`).
   - SD-10: the append-only trace sink is a TRC-001 requirement, not ENF-001 (IEEE 7.1.3 and 7.2.3; `laas.rego:126-128`; `standard/LAAS.md:73`).
   - SD-11: IRR-001 is independent pre-commit verification (`data.json:27`); the CT3 rollback plan is a regime duty (`standard/LAAS.md:56`), reflected in the profiles.
   - SD-12: operating-envelope text is removed (IEEE §5.6, ISO §3.14, NIST §2.3 AOE).

@@ -107,8 +107,8 @@ checks that the tier assignment, verification, and enforcement are correct.
   - **CT3** — any axis at rank 3 and none at rank 4: reversibility `hard`, scope `org`, or consequence
     `material` (`data.json:7–9`); triggers independent pre-commit verification (`data.json:12`).
   - **CT4** — any axis at rank 4: reversibility `irreversible` or `none`, scope `public`, or consequence
-    `high` (`data.json:7–9`); requires independent verification **plus** human approval; default when
-    surface is undetermined (`data.json:13`).
+    `high` (`data.json:7–9`); requires independent verification **plus** human approval (`data.json:12–13`);
+    default when surface is undetermined (`laas.rego:30`; `data.json:11`).
 - **Effective tier:** max of the gate tier and the cumulative window CT,
   preventing structuring attacks (`laas.rego:48`).
   The cumulative window CT is supplied by the caller (the policy does not compute it);
