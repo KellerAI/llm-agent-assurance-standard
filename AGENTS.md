@@ -121,8 +121,8 @@ Sources: `.github/workflows/ci.yml:34`, `.github/workflows/ci.yml:37`,
 - **PR target.** Contributor and agent pull requests target `dev`. Changes are promoted
   to `main` through `dev` → `qa` → `main`: the `validate-branch-tier` workflow accepts PRs into
   `main` only from `qa/**`, into `qa` only from `dev/**`, and into `dev` from `external/**`,
-  `dependabot/**`, or any branch opened by a CODEOWNER
-  (`.github/workflows/validate-branch-tier.yml:10-13`, `:51-53`, `:67`).
+  `dependabot/**`, or any branch when the PR author is `son-of-anton-ai`
+  (`.github/workflows/validate-branch-tier.yml:10-13`, `:33-34`, `:38-40`, `:54`).
 - **Policy integrity.** After editing `conformance/laas/laas.rego`, run
   `opa check conformance/laas/laas.rego conformance/laas/laas_test.rego` and
   `opa test conformance/laas/ -v` to confirm the policy still passes before committing.
