@@ -107,6 +107,8 @@ policy_dir="$repo_root/conformance"
 
 # --- compute changed_files set ------------------------------------------------
 changed_files_file="$(mktemp)"
+# Named by the EXIT trap below; only live/audit assign them.
+tmp_before="" tmp_after="" tmp_keys=""
 trap 'rm -f "$changed_files_file"' EXIT
 
 case "$mode" in
@@ -129,11 +131,6 @@ esac
 json_changes_file="$(mktemp)"
 trap 'rm -f "$changed_files_file" "$json_changes_file"' EXIT
 echo '{}' >"$json_changes_file"
-
-_dotted_keys() {
-	# Read JSON from stdin; emit a newline-delimited list of dotted scalar keys.
-	jq -r 'paths(scalars) | join(".")' 2>/dev/null || true
-}
 
 _diff_dotted_keys() {
 	local before="$1" after="$2"
@@ -223,7 +220,7 @@ json_changes="$(cat "$json_changes_file")"
 jq -n \
 	--argjson changed "$changed_array" \
 	--argjson json_changes "$json_changes" \
-	--argjson done "$done_array" \
+	--argjson "done" "$done_array" \
 	--arg sha "$git_sha" \
 	--arg mode "$mode" \
 	'{
@@ -286,7 +283,7 @@ _render_pr_comment() {
 	local sink="$1"
 	{
 		printf '## Blast-radius pulse — %s\n\n' "$verdict"
-		printf '- errors: %d\n- warnings: %d\n- mode: %s\n\n' "$errors" "$warnings" "$mode"
+		printf -- '- errors: %d\n- warnings: %d\n- mode: %s\n\n' "$errors" "$warnings" "$mode"
 		if [ "$verdict" != "clear" ]; then
 			printf '### Fired entries\n\n'
 			printf '%s\n' "$result_json" | jq -r '
