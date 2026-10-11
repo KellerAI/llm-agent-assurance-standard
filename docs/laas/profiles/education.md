@@ -107,7 +107,7 @@ rule without relaxing it.
 | `STE-EDU-07` | Identify a student by `student identifier` and name the identifier system. Do not write the student's name in a decision record. | `LAAS-OBL-VEN-001` turns on what left the institution and to whom. A name is a disclosure; an identifier is a reference. |
 | `STE-EDU-08` | State the release state of a grade using one approved term: `draft`, `provisional`, `released to student`, `grade of record`. Do not invent an intermediate state. | Release state determines reversibility, and reversibility determines the tier. An unapproved state word makes the axis `undetermined`, which forces CT4 (`data.json:11`). |
 | `STE-EDU-09` | For any disclosure of an `education record`, state the recipient, the record count, the field list, and the legal basis by its identifier. Do not write "shared with a partner". | `LAAS-OBL-VEN-001` requires third-party attribution and scope limits. "Some student data" has no scope. |
-| `STE-EDU-10` | State the appeal route as named steps with a named office and a stated deadline. Do not write it in the conditional. | `LAAS-OBL-IRR-001` requires a rollback plan at CT3 and above. "The student could appeal" is not a plan. |
+| `STE-EDU-10` | State the appeal route as named steps with a named office and a stated deadline. Do not write it in the conditional. | The CT3 regime requires a rollback plan (`standard/LAAS.md:56`); `LAAS-OBL-IRR-001` requires independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). "The student could appeal" is not a plan. |
 | `STE-EDU-11` | Do not describe a student, a submission, or a cohort with an evaluative adjective. State the measurement. | *Strong*, *weak*, *concerning*, and *improved* are the four words that carry an unevidenced judgement into a permanent record. |
 | `STE-EDU-12` | Write *material* only as the `consequence` lattice value from `conformance/laas/data.json:9`. Do not use *material* to mean course content. Write `course material` for content. | The word is a LAAS enum value and an everyday education term. Using it loosely corrupts the enum. |
 
@@ -443,7 +443,7 @@ The column states what the obligation requires of a record in this domain.
 | `LAAS-OBL-AGG-001` | 0 | Grade releases aggregate across course sections in one academic term. Comparable prose is what makes the windowed aggregate countable (`standard/LAAS.md:59-60`). |
 | `LAAS-OBL-INP-001` | 0 | A submission is untrusted input. `untrusted_input_min_ct` is 3 (`data.json:18`), so prompt-carrying submissions raise the tier rather than being described as ordinary text. |
 | `LAAS-OBL-VEN-001` | 0 | The matching service, the citation style edition, and any disclosure recipient are named with their scope limits (`STE-EDU-06`, `STE-EDU-09`, §2.2 Refinement 2). |
-| `LAAS-OBL-IRR-001` | 3 | The appeal route is stated as completed-tense steps with a named office and a deadline (`STE-EDU-10`). |
+| `LAAS-OBL-IRR-001` | 3 | Independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). The stated appeal route (`STE-EDU-10`) supports the CT3 rollback-plan regime duty (`standard/LAAS.md:56`), which this obligation does not check. |
 | `LAAS-OBL-IND-001` | 3 | `independence_basis` names one of the three bases at `standard/LAAS.md:87-89`. A citation checker is a different kind of checker only against a named style edition. |
 | `LAAS-OBL-VQ-001` | 3 | The claim class is the rubric criterion at a stated rubric level. Verbatim labels are what make the class stable enough to document coverage. |
 | `LAAS-OBL-RES-001` | 2 | `STE-EDU-04` forces a score with a maximum and a scale, which is the only form a residual bound can be compared against `escape_rate_tolerance_by_ct` (`data.json:15`). |
@@ -611,7 +611,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-RES-001` | `VRF-GRADE-ARITH` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-INP-001` | Each submission is untrusted input. `untrusted_input_min_ct` is 3 (`data.json:18`). |
 | `LAAS-OBL-VEN-001` | The matching service is named with its version and its exclusion settings, and the similarity score is not treated as a finding. |
-| `LAAS-OBL-HUM-001` | The instructor of record approves before release, and `escalation_approved` is `true`. |
+| `LAAS-OBL-HUM-001` | The instructor of record approves before release, and `human_approval.approved` is `true`. |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. A term-wide release across course sections re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
 **Language conformance: `LC-3`** — tool-checked, plus review of the free-text fields by the

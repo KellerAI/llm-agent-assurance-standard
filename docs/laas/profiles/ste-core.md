@@ -71,7 +71,7 @@ Each rule has a stable ID so that a language finding can name the rule it failed
 | `STE-C-05` | Do not use a synonym for an approved term. Repeat the approved term. | Elegant variation is ambiguity. Repetition is the point, not a defect. |
 | `STE-C-06` | Do not use a pronoun whose antecedent is more than one clause back. Repeat the noun. | "It was reverted" — the action, the record, or the config? |
 | `STE-C-07` | Do not build a noun cluster longer than three words. | "customer payment limit override approval record" has no readable structure. Break it with prepositions. |
-| `STE-C-08` | Use simple present, simple past, or the imperative. Do not use future, conditional, or subjunctive forms in a normative field. | "Would have rolled back" is not a rollback plan. `LAAS-OBL-IRR-001` needs a stated plan, not a hypothetical. |
+| `STE-C-08` | Use simple present, simple past, or the imperative. Do not use future, conditional, or subjunctive forms in a normative field. | "Would have rolled back" is not a rollback plan. The CT3 regime needs a stated rollback plan, not a hypothetical (`standard/LAAS.md:56`); `LAAS-OBL-IRR-001` is independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). |
 | `STE-C-09` | Do not omit articles, auxiliaries, or relative pronouns. | Telegraphic style reads faster and audits worse. The saved words are the ones carrying the qualification. |
 | `STE-C-10` | State a quantity, a unit, and a measurement basis. Do not hedge. | `LAAS-OBL-RES-001` compares a measured residual bound against a tolerance. A hedge is not a number, and it cannot be compared. |
 | `STE-C-11` | Do not put a qualification in a parenthesis, a footnote, or an aside in a normative field. State it as its own sentence. | A qualification the reader can skip is a qualification the approver did not approve. |
@@ -243,7 +243,7 @@ Each row states what the controlled language adds to an obligation that already 
 | `LAAS-OBL-AGG-001` | Aggregation needs comparable records. Two records describing the same effect in different words do not aggregate, and the anti-structuring rule at `standard/LAAS.md:59-60` silently under-counts. |
 | `LAAS-OBL-INP-001` | Requires the record to state the provenance of input in fixed terms, so `input_trusted` cannot be asserted by an adjective. |
 | `LAAS-OBL-VEN-001` | Vendor attribution and scope limits are prose claims. Fixed terms make the scope limit a statement rather than an impression. |
-| `LAAS-OBL-IRR-001` | A rollback plan written in the conditional (`STE-C-08`) is not a plan. The rule makes the absence visible. |
+| `LAAS-OBL-IRR-001` | Independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`, `conformance/laas/laas.rego:155-159`). The CT3 rollback plan is a regime duty (`standard/LAAS.md:56`), not part of this obligation; a plan written in the conditional (`STE-C-08`) is not a plan. |
 | `LAAS-OBL-IND-001` | `independence_basis` is a free-text field carrying a load-bearing claim. Controlled terms make it checkable against the three bases at `standard/LAAS.md:87-89`. |
 | `LAAS-OBL-VQ-001` | Claim-class coverage requires a stable claim class. This is the strongest dependency in the table. |
 | `LAAS-OBL-RES-001` | `STE-C-10` forces a quantity with a unit and a basis, which is the only form a residual bound can be compared against `escape_rate_tolerance_by_ct` (`data.json:15`). §3.3 adds the sample count, the confidence level, the interval method, and the claim class the bound covers. |

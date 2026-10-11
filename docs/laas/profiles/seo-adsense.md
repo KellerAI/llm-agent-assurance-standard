@@ -107,7 +107,7 @@ The rules below are additional and specific to this domain.
 | `STE-ADV-01` | Never write *optimize*, *improve*, or *boost*. State the parameter changed, the old value, and the new value. | These verbs record a verdict about the agent's own work before any outcome exists. This is self-grading in a single word. |
 | `STE-ADV-02` | State the count of affected items, the selection rule that produced the set, and the platform. Never write "some pages" or "the campaigns". | The selection rule is the only part a verifier can re-execute. A count alone is not reproducible. |
 | `STE-ADV-03` | Never write *revert* or *undo* for spend or for publication. State what the change restores and what it does not restore. | See §1.1. This is the profile's most important rule. |
-| `STE-ADV-04` | When recovery depends on a third party, name the party and state that recovery is not guaranteed. Give the observed recovery interval, not a target. | `LAAS-OBL-IRR-001` requires a rollback plan at CT3. A plan that waits on somebody else's crawler is a hope with a timetable. |
+| `STE-ADV-04` | When recovery depends on a third party, name the party and state that recovery is not guaranteed. Give the observed recovery interval, not a target. | The CT3 regime requires a rollback plan (`standard/LAAS.md:56`); `LAAS-OBL-IRR-001` requires independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). A plan that waits on somebody else's crawler is a hope with a timetable. |
 | `STE-ADV-05` | Never write the bare word *impression*. Write `ad impression` for a serve event. Do not use the word for a perception. | The word means a counted event here and an opinion in ordinary English, and both readings occur in rationale text. |
 | `STE-ADV-06` | Never write the bare word *traffic* or the bare word *organic*. Write `organic session` or `paid session`, with the measurement source. | *Traffic* silently merges sessions, users, clicks, and crawler hits, which have different denominators. |
 | `STE-ADV-07` | Never write *rank* as a verb. Write `position` as a noun, with the query, the locale, the device, and the measurement date. | Position is a measurement with four required qualifiers. Without them the number is not comparable to any other number. |
@@ -505,7 +505,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic path matcher is a different *kind* of checker (`standard/LAAS.md:87`). A second language model reviewing the diff would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for path-prefix matching, a negative-test suite of known over-matching patterns it must catch, and a change-controlled version in the trace. |
 | `LAAS-OBL-RES-001` | `VRF-ROBOTS-MATCH` returned `fail`, so the action is not Bucket A to the gate (`conformance/laas/laas.rego:244-247`) and the record carries the open-world bound. The bound `0.004004` is above the CT4 tolerance of `0` (`data.json:15`). The backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). |
-| `LAAS-OBL-HUM-001` | A human approver approves before deployment, and `escalation_approved` is `true`. |
+| `LAAS-OBL-HUM-001` | A human approver approves before deployment, and `human_approval.approved` is `true`. |
 | `LAAS-OBL-AGG-001` | If this change is one of a sequence of crawl-directive edits in the window, the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
 **Outcome: the action is blocked.**

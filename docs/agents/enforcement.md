@@ -103,13 +103,14 @@ checks that the tier assignment, verification, and enforcement are correct.
     non-boolean value gives `default_ct_when_undetermined` (CT4 as shipped;
     `laas.rego:30`, `:366–374`).
   - **CT1** — reversible, single-system internal write
-    (reversibility rank 1, scope rank 1; `data.json:7–9`).
-  - **CT2** — reversible or low-consequence external effect.
-  - **CT3** — hard-to-reverse or material-consequence action; triggers
-    independent pre-commit verification (`data.json:12`).
-  - **CT4** — irreversible or high-consequence; requires independent
-    verification **plus** human approval; default when surface is undetermined
-    (`data.json:13`).
+    (reversibility rank 1, scope rank 1; `data.json:7–9`), and consequence `none` or `low` (rank 0–1).
+  - **CT2** — external effect that is reversible (rank 1), multi-party scope (rank 2), and consequence
+    `none` or `low` (rank 0–1); `multi` is the only lattice key of rank 2 (`data.json:7–9`).
+  - **CT3** — any axis at rank 3 and none at rank 4: reversibility `hard`, scope `org`, or consequence
+    `material` (`data.json:7–9`); triggers independent pre-commit verification (`data.json:12`).
+  - **CT4** — any axis at rank 4: reversibility `irreversible` or `none`, scope `public`, or consequence
+    `high` (`data.json:7–9`); requires independent verification **plus** human approval (`data.json:12–13`);
+    default when surface is undetermined (`laas.rego:30`; `data.json:11`).
 - **Effective tier:** max of the gate tier and the cumulative window CT,
   preventing structuring attacks (`laas.rego:48`).
   The cumulative window CT is supplied by the caller (the policy does not compute it);

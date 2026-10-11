@@ -157,14 +157,10 @@ _agg_ct := _norm_agg_ct
 `_gate_ct` is `input.gate.assigned_ct` when it is an integer in 0..4, otherwise the
 lattice-derived `expected_ct` (`conformance/laas/laas.rego:266-277`).
 
-### 2.3 Effect Surface and the Authorized Operating Envelope
+### 2.3 Effect Surface
 
 The effect surface is the tuple `(reversibility, scope, consequence)` of the action as
 **observed by the gate** from the actual tool invocation, not as reported by the agent.
-The Authorized Operating Envelope (AOE) is the operator-declared set of permitted tools,
-scopes, data domains, action classes, and CT ceiling.
-Out-of-AOE actions produce a first-class `verdict: abstain → escalate` trace record
-(`docs/laas/proposal-v1.1.md §6.5`).
 
 ### 2.4 The Decision Trace
 
@@ -363,13 +359,13 @@ the `summary.warnings` count (`conformance/laas/laas.rego:107-112`, `:86-92`, `:
 The system shall enforce every LAAS obligation through an out-of-process gate that the agent
 cannot disable, bypass, or modify at runtime.
 The policy bundle evaluated by the gate shall be cryptographically signed and version-pinned.
-The decision-trace sink shall be append-only; the agent shall have no write access to existing
-trace records.
+The append-only decision-trace sink is required by LAAS-TRC-1 (`LAAS-OBL-TRC-001`;
+`standard/LAAS.md:73`, `conformance/laas/data.json:23`, `conformance/laas/laas.rego:126-128`).
 
 #### Discussion
 
 Mechanical enforcement is only meaningful if the mechanism is outside the actor's reach.
-This control establishes three interlocking requirements derived from
+This control establishes two interlocking requirements derived from
 `docs/laas/proposal-v1.1.md §7.7`:
 
 - `bundle_signed`: the policy bundle is signed before deployment; the gate verifies the
@@ -377,8 +373,6 @@ This control establishes three interlocking requirements derived from
 - `gate_out_of_process`: the gate runs in a separate process (or network service) from the
   agent; the agent cannot call overrides of the `--dangerously-skip-permissions` style to
   circumvent it.
-- Append-only sink: the trace store accepts `APPEND` but not `UPDATE` or `DELETE` on
-  committed records.
 
 Configuration flags driving this control
 (`conformance/laas/data.json`):
@@ -403,9 +397,7 @@ violations contains obl("LAAS-OBL-ENF-001", "gate is not out-of-process") if {
 2. Verify that `input.gate.out_of_process == true` in every decision-trace record.
 3. Confirm via architecture review that the gate process runs outside the agent process and
    that the agent has no API to disable it.
-4. Confirm that the trace store's access-control configuration prevents `UPDATE` and `DELETE`
-   on committed records.
-5. Attempt to inject a record with `bundle_signed: false`; confirm the policy emits a
+4. Attempt to inject a record with `bundle_signed: false`; confirm the policy emits a
    `LAAS-OBL-ENF-001` error-severity violation.
 
 ---
@@ -421,7 +413,8 @@ violations contains obl("LAAS-OBL-ENF-001", "gate is not out-of-process") if {
 #### Control Statement
 
 The system shall emit a decision-trace record for every gated action.
-Records shall be written to an append-only, content-addressed store.
+Records shall be written to an append-only, content-addressed store; the agent shall have no
+write access to existing trace records.
 Each record shall include a `actor_chain_prev_hash` linking it to the prior record in the
 actor's hash-chain, and the chain shall be periodically anchored to a shared Merkle root
 (`merkle_anchor`) written to an append-only sink.
@@ -439,6 +432,10 @@ The hash-chain design (`docs/laas/proposal-v1.1.md §7.4`) gives each actor its 
 avoiding the single-appender bottleneck of a linear chain in multi-agent swarms.
 The Merkle-anchor step provides cross-actor tamper evidence.
 
+Append-only sink: the trace store accepts `APPEND` but not `UPDATE` or `DELETE` on committed
+records. This requirement belongs to TRC-001, not ENF-001; the policy checks it as
+`input.trace.append_only` (`conformance/laas/laas.rego:126-128`).
+
 A Bucket-A verdict (deterministic checker) is **deterministically reproducible** against the
 recorded `verifier_input_hash`.
 A Bucket-B verdict is **tamper-evidently re-inspectable**: the recorded verdict and evidence
@@ -455,11 +452,13 @@ longer; regulated verticals must satisfy applicable statutory retention minima).
    decision-trace record.
 2. Verify that `input.trace.append_only == true` in every record
    (`conformance/laas/laas.rego:126-128`).
-3. Verify continuity of `actor_chain_prev_hash` across sequential records for each actor.
-4. Verify that `merkle_anchor` is present and updated at the declared anchoring interval.
-5. Review data-governance controls: confirm PII/MNPI fields are tokenized before writing,
+3. Confirm that the trace store's access-control configuration prevents `UPDATE` and `DELETE`
+   on committed records (TRC-001; `conformance/laas/laas.rego:126-128`).
+4. Verify continuity of `actor_chain_prev_hash` across sequential records for each actor.
+5. Verify that `merkle_anchor` is present and updated at the declared anchoring interval.
+6. Review data-governance controls: confirm PII/MNPI fields are tokenized before writing,
    confirm index-payload separation is implemented.
-6. Confirm retention policy by CT: obtain the retention schedule and verify it meets or
+7. Confirm retention policy by CT: obtain the retention schedule and verify it meets or
    exceeds declared minimums per CT.
 
 ---
@@ -582,11 +581,12 @@ obligation regardless of tier.
 #### Control Statement
 
 When an agent action is executed via a vendor model or third-party tool or API, the system
-shall record vendor provenance (attribution) and confirm that the vendor's scope is limited to
-the declared AOE.
-Residual escape-rate errors attributable to vendor-model outputs shall be charged against the
-deploying operator's escape-rate budget.
-Untrusted vendor dependencies shall fail closed.
+shall record vendor provenance (attribution) and confirm that the vendor's scope is limited
+(`vendor.scope_limited`).
+Recommended practice (informative; not evaluated by `conformance/laas/laas.rego`, whose VEN-001
+rule checks only attribution and scope, `:149-152`): residual escape-rate errors attributable to
+vendor-model outputs should be charged against the deploying operator's escape-rate budget, and
+untrusted vendor dependencies should fail closed.
 
 #### Discussion
 
@@ -612,10 +612,10 @@ The VEN-001 violation fires when `vendor.used == true` and `vendor_ok` is false
 
 1. Verify that every action using a vendor model or third-party API records
    `vendor.attribution` (non-null) and `vendor.scope_limited == true` in the trace.
-2. Verify that the escape-rate measurement methodology attributes vendor-model misses to
-   the deploying operator's Bucket-B budget.
-3. Confirm that vendor dependencies are configured to fail closed: a vendor API error or
-   unavailability produces `action_blocked == true` rather than a degraded pass.
+2. (Recommended practice; informative.) Verify that the escape-rate measurement methodology
+   attributes vendor-model misses to the deploying operator's Bucket-B budget.
+3. (Recommended practice; informative.) Confirm that vendor dependencies are configured to fail closed:
+   a vendor API error or unavailability produces `action_blocked == true` rather than a degraded pass.
 4. Verify that the VEN-001 violation fires when `vendor.used == true` and either
    `attribution` is null or `scope_limited` is false.
 
@@ -647,10 +647,6 @@ does (`docs/laas/proposal-v1.1.md §7.1`).
 
 The independence floor CT is `conformance/laas/data.json →
 independent_verification_floor_ct: 3`.
-Scalable CT4 oversight: operators may register **standing/pre-authorized envelopes** so that
-human approval applies to out-of-envelope actions rather than every individual action;
-**batched approval** of queued in-envelope items is permitted
-(`docs/laas/proposal-v1.1.md §6.3`).
 
 The Rego check (`conformance/laas/laas.rego:155-159`):
 
@@ -735,7 +731,8 @@ At CT4 a separate rule fires IND-001 for any passed model verifier on a non-bloc
 
 1. Verify that every decision-trace record with `effective_ct >= 3`, `action_blocked == false`,
    and `verifier.verdict == "pass"` has `verifier.independent == true` and a valid
-   `independence_basis` recorded.
+   `independence_basis` recorded (informative; policy keys on `verifier.type`,
+   `conformance/laas/laas.rego:76-84`).
 2. For model verifiers: verify that `verifier.model_lineage != actor_model_lineage` and that
    `verifier.error_correlation <= 0.2` are recorded in the trace.
 3. For model verifiers: obtain the evaluation-set correlation measurement report and confirm
@@ -783,8 +780,8 @@ violations contains obl("LAAS-OBL-VQ-001", "verifier is not qualified") if {
 }
 ```
 
-Qualification is version-controlled: a verifier updated after its last qualification cycle
-is treated as unqualified until re-qualified.
+Qualification is version-controlled (recommended practice; informative): a verifier updated
+after its last qualification cycle should be treated as unqualified until re-qualified.
 
 #### Assessment / Verification Objectives
 
@@ -796,8 +793,8 @@ is treated as unqualified until re-qualified.
 3. Confirm that the verifier version recorded in the trace matches the current deployed
    version.
 4. Verify that the VQ-001 violation fires when `verifier.qualified == false`.
-5. Confirm that any verifier update triggers re-qualification before the verifier is used
-   to gate CT ≥ 3 actions.
+5. (Recommended practice; informative.) Confirm that any verifier update triggers
+   re-qualification before the verifier is used to gate CT ≥ 3 actions.
 
 ---
 
@@ -862,8 +859,8 @@ approval under HUM-001 (`conformance/laas/laas.rego:178-182`).
 Backtesting methodology requirements (`docs/laas/proposal-v1.1.md §5`):
 the held-out set must be representative of the operational action distribution and
 adversarially stressed; confidence intervals must be stated; the set must be withheld from
-model training and fine-tuning; the evaluation set is independently audited
-(`docs/laas/proposal-v1.1.md §10.1`).
+model training and fine-tuning; the evaluation set should be independently audited
+(recommended practice; informative; `docs/laas/proposal-v1.1.md §10.1`).
 
 #### Assessment / Verification Objectives
 
@@ -874,7 +871,8 @@ model training and fine-tuning; the evaluation set is independently audited
 3. Verify that `residual_error_bound ≤ residual_tolerance` in every decision-trace record
    where `residual_error_bound` is non-null, except at a zero tolerance for a Bucket-A or
    human-gated action (`conformance/laas/laas.rego:331-346`).
-4. Confirm the evaluation set was adversarially stressed and independently audited.
+4. (Recommended practice; informative.) Confirm the evaluation set was adversarially stressed
+   and independently audited.
 5. Verify that the RES-001 violation fires when `residual_error_bound > residual_tolerance`,
    except at a zero tolerance for a Bucket-A or human-gated action.
 6. Verify that every non-blocked CT ≥ 2 record with a numeric `residual_error_bound` carries
@@ -903,8 +901,9 @@ model training and fine-tuning; the evaluation set is independently audited
 For every action with effective CT = 4, the system shall obtain human approval before
 committing the action, unless the action is blocked.
 Human approval shall be recorded in the decision trace as `human_approval.approved == true`
-and `escalation_approved == true`.
-Abstention is the default when no approval is received within the declared timeout.
+(`conformance/laas/laas.rego:67`, `:178-182`).
+Recommended practice (informative; not evaluated by `conformance/laas/laas.rego`): abstention
+should be the default when no approval is received within a declared timeout.
 
 #### Discussion
 
@@ -912,13 +911,7 @@ Human approval at CT4 implements the most restrictive control in the LAAS hierar
 the two-person-rule analogue for irreversible, high-consequence agent actions
 (`standard/LAAS.md §3`, `docs/laas/proposal-v1.1.md §6.3`).
 
-Human approval need not be per-action.
-Operators may register **standing/pre-authorized envelopes**: a human pre-approves a bounded
-action class with explicit limits (e.g., external transfers ≤ $X to allowlisted
-counterparties); the gate enforces the bounds and escalates only out-of-envelope actions.
-**Batched approval** of queued in-envelope items is also permitted.
-Human attention thereby scales with exceptions, not volume
-(`docs/laas/proposal-v1.1.md §6.3`).
+Approval is per decision record (`conformance/laas/laas.rego:178-182`).
 
 The human-approval floor CT is `conformance/laas/data.json → human_approval_floor_ct: 4`.
 The Rego check (`conformance/laas/laas.rego:178-182`):
@@ -934,15 +927,10 @@ violations contains obl("LAAS-OBL-HUM-001", ...) if {
 #### Assessment / Verification Objectives
 
 1. Verify that every decision-trace record with `effective_ct == 4` and
-   `action_blocked == false` has `human_approval.approved == true` and
-   `escalation_approved == true`.
-2. For deployments using standing envelopes: obtain the envelope definition and confirm
-   it specifies explicit limits (amounts, counterparty allowlists, action classes).
-3. Confirm that out-of-envelope actions produce escalation and are not committed without
-   explicit human approval.
-4. Confirm that the timeout behavior defaults to `verdict: abstain` when no approval is
-   received.
-5. Verify that the HUM-001 violation fires when `effective_ct >= 4`,
+   `action_blocked == false` has `human_approval.approved == true`.
+2. (Recommended practice, informative.) Confirm that the timeout behavior defaults to
+   `verdict: abstain` when no approval is received.
+3. Verify that the HUM-001 violation fires when `effective_ct >= 4`,
    `action_blocked != true`, and `human_approval.approved != true`.
 
 ---
@@ -1020,9 +1008,10 @@ The measurement protocol (`docs/laas/proposal-v1.1.md §5`):
 2. **Measure:** estimate by backtesting on a held-out, representative, adversarially-stressed
    set with a stated confidence interval.
 3. **Control:** route to independent verification or block when above tolerance; abstain/
-   escalate when below confidence or out of envelope.
+   escalate when below confidence.
 4. **Re-measure:** after any model, prompt, tool, or policy change.
-5. **Audit:** the evaluation set is independently audited to prevent gaming.
+5. **Audit:** the evaluation set should be independently audited to prevent gaming
+   (recommended practice; informative).
 
 The escape rate is the governing metric for Bucket B.
 Conformance asserts `measured_escape_rate ≤ tolerance` with traceable evidence.
@@ -1035,10 +1024,10 @@ LAAS is a standard of care, not a correctness guarantee (`standard/LAAS.md §1`)
 Obligations move through the lifecycle `propose → active → deprecated → retired`
 (`docs/laas/proposal-v1.1.md §9.6`).
 Retired obligations leave the active set.
-When two obligations fire with incompatible outcomes, precedence is deterministic:
-the highest CT wins; ties resolve to the most restrictive outcome (block).
-Each obligation carries a `precedence` field in `conformance/laas/data.json`; the gate's
-resolution order is recorded in the trace.
+When two obligations fire with incompatible outcomes, the deployer's gate resolves precedence
+deterministically using each obligation's `precedence` value in `conformance/laas/data.json`;
+ties resolve to the most restrictive outcome (block).
+The reference policy does not implement precedence.
 
 ---
 
@@ -1055,8 +1044,8 @@ RMF maturity, but the depth of implementation naturally aligns with organization
 |--------------|-------------------------------------|
 | Tier 1 (Partial) | CT0–CT2 controls operational; CT3–CT4 controls planned |
 | Tier 2 (Risk Informed) | All 12 controls operational; backtest evidence available |
-| Tier 3 (Repeatable) | Qualified verifiers; documented AOE; signed bundles; attestation bundles produced |
-| Tier 4 (Adaptive) | Continuous escape-rate measurement; standing envelopes; automated re-qualification trigger on change |
+| Tier 3 (Repeatable) | Qualified verifiers; signed bundles; attestation bundles produced |
+| Tier 4 (Adaptive) | Continuous escape-rate measurement; automated re-qualification trigger on change |
 
 ### 6.2 Phased Adoption
 
