@@ -82,7 +82,7 @@ Expected results: `opa test conformance/laas/ -v` prints `PASS: 101/101`; `opa t
 prints `PASS: 172/172` (101 tests in `conformance/laas/laas_test.rego`, 40 in
 `conformance/trust_dial_test.rego`, 31 in `conformance/blast_radius_test.rego`); the sanitization
 script reports `OK`; `check.sh` (emitter → `opa eval`) ends with compliant `true`; `osi_check.sh`
-prints `PASS`; and the unit tests report `Ran 69 tests` and `OK`
+prints `PASS`; and the unit tests report `Ran 76 tests` and `OK`
 (invocation from `scripts/laas/test_osi_to_surface.py:4`).
 
 **What CI runs.** CI runs only the sanitization gate and `opa eval`; the other gates are local.

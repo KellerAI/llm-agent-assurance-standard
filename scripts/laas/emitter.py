@@ -260,36 +260,48 @@ def _gate_where(gate: GateContext) -> str:
     return f"bundle {gate.bundle_path}" if gate.bundle_path else "gate lattice"
 
 
+def _undetermined_ct(gate: GateContext, where: str) -> int:
+    """Return the §6.2 default CT; raise EmitterInputError if not a number."""
+    ct = gate.ct_when_undetermined
+    if not _is_number(ct):
+        raise EmitterInputError(
+            f"{where}: laas.default_ct_when_undetermined must be a number, got {ct!r}"
+        )
+    return ct
+
+
 def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
     """Return (gate_derived_ct, resolved_surface_keys).
 
-    Matches laas.rego's `expected_ct` (laas.rego:30-45) for a boolean
-    `external_effect` only when `gate.lattice` equals the policy bundle's
-    `tier_lattice` (data.json:7-9) and `gate.ct_when_undetermined` is 4
-    (laas.rego:30). Both are the GateContext defaults; overriding either
-    can put `assigned_ct` below the policy's tier (TIER-001):
+    Matches laas.rego's `expected_ct` (laas.rego:30-45) only when
+    `gate.lattice` equals the policy bundle's `tier_lattice` (data.json:7-9)
+    and `gate.ct_when_undetermined` is 4 (laas.rego:30). Both are the
+    GateContext defaults; overriding either can put `assigned_ct` below the
+    policy's tier (TIER-001):
 
-        - external_effect False         -> CT0
-        - external effect, keys known   -> max(rev, scope, consequence)
-        - any axis undetermined         -> ct_when_undetermined (4)
+        - external_effect boolean False -> CT0
+        - external_effect not a bool    -> ct_when_undetermined (4)
+        - external_effect True, keys known -> max(rev, scope, consequence)
+        - external_effect True, any axis undetermined -> ct_when_undetermined
 
-    Callers must pass a real bool for `external_effect`. For a non-boolean
-    value this function diverges from the policy: a falsy one (e.g. None)
-    returns CT0 while the policy returns CT4 (laas.rego:30), and a truthy
-    one takes the lattice path while the policy also returns CT4. The
-    policy mismatch is tracked as a follow-up; fail-closed emitter
-    behaviour is not implemented here.
+    A non-boolean value (None, "false", 0, 1, ...) fails closed like the
+    policy (laas.rego:30-35): it is undetermined, the axes are not read, and
+    the resolved keys hold only the raw `external_effect`.
 
-    Raises EmitterInputError (naming the bundle and the dotted key) when an
-    external effect reaches a lattice entry that would crash it: a lattice
-    or axis that is not an object, an absent axis, an absent §6.2 worst key
-    it falls back to, a non-number default CT it returns, or a non-number
+    Raises EmitterInputError (naming the bundle and the dotted key) when it
+    reaches a lattice entry or default CT that would crash it: a lattice or
+    axis that is not an object, an absent axis, an absent §6.2 worst key it
+    falls back to, a non-number default CT it returns, or a non-number
     lattice value it compares. Entries it does not reach are not checked.
     """
-    if not surface.external_effect:
+    if surface.external_effect is False:
         return 0, {"external_effect": False}
 
     where = _gate_where(gate)
+    if surface.external_effect is not True:
+        return _undetermined_ct(gate, where), {
+            "external_effect": surface.external_effect
+        }
     lattice = gate.lattice
     if not isinstance(lattice, dict):
         raise EmitterInputError(
@@ -319,13 +331,7 @@ def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
 
     if undetermined:
         # The axis values are not compared on this path; only the default is.
-        ct = gate.ct_when_undetermined
-        if not _is_number(ct):
-            raise EmitterInputError(
-                f"{where}: laas.default_ct_when_undetermined must be a number, "
-                f"got {ct!r}"
-            )
-        return ct, resolved
+        return _undetermined_ct(gate, where), resolved
     for axis, ct in zip(axes, axis_cts):
         if not _is_number(ct):
             raise EmitterInputError(
@@ -336,6 +342,12 @@ def derive_ct(surface: EffectSurface, gate: GateContext) -> tuple[int, dict]:
 
 
 def _surface_hash(resolved: dict) -> str:
+    """Return the §7.2/§7.4 `effect_surface_hash` of derive_ct's resolved keys.
+
+    sha256 over canonical JSON (sorted keys, no whitespace). `resolved` equals
+    the record's `action.effect_surface` without `tool`, so a trace reader can
+    recompute the hash from the record alone. The policy does not read it.
+    """
     canonical = json.dumps(resolved, sort_keys=True, separators=(",", ":"))
     return "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
 
@@ -355,6 +367,7 @@ def emit_decision_record(
     input_prov: Optional[InputProvenance] = None,
     trace: Optional[TraceAnchor] = None,
     residual_error_bound: Optional[float] = None,
+    evidence_refs: Optional[list[str]] = None,
     action_blocked: bool = False,
     escalation_approved: bool = False,
     action_id: Optional[str] = None,
@@ -380,7 +393,7 @@ def emit_decision_record(
     effect_surface_obj: dict[str, Any] = {"external_effect": surface.external_effect}
     if surface.tool is not None:
         effect_surface_obj["tool"] = surface.tool
-    if surface.external_effect:
+    if surface.external_effect is True:
         effect_surface_obj["reversibility"] = resolved["reversibility"]
         effect_surface_obj["scope"] = resolved["scope"]
         effect_surface_obj["consequence"] = resolved["consequence"]
@@ -422,7 +435,14 @@ def emit_decision_record(
         "residual_error_bound": residual_error_bound,
         "action_blocked": action_blocked,
         "escalation_approved": escalation_approved,
+        # §7.4 trace field; not read by the policy.
+        "effect_surface_hash": _surface_hash(resolved),
     }
+    # RES-001 reads top-level evidence_refs. Emitted only when supplied:
+    # the emitter never fabricates evidence, and the policy decides whether
+    # the refs (or their absence) comply.
+    if evidence_refs is not None:
+        record["evidence_refs"] = list(evidence_refs)
 
     # Verifier block: required by the policy whenever effective_ct >= 3
     # (IRR/IND/VQ-001). For CT<3 a verifier may be absent; we emit an
@@ -524,10 +544,11 @@ def _check_spec(spec: Any, where: str) -> dict:
     """Check every spec key _build_from_spec reads; raise EmitterInputError
     on the first one whose shape would otherwise crash it (fail closed).
 
-    `effect_surface.external_effect` is required but its type is not checked
-    (see derive_ct); an unrecognized axis scalar resolves to the worst key.
-    The axes must be scalars only when `external_effect` is truthy: derive_ct
-    does not read them otherwise.
+    `effect_surface.external_effect` is required: an absent key is an input
+    error, never CT0. Its type is not checked; derive_ct gives a non-boolean
+    value the undetermined CT. An unrecognized axis scalar resolves to the
+    worst key. The axes must be scalars only when `external_effect` is
+    truthy; derive_ct reads them only when it is boolean True.
     """
     if not isinstance(spec, dict):
         raise EmitterInputError(
@@ -562,6 +583,17 @@ def _check_spec(spec: Any, where: str) -> dict:
                 raise EmitterInputError(f"{where}: missing key 'verifier.{key}'")
         for key in ("type", "verdict"):
             _require_scalar(verifier[key], f"verifier.{key}", where)
+    # null means absent. [] and [""] pass: whether the refs satisfy RES-001
+    # is the policy's call (laas.rego:235-242), not the emitter's.
+    refs = spec.get("evidence_refs")
+    must = f"{where}: evidence_refs must be a JSON array of strings, got"
+    if refs is not None and not isinstance(refs, list):
+        raise EmitterInputError(f"{must} {type(refs).__name__}")
+    for ref in refs or ():
+        if not isinstance(ref, str):
+            raise EmitterInputError(
+                f"{must} an array with a {type(ref).__name__} element"
+            )
     return spec
 
 
@@ -619,6 +651,7 @@ def _build_from_spec(spec: dict, gate: GateContext) -> dict:
             merkle_anchor=tr.get("merkle_anchor"),
         ),
         residual_error_bound=spec.get("residual_error_bound"),
+        evidence_refs=spec.get("evidence_refs"),
         action_blocked=spec.get("action_blocked", False),
         escalation_approved=spec.get("escalation_approved", False),
         action_id=spec.get("action", {}).get("id") or spec.get("id"),
