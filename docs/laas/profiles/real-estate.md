@@ -570,7 +570,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic term matcher is a different *kind* of checker (`standard/LAAS.md:87`). A second language model reviewing the copy would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for the occupant-description list, a negative-test suite of known non-compliant listing phrases it must catch, and a change-controlled version in the trace. |
 | `LAAS-OBL-RES-001` | `VRF-OCCUPANT-DESC` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
-| `LAAS-OBL-HUM-001` | The listing broker approves before publication, and `escalation_approved` is `true`. The licensed broker, not the agent, carries the advertising responsibility. |
+| `LAAS-OBL-HUM-001` | The listing broker approves before publication, and `human_approval.approved` is `true`. The licensed broker, not the agent, carries the advertising responsibility. |
 | `LAAS-OBL-VEN-001` | Syndication is third-party distribution. The record names the 14 portals and states the scope limit, rather than writing "and partner sites". |
 
 **Language conformance: `LC-3`**, with the §3.3 occupant-description block applying

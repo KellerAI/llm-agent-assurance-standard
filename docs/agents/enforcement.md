@@ -96,18 +96,21 @@ checks that the tier assignment, verification, and enforcement are correct.
   and `error_ids` (set of obligation IDs with error-severity violations; rule at `laas.rego:210`)
   (`laas.rego:11–14`).
 - **CT classification** — tier is the lattice max of three axes; an unknown or
-  undetermined surface defaults to CT4 (`laas.rego:30`; `data.json:11`):
+  undetermined surface defaults to `default_ct_when_undetermined` (CT4 as shipped;
+  `laas.rego:30`, `:366–374`; `data.json:11`):
   - **CT0** — no external effect; read-only or fully sandboxed. Assigned only when
     `external_effect` is boolean `false` (`laas.rego:33–35`); an absent, `null`, or
-    non-boolean value gives CT4 (`laas.rego:30`).
+    non-boolean value gives `default_ct_when_undetermined` (CT4 as shipped;
+    `laas.rego:30`, `:366–374`).
   - **CT1** — reversible, single-system internal write
-    (reversibility rank 1, scope rank 1; `data.json:7–9`).
-  - **CT2** — reversible or low-consequence external effect.
-  - **CT3** — hard-to-reverse or material-consequence action; triggers
-    independent pre-commit verification (`data.json:12`).
-  - **CT4** — irreversible or high-consequence; requires independent
-    verification **plus** human approval; default when surface is undetermined
-    (`data.json:13`).
+    (reversibility rank 1, scope rank 1; `data.json:7–9`), and consequence `none` or `low` (rank 0–1).
+  - **CT2** — external effect that is reversible (rank 1), multi-party scope (rank 2), and consequence
+    `none` or `low` (rank 0–1); `multi` is the only lattice key of rank 2 (`data.json:7–9`).
+  - **CT3** — any axis at rank 3 and none at rank 4: reversibility `hard`, scope `org`, or consequence
+    `material` (`data.json:7–9`); triggers independent pre-commit verification (`data.json:12`).
+  - **CT4** — any axis at rank 4: reversibility `irreversible` or `none`, scope `public`, or consequence
+    `high` (`data.json:7–9`); requires independent verification **plus** human approval (`data.json:12–13`);
+    default when surface is undetermined (`laas.rego:30`; `data.json:11`).
 - **Effective tier:** max of the gate tier and the cumulative window CT,
   preventing structuring attacks (`laas.rego:48`).
   The cumulative window CT is supplied by the caller (the policy does not compute it);
@@ -115,7 +118,10 @@ checks that the tier assignment, verification, and enforcement are correct.
   (`input.aggregate.window_effect_ct`, `laas.rego:311`).
   The gate tier is `gate.assigned_ct`, or the lattice CT when `assigned_ct` is absent or not an integer 0..4
   (`laas.rego:266–277`).
-- **Fail-safe default:** `default expected_ct := 4` (`laas.rego:30`).
+- **Fail-safe default:** an undetermined surface takes `default_ct_when_undetermined`
+  (`laas.rego:30`; `data.json:11`, shipped 4). A missing value, or one that is not an integer
+  in 0..4, fails closed to CT4 (`_default_ct`, `laas.rego:366–374`). `_ct_determined`
+  (`laas.rego:377–385`) mirrors the two determined `expected_ct` rules.
   An absent or invalid `assigned_ct` falls back to the lattice CT and raises TIER-001 (`laas.rego:263–284`).
 
 ### LaaS obligation families
@@ -192,7 +198,7 @@ so contributors run them on demand.
 
 | Script | Invocation | Purpose |
 |--------|------------|---------|
-| `scripts/laas/emitter.py` | `python3 scripts/laas/emitter.py -i <effect-surface.json> -b conformance/laas/data.json -o <out.json>` | Emit a gate-derived decision record from an effect surface. |
+| `scripts/laas/emitter.py` | `python3 scripts/laas/emitter.py -i <effect-surface.json> -b conformance/laas/data.json -o <out.json>` | Emit a gate-derived decision record from an effect surface. A non-boolean `external_effect` maps to the undetermined tier (CT4 as shipped; `scripts/laas/emitter.py:301-304`, `docs/laas/emitter.md:44`). An optional spec `evidence_refs` array is passed through to the record and read by `RES-001` (`scripts/laas/emitter.py:441-445`, `docs/laas/emitter.md:56`). Every record carries `effect_surface_hash` (`scripts/laas/emitter.py:439`, `docs/laas/emitter.md:124`). |
 | `scripts/laas/backtest.py` | `python3 scripts/laas/backtest.py --dataset <fixture.json> --data-json conformance/laas/data.json --ct <CT>` | Measure the Bucket-B escape rate against a labeled backtest fixture and validate it against the per-CT tolerance in `conformance/laas/data.json`. |
 | `scripts/laas/check.sh` | `bash scripts/laas/check.sh` | Emit a sample decision record from `scripts/laas/fixtures/transfer.effect-surface.json` and (if `opa` is present) evaluate it against `package kellerai.laas.actions`; skips the OPA step when `opa` is absent. |
 | `scripts/laas/osi_to_surface.py` | `python3 scripts/laas/osi_to_surface.py -m <model.json> --kind dataset\|metric --name <name> --operation read\|write\|delete` (add `--unsigned` for an untrusted model) | OSI (Open Semantic Interchange) → LaaS adapter: build an effect surface from an annotated OSI model and emit a decision record via the canonical emitter — no tier math lives in the adapter. |

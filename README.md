@@ -83,7 +83,7 @@ Run the LAAS policy against the bundled example decision record:
 ```bash
 cd conformance/laas
 
-# Syntax check + test suite (expect: 96/96 PASS)
+# Syntax check + test suite (expect: 101/101 PASS)
 opa check laas.rego laas_test.rego
 opa test . -v
 
@@ -123,7 +123,7 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 96/96` for `conformance/laas/`, `PASS: 167/167` for all of `conformance/`, and
+Expected: `PASS: 101/101` for `conformance/laas/`, `PASS: 172/172` for all of `conformance/`, and
 exit 0 from every other command.
 
 ## Status

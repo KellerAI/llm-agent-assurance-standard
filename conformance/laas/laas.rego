@@ -27,7 +27,7 @@ cfg := data.laas
 # Default-to-highest when the surface is undetermined (v1.1 Sec 6.2 / finding 3.3).
 # ---------------------------------------------------------------------------
 
-default expected_ct := 4
+expected_ct := _default_ct if not _ct_determined
 
 # read-only / sandboxed -> CT0 only on explicit boolean false (SD-1; LAAS.md:43-44)
 expected_ct := 0 if {
@@ -353,4 +353,33 @@ violations contains obl("LAAS-OBL-RES-001", sprintf("residual_error_bound %v at 
 	not blocked
 	not _bucket_a
 	_valid_bound == 0
+}
+
+# ---------------------------------------------------------------------------
+# Undetermined-surface tier (v1.1 Sec 6.2; bead laas-ddo).
+# expected_ct falls back to data.laas.default_ct_when_undetermined when neither
+# the read-only rule nor the lattice rule above applies. A key that is absent or
+# not an integer in 0..4 fails closed to CT4. An integral float (e.g. 2.0) is
+# normalized to an integer, as for gate.assigned_ct (R2a).
+# ---------------------------------------------------------------------------
+
+default _default_ct := 4
+
+_default_ct := round(v) if {
+	v := cfg.default_ct_when_undetermined
+	is_number(v)
+	v == floor(v)
+	v >= 0
+	v <= 4
+}
+
+# mirrors the two determined expected_ct rules (read-only; full lattice surface)
+_ct_determined if input.action.effect_surface.external_effect == false
+
+_ct_determined if {
+	input.action.effect_surface.external_effect == true
+	s := input.action.effect_surface
+	cfg.tier_lattice.reversibility[s.reversibility]
+	cfg.tier_lattice.scope[s.scope]
+	cfg.tier_lattice.consequence[s.consequence]
 }

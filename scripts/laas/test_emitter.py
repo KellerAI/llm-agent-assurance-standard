@@ -19,8 +19,10 @@ what a caller of `python3 emitter.py` observes.
   errors, and the original's exit-2 messages are unchanged.
 """
 
+import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -30,6 +32,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _EMITTER = os.path.join(_HERE, "emitter.py")
 _FIXTURE = os.path.join(_HERE, "fixtures", "transfer.effect-surface.json")
 _DATA_JSON = os.path.join(_HERE, "..", "..", "conformance", "laas", "data.json")
+_POLICY = os.path.join(_HERE, "..", "..", "conformance", "laas", "laas.rego")
+_OPA = shutil.which("opa")
 
 
 def _run(*args):
@@ -629,6 +633,39 @@ class TestEmitterCli(unittest.TestCase):
                     },
                 )
 
+    def test_external_effect_non_boolean_fails_closed(self):
+        # laas.rego gives CT0 only for boolean false and the lattice only for
+        # true; anything else is CT4 (laas.rego:30-39). The axes here have a
+        # lattice max of 2 in data.json, and the window is 0, so CT4 can only
+        # come from the undetermined default.
+        surface = {
+            "tool": "payments.transfer",
+            "reversibility": "reversible",
+            "scope": "multi",
+            "consequence": "low",
+        }
+        cases = {
+            "null": (None, 4),
+            'string "false"': ("false", 4),
+            "0": (0, 4),
+            "1": (1, 4),
+            "false": (False, 0),
+            "true": (True, 2),
+        }
+        for name, (value, expected) in cases.items():
+            with self.subTest(external_effect=name):
+                spec_obj = _fixture_spec()
+                spec_obj["effect_surface"] = dict(surface, external_effect=value)
+                spec_obj["aggregate"] = {"window_effect_ct": 0}
+                spec = self._write("ee.effect-surface.json", json.dumps(spec_obj))
+                proc = _run("-i", spec, "-b", _DATA_JSON)
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+                record = json.loads(proc.stdout)
+                self.assertEqual(record["gate"]["assigned_ct"], expected)
+                emitted = record["action"]["effect_surface"]["external_effect"]
+                self.assertIs(type(emitted), type(value))
+                self.assertEqual(emitted, value)
+
     def test_spec_newlines_read_as_text(self):
         # The original read a spec file in text mode, so CR and CRLF became
         # LF before json.loads, and read stdin through sys.stdin, which does
@@ -663,6 +700,185 @@ class TestEmitterCli(unittest.TestCase):
                     self.assertEqual(
                         proc.stderr,
                         f"EMITTER INPUT ERROR: spec {where}: invalid JSON: {reason}\n",
+                    )
+
+
+# A non-blocked CT2 Bucket-B action: lattice max(reversible 1, multi 2, low 1)
+# is 2, the window is 0, and the placeholder verifier (no `verifier` key) is
+# not a passed deterministic one. The bound 0.01 is under the CT2 tolerance
+# 0.02 (data.json escape_rate_tolerance_by_ct), so only the evidence_refs
+# rule (laas.rego:249-254) can make RES-001 fire.
+def _ct2_spec(**updates):
+    spec = _fixture_spec()
+    spec.pop("verifier")
+    spec["effect_surface"] = {
+        "tool": "crm.update",
+        "external_effect": True,
+        "reversibility": "reversible",
+        "scope": "multi",
+        "consequence": "low",
+    }
+    spec.update(
+        aggregate={"window_effect_ct": 0},
+        action_blocked=False,
+        residual_error_bound=0.01,
+    )
+    spec["actor"]["self_reported_ct"] = 2
+    spec.update(updates)
+    return spec
+
+
+def _expected_hash(record):
+    """Recompute effect_surface_hash from the record alone: sha256 over the
+    canonical JSON of action.effect_surface without `tool`."""
+    surface = dict(record["action"]["effect_surface"])
+    surface.pop("tool", None)
+    canonical = json.dumps(surface, sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+
+
+class TestEvidenceRefsAndSurfaceHash(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+
+    def _emit(self, spec_obj):
+        path = os.path.join(self._tmp.name, "spec.effect-surface.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(spec_obj, fh)
+        return path, _run("-i", path, "-b", _DATA_JSON)
+
+    def _record(self, spec_obj):
+        _, proc = self._emit(spec_obj)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
+    def _opa(self, record, query):
+        path = os.path.join(self._tmp.name, "record.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(record, fh)
+        proc = subprocess.run(
+            [_OPA, "eval", "-f", "json", "-d", _POLICY, "-d", _DATA_JSON]
+            + ["-i", path, f"data.kellerai.laas.actions.{query}"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)["result"][0]["expressions"][0]["value"]
+
+    def test_evidence_refs_emitted_verbatim(self):
+        for refs in (["ev_backtest_0001", "ev_ledger_diff_001"], [], [""]):
+            with self.subTest(refs=refs):
+                record = self._record(_ct2_spec(evidence_refs=refs))
+                self.assertEqual(record["evidence_refs"], refs)
+
+    def test_evidence_refs_absent_or_null_not_emitted(self):
+        # The emitter never fabricates evidence: no refs in, no key out.
+        self.assertNotIn("evidence_refs", self._record(_ct2_spec()))
+        record = self._record(_ct2_spec(evidence_refs=None))
+        self.assertNotIn("evidence_refs", record)
+
+    def test_evidence_refs_wrong_shape_exits_2(self):
+        cases = {
+            "string": "ev_backtest_0001",
+            "object": {"ref": "ev_backtest_0001"},
+            "number": 1,
+            "true": True,
+            "number element": ["ev_ok", 1],
+            "null element": [None],
+            "list element": [["ev_backtest_0001"]],
+        }
+        for name, refs in cases.items():
+            with self.subTest(name):
+                path, proc = self._emit(_ct2_spec(evidence_refs=refs))
+                self.assertEqual(proc.returncode, 2, proc.stderr)
+                self.assertEqual(proc.stdout, "")
+                self.assertNotIn("Traceback", proc.stderr)
+                lines = proc.stderr.strip().splitlines()
+                self.assertEqual(len(lines), 1, proc.stderr)
+                self.assertTrue(lines[0].startswith("EMITTER INPUT ERROR:"))
+                self.assertIn(path, lines[0])
+                self.assertIn("evidence_refs must be a JSON array of strings", lines[0])
+
+    @unittest.skipUnless(_OPA, "opa not on PATH (scripts/laas/check.sh skips too)")
+    def test_ct2_record_res001_follows_evidence_refs(self):
+        record = self._record(_ct2_spec(evidence_refs=["ev_backtest_0001"]))
+        summary = self._opa(record, "summary")
+        self.assertEqual(summary["effective_ct"], 2)
+        self.assertNotIn("LAAS-OBL-RES-001", self._opa(record, "error_ids"))
+        self.assertIs(self._opa(record, "compliant"), True)
+        # Planted negative: the same spec without usable refs fires RES-001.
+        for name, spec_obj in {
+            "absent": _ct2_spec(),
+            "empty": _ct2_spec(evidence_refs=[]),
+            "empty string": _ct2_spec(evidence_refs=[""]),
+        }.items():
+            with self.subTest(name):
+                record = self._record(spec_obj)
+                self.assertEqual(self._opa(record, "error_ids"), ["LAAS-OBL-RES-001"])
+                msgs = [v["msg"] for v in self._opa(record, "violations")]
+                self.assertIn(
+                    "residual_error_bound supplied at ct 2 without evidence_refs "
+                    "in the trace",
+                    msgs,
+                )
+
+    def test_effect_surface_hash_emitted(self):
+        specs = {
+            "known axes": _ct2_spec(),
+            "fixture": _fixture_spec(),
+            "undetermined axis": _ct2_spec(
+                effect_surface={"external_effect": True, "scope": "multi"}
+            ),
+            "no external effect": _ct2_spec(
+                effect_surface={"external_effect": False, "tool": "fs.read"}
+            ),
+            "non-boolean external effect": _ct2_spec(
+                effect_surface={"external_effect": "false"}
+            ),
+        }
+        hashes = set()
+        for name, spec_obj in specs.items():
+            with self.subTest(name):
+                record = self._record(spec_obj)
+                self.assertRegex(
+                    record["effect_surface_hash"], r"^sha256:[0-9a-f]{64}$"
+                )
+                self.assertEqual(record["effect_surface_hash"], _expected_hash(record))
+                hashes.add(record["effect_surface_hash"])
+        self.assertEqual(len(hashes), len(specs))
+        with self.subTest("tool is not hashed"):
+            spec_obj = _ct2_spec()
+            spec_obj["effect_surface"]["tool"] = "crm.bulk_update"
+            self.assertEqual(
+                self._record(spec_obj)["effect_surface_hash"],
+                self._record(_ct2_spec())["effect_surface_hash"],
+            )
+
+    def test_deep_external_effect_is_input_error(self):
+        # A deep non-boolean external_effect is hashed and serialised; at no
+        # depth near the parse limit may that end in a traceback.
+        def spec_text(depth):
+            spec = _ct2_spec()
+            spec["effect_surface"]["external_effect"] = "@@"
+            return json.dumps(spec).replace('"@@"', "[" * depth + "]" * depth)
+
+        for depth in range(10000, 9980, -1):
+            with self.subTest(depth=depth):
+                path = os.path.join(self._tmp.name, "deep.effect-surface.json")
+                with open(path, "w", encoding="utf-8") as fh:
+                    fh.write(spec_text(depth))
+                proc = _run("-i", path, "-b", _DATA_JSON)
+                self.assertIn(proc.returncode, (0, 2), proc.stderr)
+                self.assertNotIn("Traceback", proc.stderr)
+                if proc.returncode == 0:
+                    # Too deep to json.loads here; check the key textually.
+                    self.assertIn('\n  "effect_surface_hash": "sha256:', proc.stdout)
+                else:
+                    self.assertTrue(
+                        proc.stderr.startswith("EMITTER INPUT ERROR:"), proc.stderr
                     )
 
 
