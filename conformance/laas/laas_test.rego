@@ -40,6 +40,7 @@ _cfg := {
 		{"id": "LAAS-OBL-RES-001", "severity": "error"},
 		{"id": "LAAS-OBL-HUM-001", "severity": "error"},
 	],
+	"human_approval_bases": ["per_action"],
 }
 
 # --------------------------- reusable fixtures ---------------------------
@@ -58,14 +59,17 @@ _verifier_det := {"id": "v", "type": "deterministic", "model_lineage": "na", "qu
 
 _trace := {"append_only": true, "actor_chain_prev_hash": "h", "merkle_anchor": "m"}
 
+# An attributed per_action human approval (bead laas-69c; ADR-003 D4).
+_approval_ok := {"approved": true, "approver_id": "hr:approver", "attestation_ref": "sig:test-0001", "basis": "per_action"}
+
 # A fully-conformant CT4 decision record (gate-derived CT4, deterministic verifier, human-approved).
 _base_ct4 := {
-	"action": {"id": "a", "actor_model_lineage": "L", "self_reported_ct": 4, "effect_surface": _surface_ct4},
+	"action": {"id": "a", "actor_id": "agent.test", "actor_model_lineage": "L", "self_reported_ct": 4, "effect_surface": _surface_ct4},
 	"gate": _gate(4),
 	"verifier": _verifier_det,
 	"residual_error_bound": 0,
 	"evidence_refs": ["ev_test_0001"],
-	"human_approval": {"approved": true},
+	"human_approval": _approval_ok,
 	"aggregate": {"window_effect_ct": 4},
 	"input": {"trusted": true},
 	"vendor": {"used": false},
@@ -283,7 +287,7 @@ _osi_ct4 := {
 # CT4 write, full enforcement controls (human approval + append-only trace anchors) -> compliant.
 test_osi_ct4_full_controls_compliant if {
 	inp := json.patch(_osi_ct4, [
-		{"op": "replace", "path": "/human_approval/approved", "value": true},
+		{"op": "replace", "path": "/human_approval", "value": _approval_ok},
 		{"op": "replace", "path": "/trace", "value": {"append_only": true, "actor_chain_prev_hash": "sha256:osi", "merkle_anchor": "sha256:osi"}},
 	])
 	s := summary with input as inp with data.laas as _cfg
@@ -1113,4 +1117,156 @@ test_ddo_default_ct_integral_float_accepted if {
 	ct := expected_ct with input as _inp_undetermined
 		with data.laas as object.union(_cfg, {"default_ct_when_undetermined": 2.0})
 	ct == 2
+}
+
+# --------------------------------------------------------------------------- #
+# laas-69c: attributed per_action human approval at CT4 (ADR-003 D4/D6/D7)
+# (TDD: written before the laas.rego change)
+# --------------------------------------------------------------------------- #
+
+_hum_msg := "CT4 action without an attributed per_action human approval and not blocked"
+
+_hum_with(approval) := json.patch(_base_ct4, [{"op": "replace", "path": "/human_approval", "value": approval}])
+
+_hum_fails(inp) if {
+	ids := error_ids with input as inp with data.laas as _cfg
+	"LAAS-OBL-HUM-001" in ids
+	not compliant with input as inp with data.laas as _cfg
+	_has_msg(inp, "LAAS-OBL-HUM-001", _hum_msg)
+}
+
+_hum_fails_cfg(inp, c) if {
+	ids := error_ids with input as inp with data.laas as c
+	"LAAS-OBL-HUM-001" in ids
+	not compliant with input as inp with data.laas as c
+	vs := violations with input as inp with data.laas as c
+	some v in vs
+	v.obligation == "LAAS-OBL-HUM-001"
+	v.msg == _hum_msg
+}
+
+# T1
+test_hum_attributed_per_action_compliant if {
+	ids := error_ids with input as _base_ct4 with data.laas as _cfg
+	not "LAAS-OBL-HUM-001" in ids
+	compliant with input as _base_ct4 with data.laas as _cfg
+}
+
+# T2
+test_hum_human_verifier_distinct_approver_compliant if {
+	inp := _zt_human(0.006718)
+	_human_gated with input as inp with data.laas as _cfg
+	ids := error_ids with input as inp with data.laas as _cfg
+	not "LAAS-OBL-HUM-001" in ids
+	compliant with input as inp with data.laas as _cfg
+}
+
+# T3
+test_hum_bare_approved_true_fails if _hum_fails(_hum_with({"approved": true}))
+
+# T4
+test_hum_missing_approver_fails if _hum_fails(_hum_with(object.remove(_approval_ok, {"approver_id"})))
+
+# T5
+test_hum_invalid_approver_fails if {
+	every v in ["", 42, null, {}, [], true] {
+		_hum_fails(_hum_with(object.union(_approval_ok, {"approver_id": v})))
+	}
+}
+
+# T6
+test_hum_approver_equals_human_verifier_fails if {
+	inp := json.patch(_zt_human(0.006718), [{"op": "replace", "path": "/human_approval/approver_id", "value": "h"}])
+	_hum_fails(inp)
+}
+
+# T7
+test_hum_approver_equals_actor_fails if _hum_fails(_hum_with(object.union(_approval_ok, {"approver_id": "agent.test"})))
+
+# T8
+test_hum_basis_not_per_action_fails if {
+	every b in ["standing_envelope", "batch", "PER_ACTION", "", null, 1] {
+		_hum_fails(_hum_with(object.union(_approval_ok, {"basis": b})))
+	}
+}
+
+# T9
+test_hum_basis_missing_fails if _hum_fails(_hum_with(object.remove(_approval_ok, {"basis"})))
+
+# T10
+test_hum_missing_attestation_fails if _hum_fails(_hum_with(object.remove(_approval_ok, {"attestation_ref"})))
+
+# T11
+test_hum_approved_false_attributed_fails if _hum_fails(_hum_with(object.union(_approval_ok, {"approved": false})))
+
+# T12
+test_hum_approved_string_true_fails if _hum_fails(_hum_with(object.union(_approval_ok, {"approved": "true"})))
+
+# T13
+test_hum_missing_actor_id_fails_closed if _hum_fails(json.patch(_base_ct4, [{"op": "remove", "path": "/action/actor_id"}]))
+
+# T14
+test_hum_human_verifier_missing_id_fails_closed if {
+	inp := json.patch(_zt_human(0.006718), [{"op": "remove", "path": "/verifier/id"}])
+	_hum_fails(inp)
+}
+
+# T15
+test_hum_bases_read_from_data if {
+	c := object.union(_cfg, {"human_approval_bases": ["per_action", "batch"]})
+	inp := _hum_with(object.union(_approval_ok, {"basis": "batch"}))
+	ids := error_ids with input as inp with data.laas as c
+	not "LAAS-OBL-HUM-001" in ids
+	compliant with input as inp with data.laas as c
+}
+
+# T16
+test_hum_bases_missing_or_invalid_fail_closed if {
+	_hum_fails_cfg(_base_ct4, object.remove(_cfg, {"human_approval_bases"}))
+	_hum_fails_cfg(_base_ct4, object.union(_cfg, {"human_approval_bases": "per_action"}))
+}
+
+# T17
+test_hum_blocked_bare_approval_compliant if {
+	inp := json.patch(_hum_with({"approved": true}), [{"op": "replace", "path": "/action_blocked", "value": true}])
+	ids := error_ids with input as inp with data.laas as _cfg
+	not "LAAS-OBL-HUM-001" in ids
+	compliant with input as inp with data.laas as _cfg
+}
+
+test_hum_ct3_bare_approval_no_hum001 if {
+	inp := json.patch(_base_ct4, array.concat(_retier(3, _surface_ct3), [{"op": "replace", "path": "/human_approval", "value": {"approved": true}}]))
+	ids := error_ids with input as inp with data.laas as _cfg
+	not "LAAS-OBL-HUM-001" in ids
+}
+
+# T18: D6 - a same-person approval does not make the action human-gated.
+test_zt_same_person_bound_compared if {
+	inp := json.patch(_zt_human(0.006718), [{"op": "replace", "path": "/human_approval/approver_id", "value": "h"}])
+	not _human_gated with input as inp with data.laas as _cfg
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_exceeds)
+}
+
+# T19: D6 - a bare {approved: true} does not make the action human-gated.
+test_zt_bare_approval_bound_compared if {
+	inp := json.patch(_zt_human(0.006718), [{"op": "replace", "path": "/human_approval", "value": {"approved": true}}])
+	not _human_gated with input as inp with data.laas as _cfg
+	_has_msg_containing(inp, "LAAS-OBL-RES-001", _zt_exceeds)
+}
+
+# T20: D7 - the OSI record with a bare approval and full trace stays non-compliant.
+test_osi_ct4_bare_approval_noncompliant if {
+	inp := json.patch(_osi_ct4, [
+		{"op": "replace", "path": "/human_approval/approved", "value": true},
+		{"op": "replace", "path": "/trace", "value": {"append_only": true, "actor_chain_prev_hash": "sha256:osi", "merkle_anchor": "sha256:osi"}},
+	])
+	_hum_fails(inp)
+}
+
+# T21: a deterministic verifier's id is never compared to the approver.
+test_hum_det_verifier_id_not_compared if {
+	inp := json.patch(_base_ct4, [{"op": "replace", "path": "/verifier/id", "value": "hr:approver"}])
+	ids := error_ids with input as inp with data.laas as _cfg
+	not "LAAS-OBL-HUM-001" in ids
+	compliant with input as inp with data.laas as _cfg
 }

@@ -728,6 +728,28 @@ def _ct2_spec(**updates):
     return spec
 
 
+# An attributed per_action approval (ADR-003 D4, Q1). The approver is neither
+# the fixture's actor_id (agent.fundbot.v3) nor any human verifier's id.
+_APPROVAL_OK = {
+    "approved": True,
+    "approver_id": "hr:approver",
+    "attestation_ref": "sig:test-0001",
+    "basis": "per_action",
+}
+
+
+# A non-blocked CT4 action: the fixture surface (irreversible/public/high) and
+# window 4, with its qualified deterministic verifier now passing, so IRR, IND
+# and VQ hold and `_bucket_a` exempts the null bound from RES-001. Only the
+# human_approval attribution (laas.rego HUM-001) can make it non-compliant.
+def _ct4_spec(**updates):
+    spec = _fixture_spec()
+    spec["verifier"]["verdict"] = "pass"
+    spec.update(action_blocked=False, human_approval=dict(_APPROVAL_OK))
+    spec.update(updates)
+    return spec
+
+
 def _expected_hash(record):
     """Recompute effect_surface_hash from the record alone: sha256 over the
     canonical JSON of action.effect_surface without `tool`."""
@@ -880,6 +902,132 @@ class TestEvidenceRefsAndSurfaceHash(unittest.TestCase):
                     self.assertTrue(
                         proc.stderr.startswith("EMITTER INPUT ERROR:"), proc.stderr
                     )
+
+
+class TestHumanApprovalAttribution(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+
+    def _emit(self, spec_obj):
+        path = os.path.join(self._tmp.name, "spec.effect-surface.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(spec_obj, fh)
+        return path, _run("-i", path, "-b", _DATA_JSON)
+
+    def _record(self, spec_obj):
+        _, proc = self._emit(spec_obj)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
+    def _opa(self, record, query):
+        path = os.path.join(self._tmp.name, "record.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(record, fh)
+        proc = subprocess.run(
+            [_OPA, "eval", "-f", "json", "-d", _POLICY, "-d", _DATA_JSON]
+            + ["-i", path, f"data.kellerai.laas.actions.{query}"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)["result"][0]["expressions"][0]["value"]
+
+    def test_human_approval_fields_emitted_verbatim(self):
+        record = self._record(_ct4_spec())
+        self.assertEqual(record["human_approval"], _APPROVAL_OK)
+
+    def test_human_approval_absent_fields_not_emitted(self):
+        # The emitter never fabricates attribution: no field in, no key out.
+        for approval in (
+            {"approved": False},
+            {"approved": True, "approver_id": "hr:approver"},
+        ):
+            with self.subTest(approval=approval):
+                record = self._record(_ct4_spec(human_approval=approval))
+                self.assertEqual(record["human_approval"], approval)
+
+    def test_human_approval_field_wrong_shape_exits_2(self):
+        for key in ("approved", "approver_id", "attestation_ref", "basis"):
+            for name, value in {
+                "list": ["per_action"],
+                "object": {"id": "hr:approver"},
+            }.items():
+                with self.subTest(key=key, shape=name):
+                    approval = dict(_APPROVAL_OK, **{key: value})
+                    path, proc = self._emit(_ct4_spec(human_approval=approval))
+                    self.assertEqual(proc.returncode, 2, proc.stderr)
+                    self.assertEqual(proc.stdout, "")
+                    self.assertNotIn("Traceback", proc.stderr)
+                    lines = proc.stderr.strip().splitlines()
+                    self.assertEqual(len(lines), 1, proc.stderr)
+                    self.assertTrue(lines[0].startswith("EMITTER INPUT ERROR:"))
+                    self.assertIn(path, lines[0])
+                    self.assertIn(
+                        f"human_approval.{key} must be a JSON scalar", lines[0]
+                    )
+
+    @unittest.skipUnless(_OPA, "opa not on PATH (scripts/laas/check.sh skips too)")
+    def test_ct4_record_hum001_follows_attribution(self):
+        hum_msg = (
+            "CT4 action without an attributed per_action human approval "
+            "and not blocked"
+        )
+        # A qualified human verifier is not Bucket A, so at CT4 (tolerance 0)
+        # RES-001 needs a bound with evidence and the human gate (laas.rego
+        # :249-261, :325-346); the gate needs the attributed approval.
+        human_verifier = {
+            "id": "hr:reviewer",
+            "type": "human",
+            "model_lineage": "n/a",
+            "qualified": True,
+            "verdict": "pass",
+        }
+
+        def human_spec(**approval_updates):
+            return _ct4_spec(
+                verifier=human_verifier,
+                residual_error_bound=0.006718,
+                evidence_refs=["ev_backtest_0001"],
+                human_approval=dict(_APPROVAL_OK, **approval_updates),
+            )
+
+        for name, spec_obj in {
+            "deterministic verifier": _ct4_spec(),
+            "human verifier": human_spec(),
+        }.items():
+            with self.subTest(name):
+                record = self._record(spec_obj)
+                self.assertEqual(self._opa(record, "summary")["effective_ct"], 4)
+                self.assertEqual(self._opa(record, "error_ids"), [])
+                self.assertIs(self._opa(record, "compliant"), True)
+        # Planted negatives: one field of a compliant spec changed each time.
+        for name, (spec_obj, expected_ids) in {
+            "bare approved true": (
+                _ct4_spec(human_approval={"approved": True}),
+                ["LAAS-OBL-HUM-001"],
+            ),
+            "approver is the actor": (
+                _ct4_spec(
+                    human_approval=dict(_APPROVAL_OK, approver_id="agent.fundbot.v3")
+                ),
+                ["LAAS-OBL-HUM-001"],
+            ),
+            # Without the attributed approval the human gate fails too, so the
+            # bound is compared to the zero tolerance and RES-001 also fires.
+            "approver is the human verifier": (
+                human_spec(approver_id="hr:reviewer"),
+                ["LAAS-OBL-HUM-001", "LAAS-OBL-RES-001"],
+            ),
+        }.items():
+            with self.subTest(name):
+                record = self._record(spec_obj)
+                self.assertEqual(self._opa(record, "error_ids"), expected_ids)
+                self.assertIs(self._opa(record, "compliant"), False)
+                msgs = [v["msg"] for v in self._opa(record, "violations")]
+                self.assertIn(hum_msg, msgs)
 
 
 if __name__ == "__main__":
