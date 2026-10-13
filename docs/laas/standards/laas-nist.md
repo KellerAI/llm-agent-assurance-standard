@@ -854,7 +854,7 @@ If a higher-is-better figure is needed, `integrity = 1 - escape_rate`:
 at CT3, `integrity ≥ 0.995`. At CT4 the zero tolerance is met by the deterministic or human gate,
 not by a measured bound of 0 (`standard/LAAS.md §4.3`). At CT4 a non-blocked action requires a deterministic or human verifier,
 since a passing model verifier fires IND-001 (`conformance/laas/laas.rego:226-231`), and human
-approval under HUM-001 (`conformance/laas/laas.rego:178-182`).
+an attributed per-action human approval under HUM-001 (`conformance/laas/laas.rego:178-182`).
 
 Backtesting methodology requirements (`docs/laas/proposal-v1.1.md §5`):
 the held-out set must be representative of the operational action distribution and
@@ -898,10 +898,16 @@ model training and fine-tuning; the evaluation set should be independently audit
 
 #### Control Statement
 
-For every action with effective CT = 4, the system shall obtain human approval before
-committing the action, unless the action is blocked.
-Human approval shall be recorded in the decision trace as `human_approval.approved == true`
-(`conformance/laas/laas.rego:67`, `:178-182`).
+For every action with effective CT = 4, the system shall obtain an attributed human approval
+before committing the action, unless the action is blocked.
+The approval shall be recorded in the decision trace as a `human_approval` object with
+`approved == true`, a non-empty `approver_id`, a non-empty `attestation_ref`, and a `basis`
+that is a member of `data.laas.human_approval_bases`, whose only value is `per_action`
+(`conformance/laas/laas.rego:67`, `:178-182`, `:396-406`; `conformance/laas/data.json:33`).
+The approver shall be distinct from `action.actor_id` and, when the verifier type is `human`,
+from the verifier's `id`. A missing `action.actor_id`, or a human verifier with a missing or
+empty `id`, fails closed. A bare `{"approved": true}` is insufficient
+(`conformance/laas/laas.rego:403-416`).
 Recommended practice (informative; not evaluated by `conformance/laas/laas.rego`): abstention
 should be the default when no approval is received within a declared timeout.
 
@@ -911,27 +917,35 @@ Human approval at CT4 implements the most restrictive control in the LAAS hierar
 the two-person-rule analogue for irreversible, high-consequence agent actions
 (`standard/LAAS.md §3`, `docs/laas/proposal-v1.1.md §6.3`).
 
-Approval is per decision record (`conformance/laas/laas.rego:178-182`).
+Approval is per decision record, and the only accepted basis is `per_action`
+(`conformance/laas/laas.rego:178-182`; `conformance/laas/data.json:33`).
 
 The human-approval floor CT is `conformance/laas/data.json → human_approval_floor_ct: 4`.
 The Rego check (`conformance/laas/laas.rego:178-182`):
 
 ```rego
-violations contains obl("LAAS-OBL-HUM-001", ...) if {
+violations contains obl("LAAS-OBL-HUM-001", "CT4 action without an attributed per_action human approval and not blocked") if {
     effective_ct >= cfg.human_approval_floor_ct
     not blocked
     not human_approved
 }
 ```
 
+where `human_approved if _attributed_approval` (`conformance/laas/laas.rego:67`) and
+`_attributed_approval` is defined at `conformance/laas/laas.rego:396-406`.
+
 #### Assessment / Verification Objectives
 
 1. Verify that every decision-trace record with `effective_ct == 4` and
-   `action_blocked == false` has `human_approval.approved == true`.
+   `action_blocked == false` has `human_approval.approved == true`, a non-empty `approver_id`
+   and `attestation_ref`, `basis == "per_action"`, and an `approver_id` that differs from
+   `action.actor_id` and from a human verifier's `id`.
 2. (Recommended practice, informative.) Confirm that the timeout behavior defaults to
    `verdict: abstain` when no approval is received.
 3. Verify that the HUM-001 violation fires when `effective_ct >= 4`,
-   `action_blocked != true`, and `human_approval.approved != true`.
+   `action_blocked != true`, and the approval is not attributed (including a bare
+   `{"approved": true}`, a missing `action.actor_id`, an approver equal to the actor or to a
+   human verifier, or a human verifier with a missing `id`).
 
 ---
 

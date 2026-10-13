@@ -584,7 +584,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-INP-001` | The claimant-supplied invoice and the proof of loss are named as untrusted input, and the inspection report from TPA-NORTHFIELD is named as the independent corroboration. |
 | `LAAS-OBL-VEN-001` | TPA-NORTHFIELD is named with its scope limit: property damage adjustment only, no coverage position. |
 | `LAAS-OBL-RES-001` | `VRF-POLICY-EXACT` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
-| `LAAS-OBL-HUM-001` | A human approver approves before release, and `human_approval.approved` is `true`. |
+| `LAAS-OBL-HUM-001` | A human approver approves each action before release. `human_approval` has `approved: true`, a non-empty `approver_id`, a non-empty `attestation_ref`, and `basis: "per_action"`. The approver is not `actor_id`. A human verifier is not the approver. A missing `actor_id` or verifier id fails closed. `{approved: true}` alone fails (`conformance/laas/laas.rego:386-416`). |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. The record states 0 prior indemnity payments on this claim, so the sequence does not re-tier (`standard/LAAS.md:59-60`). |
 
 **Language conformance: `LC-3`** — tool-checked, plus review of the free-text fields by the

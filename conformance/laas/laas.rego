@@ -64,7 +64,7 @@ requires_independent_verification if effective_ct >= cfg.independent_verificatio
 
 verifier_passed if input.verifier.verdict == "pass"
 
-human_approved if input.human_approval.approved == true
+human_approved if _attributed_approval
 
 vendor_ok if {
 	input.vendor.attribution != null
@@ -175,7 +175,7 @@ violations contains obl("LAAS-OBL-VQ-001", "verifier is not qualified") if {
 }
 
 # HUM-001: CT4 also requires human approval, unless blocked (v1.1 Sec 6.3).
-violations contains obl("LAAS-OBL-HUM-001", "CT4 action without human approval and not blocked") if {
+violations contains obl("LAAS-OBL-HUM-001", "CT4 action without an attributed per_action human approval and not blocked") if {
 	effective_ct >= cfg.human_approval_floor_ct
 	not blocked
 	not human_approved
@@ -382,4 +382,35 @@ _ct_determined if {
 	cfg.tier_lattice.reversibility[s.reversibility]
 	cfg.tier_lattice.scope[s.scope]
 	cfg.tier_lattice.consequence[s.consequence]
+}
+
+# ---------------------------------------------------------------------------
+# Attributed human approval (bead laas-69c; ADR-003 D1-D7).
+# ---------------------------------------------------------------------------
+
+_nonempty_string(x) if {
+	is_string(x)
+	x != ""
+}
+
+_attributed_approval if {
+	a := input.human_approval
+	a.approved == true
+	_nonempty_string(a.approver_id)
+	_nonempty_string(a.attestation_ref)
+	is_array(cfg.human_approval_bases)
+	a.basis in cfg.human_approval_bases
+	_nonempty_string(input.action.actor_id)
+	a.approver_id != input.action.actor_id
+	_approver_distinct_from_verifier
+}
+
+_verifier_is_human if input.verifier.type == "human"
+
+_approver_distinct_from_verifier if not _verifier_is_human
+
+_approver_distinct_from_verifier if {
+	_verifier_is_human
+	_nonempty_string(input.verifier.id)
+	input.human_approval.approver_id != input.verifier.id
 }

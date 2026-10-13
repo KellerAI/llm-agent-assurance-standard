@@ -582,7 +582,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic recomputation is a different *kind* of checker (`standard/LAAS.md:87`). A second language model estimating tonnage would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for Manual J load computation and Manual S selection, a negative-test suite of known oversizing errors it must catch, and a change-controlled version in the trace. |
 | `LAAS-OBL-RES-001` | `VRF-MANUAL-J` returned `fail`, so the action is not Bucket A to the gate (`conformance/laas/laas.rego:244-247`) and the record carries the open-world bound. The bound `0.003000` is above the CT4 tolerance of `0` (`data.json:15`). The backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). |
-| `LAAS-OBL-HUM-001` | The responsible licensed mechanical contractor approves before release, and `human_approval.approved` is `true`. |
+| `LAAS-OBL-HUM-001` | The responsible licensed mechanical contractor approves before release. `human_approval` has `approved: true`, a non-empty `approver_id`, a non-empty `attestation_ref`, and `basis: "per_action"`. The approver is not `actor_id`. A human verifier is not the approver. A missing `actor_id` or verifier id fails closed. `{approved: true}` alone fails (`conformance/laas/laas.rego:386-416`). |
 | `LAAS-OBL-VEN-001` | The supplier's non-return terms are a vendor scope limit. The record names the supplier and states the terms rather than writing "may not be returnable". |
 
 **Outcome: the action is blocked.**

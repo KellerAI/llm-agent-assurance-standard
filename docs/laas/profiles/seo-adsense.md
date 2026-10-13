@@ -505,7 +505,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic path matcher is a different *kind* of checker (`standard/LAAS.md:87`). A second language model reviewing the diff would be presumed non-independent (`standard/LAAS.md:91`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for path-prefix matching, a negative-test suite of known over-matching patterns it must catch, and a change-controlled version in the trace. |
 | `LAAS-OBL-RES-001` | `VRF-ROBOTS-MATCH` returned `fail`, so the action is not Bucket A to the gate (`conformance/laas/laas.rego:244-247`) and the record carries the open-world bound. The bound `0.004004` is above the CT4 tolerance of `0` (`data.json:15`). The backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). |
-| `LAAS-OBL-HUM-001` | A human approver approves before deployment, and `human_approval.approved` is `true`. |
+| `LAAS-OBL-HUM-001` | A human approver approves each action before deployment. `human_approval` has `approved: true`, a non-empty `approver_id`, a non-empty `attestation_ref`, and `basis: "per_action"`. The approver is not `actor_id`. A human verifier is not the approver. A missing `actor_id` or verifier id fails closed. `{approved: true}` alone fails (`conformance/laas/laas.rego:386-416`). |
 | `LAAS-OBL-AGG-001` | If this change is one of a sequence of crawl-directive edits in the window, the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
 **Outcome: the action is blocked.**

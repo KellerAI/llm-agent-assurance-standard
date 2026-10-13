@@ -218,6 +218,24 @@ class ActorContext:
 
 
 @dataclass
+class HumanApproval:
+    """The CT4 human approval (HUM-001; standard/LAAS.md §4.1, ADR-003).
+    Supplied by the deployment's approval system, never by the actor.
+
+    `approved` is always emitted. Each attribution field is emitted only when
+    supplied (not None): the emitter never fabricates an approver. Whether the
+    approval is attributed -- approver distinct from the actor, attestation
+    present, `basis` in the bundle's `human_approval_bases` -- is the policy's
+    call, not the emitter's.
+    """
+
+    approved: bool = False
+    approver_id: Optional[str] = None
+    attestation_ref: Optional[str] = None
+    basis: Optional[str] = None  # per_action (data.json human_approval_bases)
+
+
+@dataclass
 class AggregateState:
     """Windowed cumulative blast radius for this principal/session/effect-class
     (§6.4). Maintained by the gate; sourced from the gate's aggregation store.
@@ -361,7 +379,7 @@ def emit_decision_record(
     actor: ActorContext,
     gate: GateContext,
     verifier: Optional[VerifierResult] = None,
-    human_approved: bool = False,
+    human_approval: Optional[HumanApproval] = None,
     aggregate: Optional[AggregateState] = None,
     vendor: Optional[VendorInfo] = None,
     input_prov: Optional[InputProvenance] = None,
@@ -382,6 +400,7 @@ def emit_decision_record(
     vendor = vendor or VendorInfo()
     input_prov = input_prov or InputProvenance()
     trace = trace or TraceAnchor()
+    human_approval = human_approval or HumanApproval()
 
     gate_derived_ct, resolved = derive_ct(surface, gate)
     # §6.4 structuring guard: the gate must assign at least the cumulative
@@ -397,6 +416,13 @@ def emit_decision_record(
         effect_surface_obj["reversibility"] = resolved["reversibility"]
         effect_surface_obj["scope"] = resolved["scope"]
         effect_surface_obj["consequence"] = resolved["consequence"]
+
+    # HUM-001 reads the attribution; a field not supplied is not emitted.
+    approval_obj: dict[str, Any] = {"approved": human_approval.approved}
+    for key in ("approver_id", "attestation_ref", "basis"):
+        value = getattr(human_approval, key)
+        if value is not None:
+            approval_obj[key] = value
 
     # --- the policy-read object graph (input.*) ---
     record: dict[str, Any] = {
@@ -419,7 +445,7 @@ def emit_decision_record(
             "out_of_process": gate.out_of_process,  # §7.7
         },
         "aggregate": {"window_effect_ct": aggregate.window_effect_ct},  # §6.4
-        "human_approval": {"approved": human_approved},
+        "human_approval": approval_obj,  # HUM-001
         "vendor": {
             "used": vendor.used,
             "attribution": vendor.attribution,  # null when unknown -> VEN-001
@@ -565,6 +591,12 @@ def _check_spec(spec: Any, where: str) -> dict:
     for key in _SPEC_OBJECT_KEYS:
         if key in spec:
             _object_at(spec, key, where)
+    # The approval fields are emitted verbatim, so only their shape is
+    # checked; the `basis` enum and attribution are the policy's (HUM-001).
+    approval = spec.get("human_approval", {})
+    for key in ("approved", "approver_id", "attestation_ref", "basis"):
+        if key in approval:
+            _require_scalar(approval[key], f"human_approval.{key}", where)
     window = spec.get("aggregate", {}).get("window_effect_ct", 0)
     if not _is_number(window):
         raise EmitterInputError(
@@ -632,12 +664,18 @@ def _build_from_spec(spec: dict, gate: GateContext) -> dict:
     ven = spec.get("vendor", {})
     inp = spec.get("input", {})
     tr = spec.get("trace", {})
+    ha = spec.get("human_approval", {})
     return emit_decision_record(
         surface=surface,
         actor=actor,
         gate=gate,
         verifier=verifier,
-        human_approved=spec.get("human_approval", {}).get("approved", False),
+        human_approval=HumanApproval(
+            approved=ha.get("approved", False),
+            approver_id=ha.get("approver_id"),
+            attestation_ref=ha.get("attestation_ref"),
+            basis=ha.get("basis"),
+        ),
         aggregate=AggregateState(window_effect_ct=agg.get("window_effect_ct", 0)),
         vendor=VendorInfo(
             used=ven.get("used", False),

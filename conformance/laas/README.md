@@ -16,7 +16,7 @@ Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.r
 |------|------|
 | `data.json` | Single source of truth — obligation bundle, tier lattice, tolerances, floors |
 | `laas.rego` | Policy — package `kellerai.laas.actions` |
-| `laas_test.rego` | `opa test` suite (96 cases: 12 obligation-specific, 3 pass/block/read-only, 4 OSI-adapter golden, 25 spec-alignment for SD-1 to SD-3, 18 for gate-tier validity (R1/R2), 9 for residual-bound validity (R3/R3a), 9 for integral-float gate tier and any-CT bound validity (R2a/R3c), 4 for integral-float window ct (R2b), 12 zero-tolerance (`test_zt_*`)) |
+| `laas_test.rego` | `opa test` suite (123 cases: 12 obligation-specific, 3 pass/block/read-only, 4 OSI-adapter golden, 25 spec-alignment for SD-1 to SD-3, 18 for gate-tier validity (R1/R2), 9 for residual-bound validity (R3/R3a), 9 for integral-float gate tier and any-CT bound validity (R2a/R3c), 4 for integral-float window ct (R2b), 12 zero-tolerance (`test_zt_*` in the laas-o4c section), 5 for the undetermined-tier default (laas-ddo: `test_ddo_*`), 22 attributed human approval (laas-69c: 19 `test_hum_*`, plus `test_zt_same_person_bound_compared`, `test_zt_bare_approval_bound_compared`, `test_osi_ct4_bare_approval_noncompliant`)) |
 | `examples/action.ct4-blocked.json` | Sample decision record for `opa eval` |
 
 ## Input
@@ -39,7 +39,7 @@ data.kellerai.laas.actions.compliant   # bool — true iff zero error-severity v
 ## Run it
 
 ```bash
-# Syntax check + test suite (expect all green — currently 101/101 PASS)
+# Syntax check + test suite (expect all green — currently 123/123 PASS)
 opa check laas.rego laas_test.rego
 opa test . -v
 
@@ -72,7 +72,7 @@ obligation or rule in `laas.rego` that consumes it.
 | `verifier.type` | `LAAS-OBL-IND-001` | Independence test: `"deterministic"` or `"human"` satisfies; `"model"` must differ in lineage and correlation. A passed `"model"` verifier is never independent at CT4: on a non-blocked CT4 action it fires IND-001 (`laas.rego:226-231`) |
 | `verifier.qualified` | `LAAS-OBL-VQ-001` | Verifier must be qualified (DO-330 analogue, v1.1 §7.5) |
 | `trace.append_only` | `LAAS-OBL-TRC-001` | Append-only chained decision trace (v1.1 §7.4) |
-| `human_approval.approved` | `LAAS-OBL-HUM-001` | Human approval required at CT4 when not blocked |
+| `human_approval` (`approved`, `approver_id`, `attestation_ref`, `basis`), `action.actor_id`, `verifier.id` | `LAAS-OBL-HUM-001` | An attributed approval is required at CT4 when not blocked (`laas.rego:67`, `:178`). All four fields are required: `approved` is boolean `true`; `approver_id` and `attestation_ref` are non-empty strings; `basis` is a member of `human_approval_bases` (currently `["per_action"]`, `data.json:33`) (`laas.rego:396-402`). Two-person rule: `approver_id` must differ from `action.actor_id` (`laas.rego:404`), and, only when `verifier.type == "human"`, from `verifier.id` (`laas.rego:408-416`). Comparison is exact string equality. Fails closed: a missing or empty `action.actor_id` (`laas.rego:403`), a human verifier with a missing or empty `id` (`laas.rego:414`), or a missing or non-array `human_approval_bases` (`laas.rego:401`) denies the approval. A bare `{"approved": true}` no longer satisfies HUM-001 |
 | `aggregate.window_effect_ct` | `LAAS-OBL-AGG-001` | Cumulative blast-radius — `effective_ct` is the max of the gate tier (`assigned_ct`, or the lattice CT if absent or invalid) and this value (`laas.rego:48`) |
 | `input.trusted` | `LAAS-OBL-INP-001` | Untrusted input must raise the effective CT to ≥3 or the action must be blocked |
 | `vendor.used` / `vendor.attribution` / `vendor.scope_limited` | `LAAS-OBL-VEN-001` | Third-party dependencies require attribution and a scope limit |
@@ -89,8 +89,8 @@ At CT4 a second IND-001 rule fires for any non-blocked action with a passed mode
 regardless of lineage or correlation (`laas.rego:226-231`).
 
 **Fields present in the example that `laas.rego` does not reference** (informational only):
-`action.id`, `action.actor_id`, `action.effect_surface.tool`, `gate.bundle_version`,
-`verifier.id`, `trace.actor_chain_prev_hash`, `trace.merkle_anchor`, and `escalation_approved`.
+`action.id`, `action.effect_surface.tool`, `gate.bundle_version`,
+`trace.actor_chain_prev_hash`, `trace.merkle_anchor`, and `escalation_approved`.
 These fields are part of the record schema, but no rule in `laas.rego` reads them.
 
 ## CI wiring (proposed)
@@ -108,6 +108,6 @@ Supporting lines: `.github/workflows/ci.yml:33-34` (sanitization gate),
 `.github/workflows/blast-radius-pulse.yml:60` (`bash scripts/pulse.sh`, which runs `opa eval` at
 `scripts/pulse.sh:242`).
 
-> Re-verified on OPA 1.18.2 (2026-10-10): `opa check` and `opa test` (101/101 PASS). The
+> Re-verified on OPA 1.18.2 (2026-10-12): `opa check` and `opa test` (123/123 PASS). The
 > conformance predicate references only declared trace fields, so it is mechanically evaluable —
 > see `standard/LAAS.md` §5.

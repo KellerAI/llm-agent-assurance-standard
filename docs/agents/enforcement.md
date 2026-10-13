@@ -88,7 +88,7 @@ checks that the tier assignment, verification, and enforcement are correct.
 
 - **Package:** `kellerai.laas.actions` (`laas.rego:19`).
 - **Sibling data:** `conformance/laas/data.json` carries the obligation registry,
-  the CT lattice, and enforcement thresholds (`conformance/laas/data.json:1–34`).
+  the CT lattice, and enforcement thresholds (`conformance/laas/data.json:1–35`).
 - **Entry points:** `violations` (set of `{obligation, severity, msg}`),
   `summary` (`bundle`, `expected_ct`, `effective_ct`, `errors`, `warnings`, `compliant`;
   `bundle` at `laas.rego:217`),
@@ -176,8 +176,12 @@ recorded in `conformance/laas/data.json:19–32`.
   At a zero tolerance (CT4 by default, `data.json:15`) the over-tolerance comparison is skipped for a Bucket-A or
   human-gated action, and a non-blocked action outside Bucket A that records a bound of exactly 0 violates RES-001
   (`laas.rego:318–356`; `standard/LAAS.md:108–114`).
-- **`LAAS-OBL-HUM-001`** — CT4 actions require human approval unless the action
-  is blocked (`laas.rego:178–182`; `data.json:13,31`).
+- **`LAAS-OBL-HUM-001`** — CT4 actions require an attributed human approval unless the action
+  is blocked (`laas.rego:67`, `:178–182`; `data.json:13,31`). `human_approval` needs `approved: true`,
+  non-empty string `approver_id` and `attestation_ref`, and a `basis` in `human_approval_bases`
+  (`["per_action"]`, `data.json:33`). The approver must differ from `action.actor_id` and, when the verifier is
+  human, from `verifier.id`; a missing `actor_id` or human verifier `id` fails closed. A bare
+  `{approved: true}` no longer suffices (`laas.rego:396–416`).
 
 ### Audit trail — `violations` and `summary`
 
@@ -198,7 +202,7 @@ so contributors run them on demand.
 
 | Script | Invocation | Purpose |
 |--------|------------|---------|
-| `scripts/laas/emitter.py` | `python3 scripts/laas/emitter.py -i <effect-surface.json> -b conformance/laas/data.json -o <out.json>` | Emit a gate-derived decision record from an effect surface. A non-boolean `external_effect` maps to the undetermined tier (CT4 as shipped; `scripts/laas/emitter.py:301-304`, `docs/laas/emitter.md:44`). An optional spec `evidence_refs` array is passed through to the record and read by `RES-001` (`scripts/laas/emitter.py:441-445`, `docs/laas/emitter.md:56`). Every record carries `effect_surface_hash` (`scripts/laas/emitter.py:439`, `docs/laas/emitter.md:124`). |
+| `scripts/laas/emitter.py` | `python3 scripts/laas/emitter.py -i <effect-surface.json> -b conformance/laas/data.json -o <out.json>` | Emit a gate-derived decision record from an effect surface. A non-boolean `external_effect` maps to the undetermined tier (CT4 as shipped; `scripts/laas/emitter.py:319-322`, `docs/laas/emitter.md:44`). An optional spec `evidence_refs` array is passed through to the record and read by `RES-001` (`scripts/laas/emitter.py:467-471`, `docs/laas/emitter.md:56`). Every record carries `effect_surface_hash` (`scripts/laas/emitter.py:465`, `docs/laas/emitter.md:125`). |
 | `scripts/laas/backtest.py` | `python3 scripts/laas/backtest.py --dataset <fixture.json> --data-json conformance/laas/data.json --ct <CT>` | Measure the Bucket-B escape rate against a labeled backtest fixture and validate it against the per-CT tolerance in `conformance/laas/data.json`. |
 | `scripts/laas/check.sh` | `bash scripts/laas/check.sh` | Emit a sample decision record from `scripts/laas/fixtures/transfer.effect-surface.json` and (if `opa` is present) evaluate it against `package kellerai.laas.actions`; skips the OPA step when `opa` is absent. |
 | `scripts/laas/osi_to_surface.py` | `python3 scripts/laas/osi_to_surface.py -m <model.json> --kind dataset\|metric --name <name> --operation read\|write\|delete` (add `--unsigned` for an untrusted model) | OSI (Open Semantic Interchange) → LaaS adapter: build an effect surface from an annotated OSI model and emit a decision record via the canonical emitter — no tier math lives in the adapter. |

@@ -178,9 +178,9 @@ with these fields:
 A `None` on any axis means no determinable value was found.
 For `write` and `delete`, `emitter.derive_ct` then returns
 `default_ct_when_undetermined` from the bundle, which is 4 (CT4) in
-`conformance/laas/data.json:11` (`scripts/laas/emitter.py:316-334`).
+`conformance/laas/data.json:11` (`scripts/laas/emitter.py:334-352`).
 For `read`, `external_effect` is `False`, so `derive_ct` returns CT0 whatever the
-axis values are (`scripts/laas/emitter.py:297-298`;
+axis values are (`scripts/laas/emitter.py:315-316`;
 `scripts/laas/osi_to_surface.py:185`); only the unsigned-model floor below can raise it.
 
 ### Axis derivation rules
@@ -211,7 +211,7 @@ The CLI wraps the surface in `osi_emit_decision_record`, which calls the canonic
 `emitter.emit_decision_record`. The resulting JSON is written to stdout or `--out`.
 The record carries `input.trusted`, `gate.assigned_ct`, and
 `aggregate.window_effect_ct` (`scripts/laas/test_osi_to_surface.py:166-188`).
-The emitter always writes `aggregate.window_effect_ct` (`scripts/laas/emitter.py:421`):
+The emitter always writes `aggregate.window_effect_ct` (`scripts/laas/emitter.py:447`):
 it is 0 for a signed model and `untrusted_input_min_ct` for an unsigned one.
 The CLI also supplies a deterministic, qualified, passing verifier (`VRF-OSI-DET`), so
 the proof script can show a compliant CT4 write
@@ -224,7 +224,7 @@ When `--unsigned` is passed, the adapter sets `aggregate.window_effect_ct` to
 (default `conformance/laas/data.json`) (`scripts/laas/osi_to_surface.py:239-241`,
 `:314`).
 The emitter then assigns `CT = max(derived_ct, window_effect_ct)`, flooring the
-assigned CT to at least that value (`scripts/laas/emitter.py:391`).
+assigned CT to at least that value (`scripts/laas/emitter.py:410`).
 
 ---
 
@@ -292,15 +292,23 @@ bash scripts/laas/osi_check.sh
    --operation write --signed`, writes the raw decision record to a temp file, and
    prints it (`scripts/laas/osi_check.sh:26-28`).
 
-2. **Enforcement-plane controls.** A Python inline script patches the record with
-   `human_approval.approved = true` and an append-only trace block
-   (`scripts/laas/osi_check.sh:35-41`). These are CT4 governance controls supplied
-   by the deployment; the adapter itself does not add them.
+2. **Enforcement-plane controls.** A Python inline script patches the record with an
+   attributed `per_action` human approval and an append-only trace block
+   (`scripts/laas/osi_check.sh:32-45`). The approval is
+   `{"approved": true, "approver_id": "hr:osi-approver", "attestation_ref": "sig:osi-demo",
+   "basis": "per_action"}` (`scripts/laas/osi_check.sh:42`). Its `approver_id` differs from
+   the adapter's `action.actor_id` (`agent.osi.demo`), as `LAAS-OBL-HUM-001` requires
+   (`conformance/laas/laas.rego:67`, `:178`, `:396-416`). A bare `{approved: true}` no
+   longer satisfies HUM-001. The deterministic `VRF-OSI-DET` verifier is kept (ADR-003 D7);
+   the proof adds no human verifier. These are CT4 governance controls supplied by the
+   deployment; the adapter itself does not add them. Approval data stays out of the
+   `custom_extension`: its schema is per-object with `"additionalProperties": false`
+   (see above), and an approval is a per-action fact, not a property of the OSI object.
 
 3. **`opa eval`.** Evaluates `data.kellerai.laas.actions.compliant` against the
    patched record using `conformance/laas/laas.rego` and `conformance/laas/data.json`.
    The script extracts the boolean result and also prints
-   `data.kellerai.laas.actions.summary` (`scripts/laas/osi_check.sh:44-49`).
+   `data.kellerai.laas.actions.summary` (`scripts/laas/osi_check.sh:48-53`).
 
 ### Expected result
 
@@ -322,4 +330,4 @@ PASS: CT4 net_settlement_amount write is compliant under full controls.
 ```
 
 If `compliant` is not `true`, the script exits non-zero with a `FAIL:` message
-(`scripts/laas/osi_check.sh:51-54`).
+(`scripts/laas/osi_check.sh:55-58`).

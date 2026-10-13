@@ -484,7 +484,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic checker is a different *kind* of checker (`standard/LAAS.md:87`), so no error-correlation measurement is needed. |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage, a negative-test suite of known sanctioned parties it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
 | `LAAS-OBL-RES-001` | `VRF-SANC-EXACT` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
-| `LAAS-OBL-HUM-001` | A human approver approves before release, and `human_approval.approved` is `true`. |
+| `LAAS-OBL-HUM-001` | A named human approver approves each action before release. `human_approval` has `approved: true`, a non-empty `approver_id`, a non-empty `attestation_ref`, and `basis: "per_action"`. The approver is not `actor_id`. A human verifier is not the approver. A missing `actor_id` or verifier id fails closed. `{approved: true}` alone fails (`conformance/laas/laas.rego:386-416`). |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. If this release is one of several to the same beneficiary, the aggregate re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
 **Language conformance: `LC-3`** — tool-checked, plus review of the free-text fields by the

@@ -5,8 +5,10 @@ date: 2026-10-10
 ---
 
 > Bead `laas-69c` (follow-up F5 from the `laas-yju` design). Status: Accepted (2026-10-10)
-> for D1, D2, D3, and D5; D4, D6, and D7 remain open. This ADR changes no policy, test,
-> script, or prose; implementation is follow-up work. Line cites are against `dev` at `eea2f44`.
+> for D1, D2, D3, and D5; D4, D6, and D7 ruled by the maintainer on 2026-10-11/12, so D1–D7
+> are all decided. Implementation lands under the same bead. Line cites in "Context" and
+> "Considered options" are against `dev` at `eea2f44`; cites in "Decision" and the rulings
+> are against the implementation tree.
 
 ## Context
 
@@ -49,6 +51,9 @@ So `standard/LAAS.md:89` can be asserted in a record, but no rule can check it.
   approval are part of the design (`docs/laas/proposal-v1.1.md:184`). The emitter already
   flags this as an open TODO (`docs/laas/emitter.md:194`). A per-action identity mandate
   without an envelope path would contradict §6.3.
+  *Amendment (2026-10-12): superseded.* SD-12 (bead `laas-0mu`) removed the operating-envelope
+  text from the standards (`CHANGELOG.md:55`), and D4 now admits only `per_action`.
+  `docs/laas/proposal-v1.1.md` is intentionally not edited; it records the original rationale.
 - The decision record is flat. `verifier`, `human_approval`, and `trace` are top-level keys
   (`scripts/laas/emitter.py:389-448`); there is no `verification` container.
 - The OSI `custom_extension` schema carries per-object governance axes only and sets
@@ -108,15 +113,17 @@ New `LAAS-OBL-HRV-001` (error, `ct_floor` 4): on a non-blocked CT4 action, requi
 "human_approval": {
   "approved": true,
   "approver_id": "hr:jdoe",            // required at CT4 when not blocked
-  "attestation_ref": "sig:…",          // required: signature, ticket, or envelope grant id
-  "basis": "per_action",               // per_action | standing_envelope | batch
-  "envelope_id": null                  // required when basis = standing_envelope
+  "attestation_ref": "sig:…",          // required: signature or ticket id
+  "basis": "per_action"                // required; only value (D4)
 }
 ```
 
+As proposed, `basis` also allowed `standing_envelope` and `batch`, with an `envelope_id` field
+required for envelopes. D4 removed both values and `envelope_id`.
+
 HUM-001 gains checks on a non-blocked CT4 action: `approved == true`; a non-empty string
-`approver_id` that differs from `action.actor_id`; a non-empty `attestation_ref`; a `basis` in
-the enum; and `envelope_id` when the basis is an envelope. When `verifier.type == "human"`,
+`approver_id` that differs from `action.actor_id`; a non-empty `attestation_ref`; and a `basis`
+in the enum. When `verifier.type == "human"`,
 `approver_id` must also differ from `verifier.id`, which gives the two-person rule. Whether a
 signature is valid is checked by the gate and asserted in the record, the same way
 `gate.bundle_signed` is (`laas.rego:115-118`).
@@ -162,26 +169,52 @@ the invariant gap open.
 Rulings recorded:
 
 - **D1 (reading): Option B.** Attribute the existing `LAAS-OBL-HUM-001` `human_approval`
-  record with `approver_id`, `attestation_ref`, `basis`, and `envelope_id`. No new obligation id.
+  record with `approver_id`, `attestation_ref`, and `basis` (`envelope_id` removed by D4).
+  No new obligation id.
 - **D2 (two-person rule): yes.** HUM-001 fails when `approver_id` equals `action.actor_id`, or
   equals `verifier.id` when the verifier is human.
 - **D3 (required fields): required at CT4.** A non-blocked CT4 record that is missing
   `approver_id` fails closed.
+- **D4 (envelopes): `per_action` only.** `basis` is required and must be in the bundle list
+  `human_approval_bases`, which ships as `["per_action"]` (`conformance/laas/data.json:33`).
 - **D5 (release): fold into the unreleased `laas-fin-2.0.0` major.** No separate version bump.
+- **D6 (zero tolerance): yes.** `_human_gated` requires the attributed approval through the
+  shared `human_approved` predicate (`conformance/laas/laas.rego:67`, `:325-329`).
+- **D7 (OSI proof): attributed approval, deterministic verifier.** No human-verifier run.
 
-Still open (no ruling; see "Decision questions for the maintainer"): D4, D6, D7.
+D1–D7 are all decided. D1–D3 and D5 were ruled 2026-10-10; D4, D6, and D7 on 2026-10-11/12.
+
+### Implementation rulings
+
+The maintainer ruled these implementation questions with D4, D6, and D7:
+
+- **Q1:** `attestation_ref` is required and must be a non-empty string.
+- **Q2:** a missing `action.actor_id` fails closed.
+- **Q3:** the approver must differ from `verifier.id` only when `verifier.type` is `"human"`;
+  a human verifier with no `id` fails closed.
+- **Q4:** identities are compared as exact strings, with no normalisation.
+- **Q5:** HUM-001 keeps one message: "CT4 action without an attributed per_action human
+  approval and not blocked" (`conformance/laas/laas.rego:178`).
+- **Q6:** prose, renderings, and profiles are updated in the same change.
+- **Q7:** the `basis` enum lives in bundle data, not in Rego (`data.json:33`).
+- **Q8:** one compliant attributed CT4 example is added under `conformance/laas/examples/`.
+- **Q9:** `docs/laas/proposal-v1.1.md:184` is left as is; the amendment under "Constraints"
+  records that SD-12 supersedes it. The `CHANGELOG.md` class is major: a bare
+  `{"approved": true}` at CT4 is now blocked.
+
+The check itself is `_attributed_approval` (`conformance/laas/laas.rego:396-406`).
 
 ## Consequences
 
 **Easier.** An auditor can check from the record alone that a named principal, distinct from
 the actor (and from a human verifier), approved each CT4 action or its envelope. The emitter
-TODO at `docs/laas/emitter.md:194` gets a schema to target.
+TODO at `docs/laas/emitter.md:195` gets a schema to target.
 
 **Harder.** Every deployer emitting `{"approved": true}` at CT4 must migrate. Gates must
 maintain a principal directory and verify attestations out of band. Risks: (1) placeholder
 `approver_id` values defeat the check, so the gate must issue them; (2) an envelope basis
 could become a blanket bypass unless envelope grants carry their own trace record; (3) if
-`action.actor_id` is absent (it is absent from `_base_ct4`, `laas_test.rego:62-75`), the
+`action.actor_id` is absent (it is absent from `_base_ct4`, `laas_test.rego:66-79`), the
 distinctness test must fail closed, or it will pass vacuously.
 
 **Follow-up for whoever implements.** One bead per mechanism: policy and tests; emitter; OSI
@@ -199,14 +232,19 @@ proof; prose and renderings. Each needs a semver-classified `CHANGELOG.md` entry
   missing `approver_id` fails closed. The ruling names `approver_id` only; whether
   `attestation_ref`, `basis`, and `envelope_id` are likewise required, and whether a missing
   `action.actor_id` fails closed, was not separately ruled.
-- **D4 (envelopes) — OPEN.** Are `standing_envelope` and `batch` valid bases at CT4, and must an
-  envelope grant be traced as its own record? Context: SD-12 interacts with this question.
-  The operating-envelope text was removed from the standards by bead `laas-0mu`, so the
-  `standing_envelope` and `envelope_id` basis values need re-examination before any ruling.
-  This ADR does not decide D4.
+- **D4 (envelopes) — RULED 2026-10-11/12: `per_action` only.** Are `standing_envelope`
+  and `batch` valid bases at CT4, and must an envelope grant be traced as its own record?
+  Context: SD-12 (bead `laas-0mu`) removed the operating-envelope text from the standards
+  (`CHANGELOG.md:55`).
+  *Ruling (2026-10-11/12):* `basis` is a required one-value enum, `per_action` only, held in
+  bundle data as `human_approval_bases` (`conformance/laas/data.json:33`). `standing_envelope`,
+  `batch`, and `envelope_id` are dropped.
 - **D5 (release) — RULED 2026-10-10: unreleased `laas-fin-2.0.0` major.** No separate bump.
-- **D6 (zero tolerance) — OPEN.** Must `_human_gated` (`laas.rego:325-329`) require the
-  attributed approval, or only HUM-001?
-- **D7 (OSI proof) — OPEN.** Should `osi_check.sh` add the attributed approval to its existing
-  deterministic verifier (`scripts/laas/osi_to_surface.py:300-306`), or also exercise a human
-  verifier?
+- **D6 (zero tolerance) — RULED 2026-10-11/12: yes.** Must `_human_gated` (`laas.rego:325-329`)
+  require the attributed approval, or only HUM-001? *Ruling:* `_human_gated` requires the
+  attributed approval through the shared `human_approved` predicate (`laas.rego:67`).
+- **D7 (OSI proof) — RULED 2026-10-11/12: attributed approval only.** Should `osi_check.sh` add
+  the attributed approval to its existing deterministic verifier
+  (`scripts/laas/osi_to_surface.py:300-306`), or also exercise a human verifier? *Ruling:* the
+  proof injects an attributed `per_action` approval and keeps the deterministic verifier; there
+  is no human-verifier run.

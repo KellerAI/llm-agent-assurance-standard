@@ -422,7 +422,8 @@ b) **Distinct-lineage-and-low-correlation criterion:** The verifier uses a disti
 
 c) **Human criterion:** The verifier is a human reviewer. At CT4, independence is satisfied by
    criterion (a) or by a human verifier; criterion (b) does not satisfy independence at CT4.
-   Human approval (LAAS-OBL-HUM-001) is required at CT4 in addition to the verifier.
+   Attributed human approval (LAAS-OBL-HUM-001, 7.1) is required at CT4 in addition to the verifier;
+   the approver shall be distinct from a human verifier.
 
 A verifier sharing the actor's model lineage shall be presumed non-independent. Where the
 error-correlation between a model verifier and the actor cannot be bounded below 0.2, the
@@ -628,9 +629,13 @@ c) maintain the searchable trace index as a separate component from sensitive pa
 
 #### 7.1.1 Requirement
 
-An action at effective CT4 shall not be committed without human approval. The
-`human_approval.approved` field of the decision record shall be `true`
-(`conformance/laas/laas.rego:67`, `:178–182`). A CT4 action that is
+An action at effective CT4 shall not be committed without an attributed human approval.
+The decision record shall carry `human_approval.approved == true`, a non-empty `approver_id`,
+a non-empty `attestation_ref`, and a `basis` of `per_action`, the only value in
+`data.laas.human_approval_bases` (`conformance/laas/data.json:33`); a bare `{approved: true}`
+is insufficient. The approver shall be distinct from `action.actor_id` and, where the verifier
+is a human, from that verifier's `id`; a missing `action.actor_id`, or a human verifier with a
+missing `id`, fails closed (`conformance/laas/laas.rego:67`, `:178–182`, `:386–416`). A CT4 action that is
 blocked and escalated satisfies this obligation if the block and escalation are recorded
 in the decision trace.
 
@@ -638,13 +643,13 @@ in the decision trace.
 
 #### 7.1.2 Abstention default
 
-In the absence of human approval for a CT4 action, the gate shall abstain (return
+In the absence of an attributed human approval for a CT4 action, the gate shall abstain (return
 `verdict: abstain`) and escalate. An abstention is a conforming outcome.
 
 #### 7.1.3 Per-record human approval
 
-Each non-blocked CT4 decision record shall carry `human_approval.approved == true`
-(`conformance/laas/laas.rego:178–182`); LAAS defines no standing-envelope mechanism.
+Each non-blocked CT4 decision record shall carry its own attributed approval as specified in
+7.1.1 (`conformance/laas/laas.rego:178–182`, `:396–406`); LAAS defines no standing-envelope mechanism.
 
 ### 7.2 Third-party and vendor components (LAAS-OBL-VEN-001)
 
@@ -684,7 +689,7 @@ An action is conforming if and only if, for every obligation whose trigger match
 the following holds:
 
 a) **Pass path:** The action passed an independent (Clause 5.2), qualified (5.3) verifier;
-   and, where the effective consequence tier is CT4, human approval was obtained (7.1); and
+   and, where the effective consequence tier is CT4, attributed human approval was obtained (7.1); and
    the measured residual escape rate does not exceed the declared tolerance or, at a zero
    tolerance, the deterministic or human gate of 5.5.2 is met; or
 
@@ -698,7 +703,7 @@ trigger_matched == true  IMPLIES
   ( verdict == "pass"
     AND verifier_independent == true
     AND verifier_qualified == true
-    AND ( gate_derived_ct < 4  OR  human_approval.approved == true )
+    AND ( gate_derived_ct < 4  OR  attributed_approval == true )
     AND ( residual_error_bound == null  OR  residual_error_bound <= residual_tolerance
           OR  ( residual_tolerance == 0  AND  zero_tolerance_gate_met == true ) ) )
   OR
@@ -711,8 +716,8 @@ trigger_matched == true  IMPLIES
 `:226–261`, `:318–356`. OPA does not evaluate
 escalation or the restriction of blocking to `fail`/`abstain`/`indeterminate` verdicts; those
 require deployment controls or separate verification. The proposal's `escalation_approved` term
-is historical; HUM-001 reads `human_approval.approved` (`conformance/laas/laas.rego:67`,
-`:178–182`).*
+is historical; HUM-001 reads the attributed approval of 7.1.1 (`conformance/laas/laas.rego:67`,
+`:178–182`, `:396–406`), where `attributed_approval` denotes that predicate.*
 
 The policy is stricter than this predicate on the residual clause. At CT≥2, on a non-blocked action, a null
 `residual_error_bound` conforms only when a deterministic verifier passed
@@ -774,7 +779,7 @@ justified exception in the conformance evidence.
 | A.9 | Verifier independence and low error-correlation | The verifier shall satisfy at least one independence criterion in 5.2; model verifiers shall demonstrate error-correlation ≤ 0.2 and are not accepted at CT4; at CT4, a deterministic or human verifier and human approval are required (5.2). | LAAS-OBL-IND-001 | CT3 |
 | A.10 | Verifier qualification | Verifiers gating CT3 or above shall be qualified with documented claim-class coverage, a negative-test suite, and a change-controlled version identifier in the decision trace (5.3). | LAAS-OBL-VQ-001 | CT3 |
 | A.11 | Bounded residual escape rate | The measured Bucket B escape rate shall not exceed the declared tolerance for the effective tier: CT2 ≤ 2 %, CT3 ≤ 0.5 %, CT4 = 0 %; evidence shall be referenced in the decision trace (5.5). At a zero tolerance the requirement is met by the deterministic or human gate, and a recorded bound of exactly 0 on a non-blocked action outside Bucket A does not conform (5.5.2; `standard/LAAS.md:108–114`). | LAAS-OBL-RES-001 | CT2 |
-| A.12 | Human approval at CT4 | CT4 actions shall not be committed without human approval or a documented block and escalation; the abstention default applies in the absence of approval (7.1). | LAAS-OBL-HUM-001 | CT4 |
+| A.12 | Human approval at CT4 | CT4 actions shall not be committed without attributed human approval or a documented block and escalation; the abstention default applies in the absence of approval (7.1). | LAAS-OBL-HUM-001 | CT4 |
 
 ---
 
