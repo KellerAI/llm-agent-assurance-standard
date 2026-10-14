@@ -132,7 +132,7 @@ python3 -m unittest discover scripts/laas
 
 Expected: `PASS: 123/123` for `conformance/laas/`, `PASS: 194/194` for all of `conformance/`,
 `OK` from the sanitization script, `true` as the last line of `check.sh` (the `compliant`
-verdict), `PASS` from `osi_check.sh`, and `Ran 80 tests` then `OK` from the unit tests.
+verdict), `PASS` from `osi_check.sh`, and `Ran 81 tests` then `OK` from the unit tests.
 
 CI runs every one of these gates on each pull request and on pushes to `dev` and `main`
 (`.github/workflows/ci.yml:3-8`):
@@ -142,9 +142,9 @@ CI runs every one of these gates on each pull request and on pushes to `dev` and
 - `OPA test (conformance/)` runs `opa check conformance/` and both `opa test` suites, and fails
   below a test-count floor of 123 for `conformance/laas/` and 194 for `conformance/`
   (`.github/workflows/ci.yml:49-100`).
-- `Python tests and proof scripts` runs the unit tests with a floor of 80, `check.sh` (the step
-  fails unless its last line is `true`), and `osi_check.sh` (`.github/workflows/ci.yml:106-144`).
-- `links` runs a link check (`.github/workflows/ci.yml:146-156`).
+- `Python tests and proof scripts` runs the unit tests with a floor of 81 on Python 3.13, failing on any skipped test, `check.sh` (the step
+  fails unless its last line is `true`), and `osi_check.sh` (`.github/workflows/ci.yml:106-155`).
+- `links` runs a link check (`.github/workflows/ci.yml:157-167`).
 
 The trust-dial gate and blast-radius pulse workflows also run `opa eval` on pull requests
 (`.github/workflows/trust-dial-gate.yml:121`; `.github/workflows/blast-radius-pulse.yml:60`,

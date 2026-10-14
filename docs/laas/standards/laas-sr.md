@@ -1,4 +1,4 @@
-# Action-Level Assurance for Autonomous AI Agents (LAAS): Supervisory Expectations for Governing Agent Actions in Regulated Institutions
+# Action-Level Assurance for Autonomous AI Agents (LAAS): Model Supervisory Expectations Proposed by KellerAI for Governing Agent Actions in Regulated Institutions
 
 *SR-letter-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
 

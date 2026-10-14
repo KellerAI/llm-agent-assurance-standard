@@ -131,7 +131,7 @@ Obligation wording is from `standard/LAAS.md:70-81`; IDs, severities, and CT flo
 ## Interpretability and internal-state terms
 
 Advisory, non-normative terms from the J-space annex, [`../laas/j-space-internal-state-annex.md`](../laas/j-space-internal-state-annex.md).
-"The paper" below is Gurnee et al. (Anthropic), "Verbalizable Representations Form a Global Workspace in Language Models," Transformer Circuits, 2026 (`docs/laas/j-space-internal-state-annex.md:198`).
+"The paper" below is Anthropic, "Verbalizable Representations Form a Global Workspace in Language Models," Transformer Circuits, 2026 (`docs/laas/j-space-internal-state-annex.md:198`).
 The annex, like the paper, addresses access consciousness only (`docs/laas/j-space-internal-state-annex.md:7-8`).
 
 - **Global workspace** — the paper's account of a workspace shared across the model's residual stream through which verbalizable representations are broadcast for report, reasoning, and behavioral modulation, addressing access consciousness only.

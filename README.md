@@ -25,11 +25,11 @@ It is a **standard of care**, not a correctness guarantee.
 
 ## Try it
 
-You need `opa` (CI pins 1.14.1) and Python 3. From the repository root:
+You need `opa` (CI pins 1.14.1) and Python 3.13 (CI pins 3.13). From the repository root:
 
 ```sh
 opa test conformance/ -v                    # 194 policy tests
-python3 -m unittest discover scripts/laas   # 80 reference-tooling tests
+python3 -m unittest discover scripts/laas   # 81 reference-tooling tests
 bash scripts/laas/check.sh                  # emit a decision record, then evaluate it
 ```
 
@@ -106,7 +106,7 @@ What is and is not measured:
 | [`conformance/`](conformance/) | Verdict policies: blast-radius pulse, trust-dial (+ test suites) |
 | [`docs/agents/`](docs/agents/) | Tier-2 agent guides: conventions, enforcement, glossary, citation |
 | [`docs/adr/`](docs/adr/) | Architecture decision records |
-| [`docs/articles/`](docs/articles/) | 25-article LAAS bibliography |
+| [`docs/articles/`](docs/articles/) | Index of 25 KellerAI articles on LAAS (kellerai.blog) |
 | [`.github/`](.github/) | Workflows, issue and PR templates, CODEOWNERS, Dependabot config |
 
 ## Verify the policy
@@ -149,7 +149,7 @@ python3 -m unittest discover scripts/laas
 ```
 
 Expected: `PASS: 123/123` for `conformance/laas/`, `PASS: 194/194` for all of `conformance/`,
-`Ran 80 tests` and `OK` from the unit tests, and exit 0 from every other command.
+`Ran 81 tests` and `OK` from the unit tests, and exit 0 from every other command.
 
 ## License
 

@@ -7,7 +7,7 @@ govern this repository's own automation. Normative prose: [`standard/LAAS.md`](.
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 
 Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`,
-`conformance/blast_radius.rego:15`. The external workflow call is `.github/workflows/ci.yml:37`
+`conformance/blast_radius.rego:15`. The external workflow call is `.github/workflows/ci.yml:39`
 (see `.github/workflows/conformance.yml:4-5`).
 
 ## Files
@@ -97,7 +97,7 @@ These fields are part of the record schema, but no rule in `laas.rego` reads the
 
 CI runs `opa check` and `opa test` on this directory, and evaluates two sample decision
 records with `opa eval` through `scripts/laas/check.sh` and `scripts/laas/osi_check.sh`
-(`.github/workflows/ci.yml:49-144`).
+(`.github/workflows/ci.yml:49-155`).
 
 Not implemented: no workflow evaluates a stream or sample of real decision records from a
 deployed gate. A future reusable workflow could do that, blocking on `error`-severity
