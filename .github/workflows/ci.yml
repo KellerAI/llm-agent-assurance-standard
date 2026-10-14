@@ -38,6 +38,65 @@ jobs:
     with:
       artifact_type: "rego-policy"
 
+  # The reusable "conformance / OPA conformance" job above checks repo
+  # structure against the template's policy. It never runs this repo's own
+  # Rego tests. This job does: `opa check` plus `opa test` for the LAAS
+  # policy suite and for all of conformance/. The *_MIN_TESTS floors make a
+  # deleted or skipped test fail the job, not just shrink the count. Raise a
+  # floor when you add tests; lower it only with a reviewed reason.
+  opa-test:
+    name: OPA test (conformance/)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LAAS_MIN_TESTS: "44"   # conformance/laas/laas_test.rego
+      ALL_MIN_TESTS: "115"   # conformance/ (laas + trust_dial + blast_radius)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install OPA
+        uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
+        with:
+          version: "1.14.1"
+
+      - name: OPA check (conformance/)
+        run: opa check conformance/
+
+      - name: OPA test (conformance/laas/)
+        run: |
+          set -euo pipefail
+          opa test conformance/laas/ -v
+          opa test conformance/laas/ --format json > laas-tests.json
+          total="$(jq 'length' laas-tests.json)"
+          failed="$(jq '[.[] | select(.fail or .error or .skip)] | length' laas-tests.json)"
+          echo "laas suite: $((total - failed))/${total} passed (floor ${LAAS_MIN_TESTS})"
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::laas suite has ${failed} failing, erroring, or skipped test(s)"
+            exit 1
+          fi
+          if [ "$total" -lt "$LAAS_MIN_TESTS" ]; then
+            echo "::error::laas suite ran ${total} tests, below the floor of ${LAAS_MIN_TESTS}"
+            exit 1
+          fi
+
+      - name: OPA test (conformance/)
+        run: |
+          set -euo pipefail
+          opa test conformance/
+          opa test conformance/ --format json > all-tests.json
+          total="$(jq 'length' all-tests.json)"
+          failed="$(jq '[.[] | select(.fail or .error or .skip)] | length' all-tests.json)"
+          echo "conformance/: $((total - failed))/${total} passed (floor ${ALL_MIN_TESTS})"
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::conformance/ has ${failed} failing, erroring, or skipped test(s)"
+            exit 1
+          fi
+          if [ "$total" -lt "$ALL_MIN_TESTS" ]; then
+            echo "::error::conformance/ ran ${total} tests, below the floor of ${ALL_MIN_TESTS}"
+            exit 1
+          fi
+
   links:
     runs-on: ubuntu-latest
     steps:
