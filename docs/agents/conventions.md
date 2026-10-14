@@ -75,15 +75,15 @@ Always branch; never open a pull request from your fork's `main`.
 
 ### Branch tiers (`validate-branch-tier`)
 
-The `validate-branch-tier` workflow checks every pull request's source branch against its target (`.github/workflows/validate-branch-tier.yml:10-13`, rules at `:50-54`):
+The `validate-branch-tier` workflow checks every pull request's source branch against its target (`.github/workflows/validate-branch-tier.yml:10-13`, rules at `:37-41`):
 
-- `main` accepts pull requests only from `qa` or `qa/…` branches (`:51`).
-- `qa` accepts pull requests only from `dev` or `dev/…` branches (`:52`).
-- `dev` accepts pull requests from `external/…` and `dependabot/…` branches (`:53`),
-  or from any branch when the pull request author is listed in `.github/CODEOWNERS` (`.github/workflows/validate-branch-tier.yml:33-47`, `:67`).
-- A target with no rule (any other branch) is not checked (`:56-59`).
+- `main` accepts pull requests only from `qa` or `qa/…` branches (`:38`).
+- `qa` accepts pull requests only from `dev` or `dev/…` branches (`:39`).
+- `dev` accepts pull requests from `external/…` and `dependabot/…` branches (`:40`),
+  or from any branch when the pull request author is `son-of-anton-ai`, compared case-insensitively (`.github/workflows/validate-branch-tier.yml:33-34`, `:54`).
+- A target with no rule (any other branch) is not checked (`:43-46`).
 
-Agent branches such as `claude/<scope>` pass the `dev` check only when a CODEOWNER opens the pull request.
+Agent branches such as `claude/<scope>` pass the `dev` check only when `son-of-anton-ai` opens the pull request; a CODEOWNER opening it does not pass.
 
 ### External branch names (`validate-branch-name`)
 
@@ -130,7 +130,7 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 44/44` for `conformance/laas/` and `PASS: 115/115` for all of `conformance/`.
+Expected: `PASS: 101/101` for `conformance/laas/` and `PASS: 172/172` for all of `conformance/`.
 
 In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
 
@@ -156,3 +156,29 @@ When you change it:
 Publishable files (`standard/**`, `conformance/**`, `docs/**`, `README.md`) change through a PR.
 A PR states what changed and how the change was verified.
 Staging files — anything matched by `.gitignore` — need no PR and can be edited directly.
+
+## Capability Roster
+
+When a task needs a specialist capability, prefer the canonical plugin for the
+domain. The roster lists KellerAI's defaults; adopters may substitute rows.
+
+| Domain | Canonical capability | Secondary |
+| ------ | -------------------- | --------- |
+| Session mining | `thoughtbox` | — |
+| Capability analysis | `kellerai-repo-audit` | — |
+| Repo architecture & scaffolding | `kellerai-repo-audit` | `kellerai-skill-creator` |
+| Conformance & policy | `opa-rego` | `kellerai-grc` |
+| CI/CD authoring | `git-workflow-tools` | `beads-workflow` |
+| Governance & traceability | `kellerai-feature-spec` | `thoughtbox` |
+| Documentation | `documentation-audit` | `claude-md-management` |
+
+<!-- BEGIN LOCAL AGENT MODERNIZATION v:1 -->
+
+## Shared agent scope and worktrees
+
+- `AGENTS.md` is the shared project instruction entrypoint. Put shared agent resources in `.agents/`; retain Claude-specific settings, hooks, and plugins in `.claude/`.
+- Keep project rules in repository or nested `AGENTS.md` files. Keep machine-local configuration outside tracked shared instructions; do not copy credentials or runtime state into `.agents/`.
+- New manually managed worktrees use `<main-checkout>/.worktrees/<branch-slug>`. Verify the exact path is ignored before creation. Preserve existing worktrees and the roots used by Codex/Claude managed worktree tools.
+- Before changing tracker storage or commands, verify the intended store and supported CLI. Preserve issue IDs, existing data, uncommitted files, and registered worktrees. Instruction modernization does not authorize storage conversion or checkout relocation.
+
+<!-- END LOCAL AGENT MODERNIZATION -->

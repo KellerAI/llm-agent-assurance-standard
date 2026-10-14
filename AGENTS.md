@@ -22,15 +22,7 @@ This file is the Tier-1 entry point. Deeper detail lives under [`docs/agents/`](
   (`osi_to_surface.py`), and end-to-end proof scripts (`check.sh`, `osi_check.sh`).
 - **Verdict policies**: [`conformance/`](conformance/) — the trust-dial Dependabot auto-merge
   verdict policy (`conformance/trust_dial.rego:2`) and the blast-radius pulse verdict policy
-  (`conformance/blast_radius.rego:2`).
-  The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in
-  `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial`
-  (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius
-  pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the
-  repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
-  Sources: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`,
-  `conformance/blast_radius.rego:15`, `.github/workflows/conformance.yml:4-5`,
-  `.github/workflows/ci.yml:37`.
+  (`conformance/blast_radius.rego:2`). OPA package list: `docs/agents/enforcement.md` ("Automated gates").
 - Licensed **Apache-2.0** — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 
 ## What this repo is NOT
@@ -86,17 +78,16 @@ opa eval -d conformance/laas/laas.rego -d conformance/laas/data.json \
   'data.kellerai.laas.actions.summary' --format pretty
 ```
 
-Expected results: `opa test conformance/laas/ -v` prints `PASS: 44/44`; `opa test conformance/ -v`
-prints `PASS: 115/115` (44 tests in `conformance/laas/laas_test.rego`, 40 in
+Expected results: `opa test conformance/laas/ -v` prints `PASS: 123/123`; `opa test conformance/ -v`
+prints `PASS: 194/194` (123 tests in `conformance/laas/laas_test.rego`, 40 in
 `conformance/trust_dial_test.rego`, 31 in `conformance/blast_radius_test.rego`); the sanitization
 script reports `OK`; `check.sh` (emitter → `opa eval`) ends with compliant `true`; `osi_check.sh`
-prints `PASS`; and the unit tests report `Ran 10 tests` and `OK`
+prints `PASS`; and the unit tests report `Ran 80 tests` and `OK`
 (invocation from `scripts/laas/test_osi_to_surface.py:4`).
 
-**What CI runs.** In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus `opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job `OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`). It is not a required status check until it is added to the branch rulesets. The Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
-Sources: `.github/workflows/ci.yml:34`, `.github/workflows/ci.yml:37`,
-`.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`,
-`scripts/pulse.sh:242`, `.github/workflows/ci.yml` job `opa-test`.
+**What CI runs.** CI runs the sanitization gate, `opa eval`, and `opa check` plus `opa test` on
+`conformance/` (the `OPA test (conformance/)` job in `ci.yml`, not yet a required check); the
+other gates are local. Detail and sources: `docs/agents/conventions.md` ("Local gates").
 
 ## Conventions agents MUST follow
 
@@ -121,8 +112,8 @@ Sources: `.github/workflows/ci.yml:34`, `.github/workflows/ci.yml:37`,
 - **PR target.** Contributor and agent pull requests target `dev`. Changes are promoted
   to `main` through `dev` → `qa` → `main`: the `validate-branch-tier` workflow accepts PRs into
   `main` only from `qa/**`, into `qa` only from `dev/**`, and into `dev` from `external/**`,
-  `dependabot/**`, or any branch opened by a CODEOWNER
-  (`.github/workflows/validate-branch-tier.yml:10-13`, `:51-53`, `:67`).
+  `dependabot/**`, or any branch when the PR author is `son-of-anton-ai`
+  (`.github/workflows/validate-branch-tier.yml:10-13`, `:33-34`, `:38-40`, `:54`).
 - **Policy integrity.** After editing `conformance/laas/laas.rego`, run
   `opa check conformance/laas/laas.rego conformance/laas/laas_test.rego` and
   `opa test conformance/laas/ -v` to confirm the policy still passes before committing.
@@ -132,21 +123,6 @@ Sources: `.github/workflows/ci.yml:34`, `.github/workflows/ci.yml:37`,
   external references use a full bibliographic citation.
 
 Full detail: [`docs/agents/conventions.md`](docs/agents/conventions.md).
-
-## Capability Roster
-
-When a task needs a specialist capability, prefer the canonical plugin for the
-domain. The roster lists KellerAI's defaults; adopters may substitute rows.
-
-| Domain | Canonical capability | Secondary |
-| ------ | -------------------- | --------- |
-| Session mining | `thoughtbox` | — |
-| Capability analysis | `kellerai-repo-audit` | — |
-| Repo architecture & scaffolding | `kellerai-repo-audit` | `kellerai-skill-creator` |
-| Conformance & policy | `opa-rego` | `kellerai-grc` |
-| CI/CD authoring | `git-workflow-tools` | `beads-workflow` |
-| Governance & traceability | `kellerai-feature-spec` | `thoughtbox` |
-| Documentation | `documentation-audit` | `claude-md-management` |
 
 ## Open questions
 
@@ -158,20 +134,10 @@ Surface these when proposing amendments — do not silently assume an answer.
 ## Tier-2 references — load on demand
 
 - [`docs/agents/conventions.md`](docs/agents/conventions.md) — Conventional Commits,
-  branch naming, PR style, citation format, the local `opa` commands.
+  branch naming, PR style, citation format, the local gates and what CI runs, the Capability
+  Roster (specialist plugins by domain), and shared agent scope and worktree rules.
 - [`docs/agents/citation.md`](docs/agents/citation.md) — Apache-2.0 attribution,
   BibTeX, `CITATION.cff`.
 - [`docs/agents/glossary.md`](docs/agents/glossary.md) — load-bearing vocabulary.
 - [`docs/agents/enforcement.md`](docs/agents/enforcement.md) — automated gates,
-  CODEOWNERS routing, pre-commit hook, policy integrity.
-
-<!-- BEGIN LOCAL AGENT MODERNIZATION v:1 -->
-
-## Shared agent scope and worktrees
-
-- `AGENTS.md` is the shared project instruction entrypoint. Put shared agent resources in `.agents/`; retain Claude-specific settings, hooks, and plugins in `.claude/`.
-- Keep project rules in repository or nested `AGENTS.md` files. Keep machine-local configuration outside tracked shared instructions; do not copy credentials or runtime state into `.agents/`.
-- New manually managed worktrees use `<main-checkout>/.worktrees/<branch-slug>`. Verify the exact path is ignored before creation. Preserve existing worktrees and the roots used by Codex/Claude managed worktree tools.
-- Before changing tracker storage or commands, verify the intended store and supported CLI. Preserve issue IDs, existing data, uncommitted files, and registered worktrees. Instruction modernization does not authorize storage conversion or checkout relocation.
-
-<!-- END LOCAL AGENT MODERNIZATION -->
+  CODEOWNERS routing, pre-commit hook, policy integrity, the in-repo OPA packages.

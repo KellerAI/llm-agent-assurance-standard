@@ -54,7 +54,7 @@ v1.1 §6.2.
 | 1  | Self-check (exact verifier if one exists) + trace |
 | 2  | Independent automated check **or** rehearsed rollback + bounded residual + trace |
 | 3  | **Mandatory independent, qualified pre-commit verification** + residual ≤ tolerance + rollback plan + trace |
-| 4  | CT3 controls **+ human approval** + abstention default + full evidence |
+| 4  | CT3 controls (residual clause per §4.3 at a zero tolerance) **+ human approval** + abstention default + full evidence |
 
 The cumulative effect of a sequence MUST be tiered too: if a windowed aggregate crosses a
 threshold, subsequent actions are re-tiered to the aggregate's tier (anti-structuring).
@@ -63,7 +63,7 @@ threshold, subsequent actions are re-tiered to the aggregate's tier (anti-struct
 
 The authoritative, versioned list lives in `data.json → obligations`. Each carries an ID,
 severity, CT floor, precedence, and a reference to the rationale section. `error`-severity
-violations are blocking; `warning`-severity are reported.
+violations are blocking; `warning`-severity are reported. These 12 obligations are the machine-checkable subset of the §3 regime, enforced by `laas.rego`; the other regime elements (the CT1 self-check, the CT2 rehearsed-rollback alternative, the CT3 rollback plan, and the CT4 abstention default and full evidence) are deployer duties that the policy does not evaluate.
 
 | ID | Obligation | Sev | CT floor |
 |----|------------|-----|----------|
@@ -78,7 +78,7 @@ violations are blocking; `warning`-severity are reported.
 | `LAAS-OBL-IND-001` | Verifier independence + low error-correlation | error | 3 |
 | `LAAS-OBL-VQ-001`  | Verifier qualification (DO-330 analogue) | error | 3 |
 | `LAAS-OBL-RES-001` | Bounded residual escape rate (Bucket B) | error | 2 |
-| `LAAS-OBL-HUM-001` | Human approval required at CT4 | error | 4 |
+| `LAAS-OBL-HUM-001` | Attributed per-action human approval required at CT4 (§4.1) | error | 4 |
 
 ### 4.1 Verifier independence (normative)
 
@@ -86,7 +86,7 @@ A verifier is independent of the actor iff one holds, by tier:
 
 - it is a **different kind of checker** (deterministic/exact) — valid at any CT for the deterministic class;
 - it is a **distinct model lineage AND** shows **measured error-correlation ≤ `max_error_correlation`** — valid up to CT3;
-- it is a **human** — required *in addition* at CT4.
+- it is a **human** — required *in addition* at CT4, where a non-blocked action MUST carry an attributed human approval recording the approver's identity (`approver_id`), an attestation reference (`attestation_ref`), and the approval basis, which MUST be per-action (`per_action`, the only permitted basis); the approver MUST NOT be the acting agent (`action.actor_id`) and, where the verifier is human, MUST NOT be that verifier; a record lacking an actor identity, or a human verifier lacking an id, does not satisfy `LAAS-OBL-HUM-001`.
 
 A verifier sharing the actor's model lineage is presumed non-independent.
 
@@ -97,10 +97,21 @@ suite of known-bad inputs it must catch, and a change-controlled version recorde
 
 ### 4.3 Escape rate (normative)
 
-For the open-world ("Bucket B") class, the operator declares a maximum **escape rate** (residual
-undetected-error rate) per CT (`data.json → escape_rate_tolerance_by_ct`), estimates it by
-backtesting on a held-out adversarial set, and re-measures on any model/prompt/tool/policy change.
-Conformance requires measured escape rate ≤ tolerance, with evidence referenced in the trace.
+An action is in **Bucket A** when a deterministic verifier checks its claim and returns pass. Every
+other action is in the open-world **Bucket B**.
+
+For Bucket B, the operator declares a maximum **escape rate** (residual undetected-error rate) per
+CT (`data.json → escape_rate_tolerance_by_ct`), estimates it by backtesting on a held-out
+adversarial set, and re-measures on any model/prompt/tool/policy change. Conformance requires
+measured escape rate ≤ tolerance, with evidence referenced in the trace.
+
+**Zero tolerance.** Where the declared tolerance for the effective CT is 0 (CT4 by default), no
+finite-sample backtest can demonstrate it: any binomial upper bound over a finite sample is greater
+than 0 (`docs/laas/backtest.md:116`). At a zero tolerance the residual clause is satisfied by the
+deterministic pass (Bucket A) or by the human gate — a human verifier whose verdict is pass, plus
+attributed human approval (§4.1). The recorded bound is then evidence, not a pass condition. A recorded bound
+of exactly 0 on a non-blocked action outside Bucket A is not a finite-sample backtest bound and does
+not conform. This rule keys on a zero tolerance, not on CT4 as such.
 
 ## 5. Decision trace (normative)
 
@@ -113,8 +124,9 @@ tokenized; the searchable index is separable from sensitive payloads.
 The **conformance predicate** (encoded in `laas.rego`) is, in plain terms:
 
 > If an obligation's trigger matched, then either the action **passed** an independent, qualified
-> verifier (plus human approval at CT4, plus residual ≤ tolerance) **or** the action was
-> **blocked** and escalated. Nothing else conforms.
+> verifier (plus human approval at CT4, plus residual ≤ tolerance or, at a zero tolerance, the
+> §4.3 deterministic or human gate) **or** the action was **blocked** and escalated. Nothing else
+> conforms.
 
 ## 6. Conformance & attestation
 
@@ -125,12 +137,12 @@ obligation set. This artifact graduates into a third-party certificate if an SDO
 ## 7. Lifecycle & precedence
 
 Obligations move `propose → active → deprecated → retired`; retired obligations leave the active
-set. When two obligations fire incompatibly, precedence is deterministic: highest CT wins; ties
+set. When two obligations fire incompatibly, the deployer's gate resolves precedence deterministically using each obligation's `precedence` value (`laas.rego` does not implement it); ties
 resolve to the most restrictive outcome (block). Each obligation's `precedence` is recorded in
 `data.json`, and the resolution order is itself written to the trace.
 
 ## 8. Conformance of *this* artifact
 
 A fresh agent, given only `data.json` and a candidate decision record, can derive the tier, locate
-the applicable obligations, evaluate the predicate, and emit `pass | fail | abstain | indeterminate`
-— with no human explanation. See [`conformance/laas/README.md`](../conformance/laas/README.md).
+the applicable obligations, and evaluate the predicate to the policy's boolean `compliant` and `error_ids` (`laas.rego:11–14`, `:210–223`); `pass | fail | abstain | indeterminate` is the verifier verdict
+recorded by the emitter (`scripts/laas/emitter.py:50`), not the policy output — with no human explanation. See [`conformance/laas/README.md`](../conformance/laas/README.md).
