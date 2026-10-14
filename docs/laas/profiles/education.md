@@ -611,7 +611,7 @@ Required independent checks at CT4:
 | `LAAS-OBL-RES-001` | `VRF-GRADE-ARITH` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-INP-001` | Each submission is untrusted input. `untrusted_input_min_ct` is 3 (`data.json:18`). |
 | `LAAS-OBL-VEN-001` | The matching service is named with its version and its exclusion settings, and the similarity score is not treated as a finding. |
-| `LAAS-OBL-HUM-001` | The instructor of record approves before release, and `human_approval.approved` is `true`. |
+| `LAAS-OBL-HUM-001` | The instructor of record approves each action before release. `human_approval` has `approved: true`, a non-empty `approver_id`, a non-empty `attestation_ref`, and `basis: "per_action"`. The approver is not `actor_id`. A human verifier is not the approver. A missing `actor_id` or verifier id fails closed. `{approved: true}` alone fails (`conformance/laas/laas.rego:386-416`). |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. A term-wide release across course sections re-tiers the sequence (`standard/LAAS.md:59-60`). |
 
 **Language conformance: `LC-3`** — tool-checked, plus review of the free-text fields by the

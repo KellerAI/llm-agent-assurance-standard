@@ -94,8 +94,13 @@ evaluate against a single machine-readable bundle.
    `conformance/laas/data.json`, key `escape_rate_tolerance_by_ct`.)
 
 9. **Human approval at the highest tier.** Every action at the human-approval floor tier shall
-   obtain explicit human approval, recorded on its decision record (`human_approval.approved`;
-   `conformance/laas/laas.rego:178-182`), before commitment, unless blocked. As recommended
+   obtain an attributed human approval, recorded on its decision record (`human_approval`;
+   `conformance/laas/laas.rego:178-182`), before commitment, unless blocked. The approval shall
+   carry `approved` true, a non-empty `approver_id` and `attestation_ref`, and `basis` set to
+   `per_action`, the only value in `human_approval_bases` (`conformance/laas/data.json:33`). The
+   approver shall differ from the action's `actor_id` and, where the verifier is human, from its
+   id; a missing `actor_id` or human-verifier id fails closed, and a bare `{approved: true}` does
+   not satisfy the floor (`conformance/laas/laas.rego:67`, `:386-416`). As recommended
    practice (informative), abstention should be the default on approval timeout.
    (LAAS-OBL-HUM-001; floor in `conformance/laas/data.json`.)
 

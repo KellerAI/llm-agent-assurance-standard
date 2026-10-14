@@ -78,7 +78,7 @@ violations are blocking; `warning`-severity are reported. These 12 obligations a
 | `LAAS-OBL-IND-001` | Verifier independence + low error-correlation | error | 3 |
 | `LAAS-OBL-VQ-001`  | Verifier qualification (DO-330 analogue) | error | 3 |
 | `LAAS-OBL-RES-001` | Bounded residual escape rate (Bucket B) | error | 2 |
-| `LAAS-OBL-HUM-001` | Human approval required at CT4 | error | 4 |
+| `LAAS-OBL-HUM-001` | Attributed per-action human approval required at CT4 (§4.1) | error | 4 |
 
 ### 4.1 Verifier independence (normative)
 
@@ -86,7 +86,7 @@ A verifier is independent of the actor iff one holds, by tier:
 
 - it is a **different kind of checker** (deterministic/exact) — valid at any CT for the deterministic class;
 - it is a **distinct model lineage AND** shows **measured error-correlation ≤ `max_error_correlation`** — valid up to CT3;
-- it is a **human** — required *in addition* at CT4.
+- it is a **human** — required *in addition* at CT4, where a non-blocked action MUST carry an attributed human approval recording the approver's identity (`approver_id`), an attestation reference (`attestation_ref`), and the approval basis, which MUST be per-action (`per_action`, the only permitted basis); the approver MUST NOT be the acting agent (`action.actor_id`) and, where the verifier is human, MUST NOT be that verifier; a record lacking an actor identity, or a human verifier lacking an id, does not satisfy `LAAS-OBL-HUM-001`.
 
 A verifier sharing the actor's model lineage is presumed non-independent.
 
@@ -109,7 +109,7 @@ measured escape rate ≤ tolerance, with evidence referenced in the trace.
 finite-sample backtest can demonstrate it: any binomial upper bound over a finite sample is greater
 than 0 (`docs/laas/backtest.md:116`). At a zero tolerance the residual clause is satisfied by the
 deterministic pass (Bucket A) or by the human gate — a human verifier whose verdict is pass, plus
-recorded human approval. The recorded bound is then evidence, not a pass condition. A recorded bound
+attributed human approval (§4.1). The recorded bound is then evidence, not a pass condition. A recorded bound
 of exactly 0 on a non-blocked action outside Bucket A is not a finite-sample backtest bound and does
 not conform. This rule keys on a zero tolerance, not on CT4 as such.
 

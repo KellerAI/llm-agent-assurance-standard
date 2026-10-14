@@ -255,7 +255,7 @@ surface; the floor below which the gate-assigned CT shall not fall
 
 **human approval**
 An explicit authorization by a human operator, recorded in the decision trace, granting
-permission for a specific CT4 action or action class to proceed.
+permission for a specific CT4 action to proceed, attributed to a named approver (Section 8.1).
 
 **independence basis**
 The documented reason a verifier satisfies the independence requirement; one of `deterministic`,
@@ -563,11 +563,11 @@ An unrehearsed rollback does not satisfy the CT2 regime requirement
 (`docs/laas/proposal-v1.1.md:§6.3`).
 
 **5.5.3** At CT4, abstention shall be the default when the gate cannot confirm a passing verifier
-and human approval (`human_approval.approved`).
+and an attributed human approval (`human_approval`, Section 8.1).
 
-NOTE (informative): LAAS defines no operating-envelope concept; the policy requires
-`human_approval.approved == true` on each non-blocked CT4 record
-(`conformance/laas/laas.rego:67`, `:178–182`).
+NOTE (informative): LAAS defines no operating-envelope concept; the policy requires an attributed
+per-action `human_approval` on each non-blocked CT4 record; a bare `human_approval.approved: true`
+is insufficient (`conformance/laas/laas.rego:67`, `:178–182`, `:386–416`).
 Operator envelopes or batching are deployment mechanisms outside the standard.
 
 ---
@@ -675,7 +675,7 @@ These values are normative and are sourced from
 NOTE: No finite-sample backtest can demonstrate a tolerance of 0, because any binomial upper bound
 over a finite sample is greater than 0 (`standard/LAAS.md:108–110`).
 At a zero tolerance the residual clause shall be met by the deterministic pass (Bucket A) or by the
-human gate: a human verifier whose verdict is `pass`, plus recorded human approval
+human gate: a human verifier whose verdict is `pass`, plus an attributed human approval (Section 8.1)
 (`standard/LAAS.md:110–112`, `conformance/laas/laas.rego:325–339`).
 A recorded bound of exactly 0 on a non-blocked action outside Bucket A does not conform
 (`standard/LAAS.md:112–114`, `conformance/laas/laas.rego:348–356`).
@@ -851,11 +851,21 @@ in DO-178C.
 approval, unless the action is blocked (`conformance/laas/data.json:13`,
 `conformance/laas/laas.rego:178–182`).
 
-**8.1.2** Human approval shall be recorded in the decision trace as
-`human_approval.approved: true` (`conformance/laas/laas.rego:67`, `:178–182`).
+**8.1.2** Human approval shall be recorded in the decision trace as an attributed approval
+(`conformance/laas/laas.rego:67`, `:178–182`, `:386–416`). The `human_approval` record shall have
+`approved: true`, a non-empty string `approver_id`, a non-empty string `attestation_ref`, and a
+`basis` that is a member of `human_approval_bases` (`conformance/laas/data.json:33`); the only
+value is `per_action`. A bare `human_approval: {approved: true}` does not satisfy this requirement.
 
-**8.1.3** A CT4 action that is neither covered by human approval nor blocked constitutes an
-HUM-001 (`LAAS-OBL-HUM-001`) error-severity violation.
+**8.1.2a** The approver shall be distinct from the acting agent: `human_approval.approver_id` shall
+not equal `action.actor_id`, and `action.actor_id` shall be a non-empty string. Where the verifier
+type is `human`, `approver_id` shall also not equal `verifier.id`, and `verifier.id` shall be a
+non-empty string. Comparison is exact string equality with no normalisation. A missing
+`action.actor_id`, or a missing `verifier.id` on a human verifier, fails closed
+(`conformance/laas/laas.rego:403–416`).
+
+**8.1.3** A CT4 action that is neither covered by an attributed human approval nor blocked
+constitutes an HUM-001 (`LAAS-OBL-HUM-001`) error-severity violation.
 
 **8.1.4** (Removed.)
 

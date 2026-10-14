@@ -29,6 +29,7 @@
       { "id": "LAAS-OBL-VQ-001", "title": "Verifier qualification (DO-330 analogue)", "severity": "error", "ct_floor": 3, "reference": "v1.1 \u00a77.5", "status": "active", "precedence": 80 },
       { "id": "LAAS-OBL-RES-001", "title": "Bounded residual escape rate (Bucket B)", "severity": "error", "ct_floor": 2, "reference": "v1.1 \u00a75", "status": "active", "precedence": 70 },
       { "id": "LAAS-OBL-HUM-001", "title": "Human approval required at CT4", "severity": "error", "ct_floor": 4, "reference": "v1.1 \u00a76.3", "status": "active", "precedence": 95 }
-    ]
+    ],
+    "human_approval_bases": ["per_action"]
   }
 }
