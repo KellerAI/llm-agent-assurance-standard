@@ -85,8 +85,9 @@ script reports `OK`; `check.sh` (emitter → `opa eval`) ends with compliant `tr
 prints `PASS`; and the unit tests report `Ran 80 tests` and `OK`
 (invocation from `scripts/laas/test_osi_to_surface.py:4`).
 
-**What CI runs.** CI runs only the sanitization gate and `opa eval`; the other gates are local.
-Detail and sources: `docs/agents/conventions.md` ("Local gates").
+**What CI runs.** CI runs the sanitization gate, `opa eval`, and `opa check` plus `opa test` on
+`conformance/` (the `OPA test (conformance/)` job in `ci.yml`, not yet a required check); the
+other gates are local. Detail and sources: `docs/agents/conventions.md` ("Local gates").
 
 ## Conventions agents MUST follow
 
@@ -106,8 +107,8 @@ Detail and sources: `docs/agents/conventions.md` ("Local gates").
   (`.github/workflows/validate-branch-name.yml:10`, `:14`, `:27`, `:31-36`).
 - **PRs for publishable files.** Edits to `standard/**`, `conformance/**`, `docs/**`,
   or `README.md` require a pull request. Changes must pass `opa check` and `opa test`;
-  run them locally, because no workflow in this repository runs them (see "What CI runs"
-  under `## Key commands`).
+  run them locally before pushing. CI also runs them in the non-required
+  `OPA test (conformance/)` job (see "What CI runs" under `## Key commands`).
 - **PR target.** Contributor and agent pull requests target `dev`. Changes are promoted
   to `main` through `dev` → `qa` → `main`: the `validate-branch-tier` workflow accepts PRs into
   `main` only from `qa/**`, into `qa` only from `dev/**`, and into `dev` from `external/**`,

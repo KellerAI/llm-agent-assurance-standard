@@ -98,15 +98,20 @@ opa eval -d laas.rego -d data.json \
 ## What CI runs
 
 In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`,
-in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the
-blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit
+in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the
+blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus
+`opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job
+`OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped
+test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`).
+It is not a required status check until it is added to the branch rulesets. The Python unit
 tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow
 in this repository's `.github/workflows/` runs, and what the external reusable conformance
 workflow called from `ci.yml` runs cannot be inspected from this repository.
 
 Sources: `.github/workflows/ci.yml:33-34` (sanitization gate), `.github/workflows/ci.yml:37`
 (external conformance workflow), `.github/workflows/trust-dial-gate.yml:113` (`opa eval`),
-`.github/workflows/blast-radius-pulse.yml:60` and `scripts/pulse.sh:242` (`opa eval`).
+`.github/workflows/blast-radius-pulse.yml:60` and `scripts/pulse.sh:242` (`opa eval`),
+`.github/workflows/ci.yml` job `opa-test` (`opa check`, `opa test`).
 Both OPA workflows trigger on `pull_request` only (`.github/workflows/trust-dial-gate.yml:21`,
 `.github/workflows/blast-radius-pulse.yml:19`); the trust-dial job runs only for Dependabot or
 maintainer pull requests (`.github/workflows/trust-dial-gate.yml:31`).
