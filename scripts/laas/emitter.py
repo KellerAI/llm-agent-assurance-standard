@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import sys
 from dataclasses import dataclass, field
@@ -543,9 +544,13 @@ def _read_spec(path: Optional[str]) -> Any:
 
     A spec that is unreadable, not UTF-8 or not valid JSON raises
     EmitterInputError. The spec is read as the original emitter read it --
-    a file in text mode (CR and CRLF reach json.loads as LF), stdin through
-    sys.stdin -- so an invalid-JSON message reports the same line, column
-    and offset.
+    a file in text mode (CR and CRLF reach json.loads as LF), stdin with
+    sys.stdin's newline handling (no translation on POSIX) -- so an
+    invalid-JSON message reports the same line, column and offset.
+    stdin is decoded as strict UTF-8 from sys.stdin.buffer, not read
+    through sys.stdin, whose error handler depends on the locale: under
+    UTF-8 mode it is surrogateescape, which turns non-UTF-8 bytes into an
+    invalid-JSON error instead of a read error.
     """
     where = f"spec {path or '<stdin>'}"
     try:
@@ -553,7 +558,19 @@ def _read_spec(path: Optional[str]) -> Any:
             with open(path, encoding="utf-8") as fh:
                 raw = fh.read()
         else:
-            raw = sys.stdin.read()
+            buffer = getattr(sys.stdin, "buffer", None)
+            if buffer is None:  # stdin already replaced by a text stream
+                raw = sys.stdin.read()
+            else:
+                # sys.stdin translates newlines only on Windows; match it.
+                newline = None if sys.platform == "win32" else "\n"
+                stream = io.TextIOWrapper(
+                    buffer, encoding="utf-8", errors="strict", newline=newline
+                )
+                try:
+                    raw = stream.read()
+                finally:
+                    stream.detach()  # leave sys.stdin.buffer open
     except OSError as e:
         raise EmitterInputError(f"cannot read {where}: {e.strerror}") from e
     except UnicodeDecodeError as e:
