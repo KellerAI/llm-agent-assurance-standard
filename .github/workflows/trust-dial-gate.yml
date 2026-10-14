@@ -40,10 +40,10 @@ jobs:
       - name: Fetch Dependabot metadata
         id: meta
         if: ${{ github.actor == 'dependabot[bot]' }}
-        uses: dependabot/fetch-metadata@v2.4.0  # pin to SHA before release
+        uses: dependabot/fetch-metadata@08eff52bf64351f401fb50d4972fa95b9f2c2d1b # v2.4.0
 
       - name: Install OPA
-        uses: open-policy-agent/setup-opa@v2.4.0  # pin to SHA before release
+        uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
         with:
           version: "1.14.1"
 
