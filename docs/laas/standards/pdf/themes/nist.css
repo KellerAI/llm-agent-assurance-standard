@@ -1,25 +1,25 @@
-/* NIST-SP-style emulation for LAAS: UNOFFICIAL draft rendering.
+/* NIST-format theme for the KellerAI LAAS rendering: unofficial draft.
    No NIST logos, seals, or trademarks are used. */
 
 @page {
   size: Letter;
   margin: 24mm 22mm 22mm 22mm;
   @top-left {
-    content: "NIST-STYLE DRAFT (Unofficial)";
+    content: "KellerAI LAAS 1.1 · NIST-format rendering · Draft";
     font-family: "Helvetica Neue", Arial, sans-serif;
     font-size: 8pt;
     letter-spacing: 0.04em;
     color: #1a4480;
   }
   @top-right {
-    content: "LAAS \00b7 Action-Level Assurance for Autonomous AI Agents";
+    content: "LAAS · Action-Level Assurance for Autonomous AI Agents";
     font-family: "Helvetica Neue", Arial, sans-serif;
     font-size: 8pt;
     color: #666;
   }
   @bottom-center { content: counter(page); font-size: 9pt; color: #1b1b1b; }
   @bottom-left {
-    content: "This is not an official NIST publication.";
+    content: "Unofficial: not a publication of NIST.";
     font-size: 7pt;
     color: #888;
   }

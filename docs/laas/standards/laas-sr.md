@@ -1,28 +1,39 @@
+# Action-Level Assurance for Autonomous AI Agents (LAAS): Supervisory Expectations for Governing Agent Actions in Regulated Institutions
+
+*SR-letter-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
+
+- **Publisher:** Published by KellerAI.
+- **Designation:** KellerAI LAAS 1.1 · SR-letter-format rendering · Draft 1 (2026)
+- **Attribution:** Formatted after the drafting conventions of the Board of Governors of the
+  Federal Reserve System. Not issued, approved, or endorsed by the Board of Governors of the
+  Federal Reserve System.
+- **Copyright:** © 2026 KellerAI contributors. Licensed under Apache-2.0.
+
 > **Disclaimer:** This is not an official Federal Reserve publication.
 > It is not an SR letter and was not issued, reviewed, or endorsed by the Board of Governors
 > of the Federal Reserve System, any Reserve Bank, or any other supervisory agency.
-> It is a community-produced rendering of the LLM-Agent Assurance Standard (LAAS) in the
+> It is a KellerAI rendering of the LLM-Agent Assurance Standard (LAAS) in the
 > format of a supervisory letter, to aid readers familiar with that format.
-> The "Distribution" section and the "*[Signed]*" line below are part of that format;
-> no one has signed this document and it carries no supervisory force.
+> It carries no supervisory force.
 
 ---
 
 ## Purpose
 
-This guidance establishes supervisory expectations for the governance of individual actions
-taken by large-language-model (LLM) based autonomous agents at supervised institutions.
-It applies to any supervised banking organization that deploys an autonomous agent capable of
+This document sets out model supervisory expectations, written by KellerAI in supervisory-letter
+format, for the governance of individual actions taken by large-language-model (LLM) based
+autonomous agents at supervised institutions.
+It addresses any supervised banking organization that deploys an autonomous agent capable of
 committing an action with an effect outside the agent's own sandbox, including record writes,
 fund transfers, access-permission changes, and external communications.
-The guidance adopts the LLM-Agent Assurance Standard (LAAS) v1.1 (`standard/LAAS.md`) as the
+The document adopts the LLM-Agent Assurance Standard (LAAS) v1.1 (`standard/LAAS.md`) as the
 reference technical control set and frames its obligations as supervisory expectations consistent
 with the model-risk-management principles first set out in SR 11-7 and now carried by SR 26-2,
 which superseded and replaced SR 11-7 on April 17, 2026. SR 26-2 states that generative and
-agentic AI models are not within its scope, so this guidance applies those principles to LLM
+agentic AI models are not within its scope, so this document applies those principles to LLM
 agents by analogy, not as an extension of SR 26-2.
 
-This guidance does not certify a model, a model provider, or a management system.
+This document does not certify a model, a model provider, or a management system.
 It addresses what an agent may commit, and the evidence an institution must produce that the
 right checks ran, by the right party, before the action took effect.
 
@@ -47,8 +58,8 @@ conformance bundle `laas-fin-2.0.0` (`conformance/laas/data.json`), enforced by 
 
 ## Supervisory Expectations
 
-Supervised institutions deploying in-scope agents are expected to implement the following
-controls. Each expectation derives from a normative LAAS obligation; threshold values are not
+KellerAI suggests that supervised institutions deploying in-scope agents implement the following
+model controls. Each expectation derives from a normative LAAS obligation; threshold values are not
 restated here but are sourced from `conformance/laas/data.json` so that examiners and institutions
 evaluate against a single machine-readable bundle.
 
@@ -139,8 +150,8 @@ evaluate against a single machine-readable bundle.
 
 ## Examiner Guidance
 
-In assessing an institution's governance of in-scope agents, examiners should evaluate the
-following evidence:
+This section offers suggested examiner guidance. In assessing an institution's governance of
+in-scope agents, examiners should evaluate the following evidence:
 
 - **Tier classification in practice.** Decision-trace records demonstrating that the gate derives
   the Consequence Tier from the observed effect surface and that the gate-assigned tier is never
@@ -171,11 +182,11 @@ actions as material weaknesses in the institution's model-risk and operational-r
 
 ## Implementation
 
-Institutions are expected to implement these controls in accordance with the size, complexity, and
-risk profile of their agent deployments, on a phased basis:
+KellerAI suggests that institutions implement these controls in accordance with the size,
+complexity, and risk profile of their agent deployments, on a phased basis:
 
-- **Effective date:** [EFFECTIVE DATE PLACEHOLDER]. This guidance is a draft and carries no effective
-  date until issued.
+- **Effective date:** none. This document is a KellerAI draft and carries no regulatory effective
+  date.
 - **Phase 1, enforcement plane and trace.** Stand up the out-of-process gate and the append-only
   decision trace before adding obligation checks.
 - **Phase 2, tier derivation.** Implement effect-surface tier derivation, self-report recording, and
@@ -185,33 +196,27 @@ risk profile of their agent deployments, on a phased basis:
 - **Phase 5, escape rate and human approval.** Run initial backtests, declare per-tier tolerances,
   and implement the per-action human-approval path.
 
-Institutions should be prepared to discuss their implementation roadmap and current state with their
-supervisory teams.
+KellerAI suggests that institutions be prepared to discuss their implementation roadmap and current
+state with their supervisory teams.
 
 ## Supersession / Related Guidance
 
-This guidance does not supersede or amend any supervisory guidance. SR 26-2 (*Revised Guidance on
+This document does not supersede or amend any supervisory guidance. SR 26-2 (*Revised Guidance on
 Model Risk Management*, April 17, 2026) supersedes and replaces SR 11-7 (*Guidance on Model Risk
 Management*, 2011) and SR 21-8. SR 26-2 places generative and agentic AI models outside its scope
-(attachment, footnote 3), so it does not itself govern the agents this guidance addresses. It adopts LAAS v1.1 (`standard/LAAS.md`), which supersedes LAAS
-v1.0, as the reference technical control set. Where this letter and `conformance/laas/data.json`
+(attachment, footnote 3), so it does not itself govern the agents this document addresses. It adopts LAAS v1.1 (`standard/LAAS.md`), which supersedes LAAS
+v1.0, as the reference technical control set. Where this document and `conformance/laas/data.json`
 differ on a threshold value, the data file is the machine source of truth. Related supervisory and
 technical references include SR 26-2, SR 11-7 (superseded), the NIST AI Risk Management Framework (AI 100-1),
 and the LAAS design record (`docs/laas/proposal-v1.1.md`).
 
-## Distribution
+## Questions
 
-Reserve Banks should distribute this letter to the supervised organizations in their districts
-and to appropriate supervisory and examination staff. Direct questions regarding this guidance
-to the LAAS maintainers.
-
-*[Signed]*
-
-*[Placeholder signatory title; no official has signed this document]*
+Open an issue at https://github.com/KellerAI/llm-agent-assurance-standard/issues.
 
 ---
 
 **Attachment:** *LLM-Agent Assurance Standard (LAAS) v1.1*, the technical annex defining the
 consequence-tier framework, the twelve normative obligations, verifier independence and
 qualification criteria, residual escape-rate tolerances, enforcement-plane integrity requirements,
-and decision-trace evidence requirements referenced throughout this letter (`standard/LAAS.md`).
+and decision-trace evidence requirements referenced throughout this document (`standard/LAAS.md`).
