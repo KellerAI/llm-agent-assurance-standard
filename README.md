@@ -29,7 +29,7 @@ It is a **standard of care**, not a correctness guarantee.
   This is the canonical source; `conformance/laas/data.json` is derived from it.
 - [`conformance/laas/`](conformance/laas/) — OPA/Rego policy (`package kellerai.laas.actions`)
   that machine-checks gate-produced decision records against the standard.
-  Includes the obligation bundle, a 44-case test suite, and a bundled CT4-blocked example.
+  Includes the obligation bundle, a 96-case test suite, and a bundled CT4-blocked example.
 - [`docs/laas/standards/`](docs/laas/standards/) — four KellerAI renderings of LAAS in IEEE-, ISO-,
   NIST-, and SR-letter formats (the last after SR 11-7 / SR 26-2), none issued by those bodies.
   A PDF build pipeline with KellerAI covers and per-format CSS themes lives under
@@ -65,7 +65,7 @@ It is a **standard of care**, not a correctness guarantee.
 | Path | What it contains |
 |------|-----------------|
 | [`standard/LAAS.md`](standard/LAAS.md) | Normative standard — tiers, obligations, governing invariant |
-| [`conformance/laas/`](conformance/laas/) | OPA policy + data bundle + 44-case test suite + CT4 example |
+| [`conformance/laas/`](conformance/laas/) | OPA policy + data bundle + 96-case test suite + CT4 example |
 | [`docs/laas/standards/`](docs/laas/standards/) | IEEE, NIST, ISO, SR renderings + PDF pipeline |
 | [`scripts/laas/`](scripts/laas/) | Emitter, backtest harness, OSI adapter, proof scripts (`check.sh`, `osi_check.sh`) |
 | [`docs/laas/`](docs/laas/) | Design docs: v1.1 proposal, steelman, backtest spec and demo, emitter, OSI adapter, J-space annex |
@@ -83,7 +83,7 @@ Run the LAAS policy against the bundled example decision record:
 ```bash
 cd conformance/laas
 
-# Syntax check + test suite (expect: 44/44 PASS)
+# Syntax check + test suite (expect: 101/101 PASS)
 opa check laas.rego laas_test.rego
 opa test . -v
 
@@ -98,15 +98,20 @@ opa eval -d laas.rego -d data.json \
 ## What CI runs
 
 In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`,
-in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the
-blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit
+in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the
+blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus
+`opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job
+`OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped
+test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`).
+It is not a required status check until it is added to the branch rulesets. The Python unit
 tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow
 in this repository's `.github/workflows/` runs, and what the external reusable conformance
 workflow called from `ci.yml` runs cannot be inspected from this repository.
 
 Sources: `.github/workflows/ci.yml:33-34` (sanitization gate), `.github/workflows/ci.yml:37`
 (external conformance workflow), `.github/workflows/trust-dial-gate.yml:113` (`opa eval`),
-`.github/workflows/blast-radius-pulse.yml:60` and `scripts/pulse.sh:242` (`opa eval`).
+`.github/workflows/blast-radius-pulse.yml:60` and `scripts/pulse.sh:242` (`opa eval`),
+`.github/workflows/ci.yml` job `opa-test` (`opa check`, `opa test`).
 Both OPA workflows trigger on `pull_request` only (`.github/workflows/trust-dial-gate.yml:21`,
 `.github/workflows/blast-radius-pulse.yml:19`); the trust-dial job runs only for Dependabot or
 maintainer pull requests (`.github/workflows/trust-dial-gate.yml:31`).
@@ -123,7 +128,7 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 44/44` for `conformance/laas/`, `PASS: 115/115` for all of `conformance/`, and
+Expected: `PASS: 101/101` for `conformance/laas/`, `PASS: 172/172` for all of `conformance/`, and
 exit 0 from every other command.
 
 ## Status

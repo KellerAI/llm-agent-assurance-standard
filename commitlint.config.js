@@ -7,5 +7,15 @@ module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'subject-case': [0], // disabled — agents author headers with proper-cased terms/acronyms
+    // Disabled: GitHub-generated squash bodies routinely carry long lines.
+    'body-max-line-length': [0],
   },
+  // Dependabot bump headers name full action paths and 40-char SHAs, so they exceed
+  // header-max-length (100). Skip only that exact bot form (all rules); human commits keep the limit.
+  ignores: [
+    (message) =>
+      /^(chore|build)(\(deps[^)]*\))?: bump \S+ from \S+ to \S+( \(#\d+\))?$/.test(
+        message.split('\n')[0],
+      ),
+  ],
 };

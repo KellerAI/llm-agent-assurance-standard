@@ -29,13 +29,17 @@ cat "$RAW"
 
 echo
 echo "== 2. Apply full enforcement-plane controls (human approval + trace anchors) =="
-# The adapter builds the surface + CT + provenance; the deployment supplies the
-# CT4 governance controls (human approval, append-only trace anchors). We add
-# them here so opa eval sees a fully-conformant CT4 record.
+# The adapter builds the surface + CT + provenance and keeps the deterministic
+# VRF-OSI-DET verifier; the deployment supplies the CT4 governance controls.
+# The proof injects an attributed per_action human approval (ADR-003 Option B,
+# D4/D7): approver_id "hr:osi-approver" differs from the adapter's
+# action.actor_id ("agent.osi.demo"), and carries an attestation_ref and basis.
+# It also injects append-only trace anchors, so opa eval sees a fully-conformant
+# CT4 record.
 python3 - "$RAW" "$REC" <<'PY'
 import json, sys
 rec = json.load(open(sys.argv[1]))
-rec["human_approval"] = {"approved": True}
+rec["human_approval"] = {"approved": True, "approver_id": "hr:osi-approver", "attestation_ref": "sig:osi-demo", "basis": "per_action"}
 rec["trace"] = {"append_only": True, "actor_chain_prev_hash": "sha256:osi", "merkle_anchor": "sha256:osi"}
 json.dump(rec, open(sys.argv[2], "w"), indent=2)
 PY

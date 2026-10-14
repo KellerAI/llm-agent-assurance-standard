@@ -76,7 +76,7 @@
   ],
   "forbidden": [
     { "term": "grade (bare noun)", "reason": "Means a raw score, a weighted score, a final grade, or a grade of record. The four differ in reversibility.", "replacement": "raw score, weighted score, final grade, or grade of record" },
-    { "term": "pass (as a grade)", "variants": ["fail (as a grade)"], "reason": "Collide with the verdict values at standard/LAAS.md:135.", "replacement": "credit awarded, credit not awarded" },
+    { "term": "pass (as a grade)", "variants": ["fail (as a grade)"], "reason": "Collide with the verdict values at standard/LAAS.md:147.", "replacement": "credit awarded, credit not awarded" },
     { "term": "score (bare)", "reason": "Means a raw score, a weighted score, or a plagiarism similarity score.", "replacement": "the qualified noun, with its maximum and scale" },
     { "term": "credit (bare)", "reason": "Means credit hour, awarded credit, or attribution of a source.", "replacement": "credit hour, credit awarded, or cite" },
     { "term": "plagiarism (as a conclusion)", "reason": "Names a finding that only a decision process can make.", "replacement": "plagiarism similarity score with the matching service, or the decided academic integrity case" },

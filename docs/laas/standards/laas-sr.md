@@ -9,6 +9,15 @@
   Federal Reserve System.
 - **Copyright:** © 2026 KellerAI contributors. Licensed under Apache-2.0.
 
+> **Disclaimer:** This is not an official Federal Reserve publication.
+> It is not an SR letter and was not issued, reviewed, or endorsed by the Board of Governors
+> of the Federal Reserve System, any Reserve Bank, or any other supervisory agency.
+> It is a KellerAI rendering of the LLM-Agent Assurance Standard (LAAS) in the
+> format of a supervisory letter, to aid readers familiar with that format.
+> It carries no supervisory force.
+
+---
+
 ## Purpose
 
 This document sets out model supervisory expectations, written by KellerAI in supervisory-letter
@@ -19,7 +28,10 @@ committing an action with an effect outside the agent's own sandbox, including r
 fund transfers, access-permission changes, and external communications.
 The document adopts the LLM-Agent Assurance Standard (LAAS) v1.1 (`standard/LAAS.md`) as the
 reference technical control set and frames its obligations as supervisory expectations consistent
-with the model-risk-management principles of SR 11-7 and its successor SR 26-2.
+with the model-risk-management principles first set out in SR 11-7 and now carried by SR 26-2,
+which superseded and replaced SR 11-7 on April 17, 2026. SR 26-2 states that generative and
+agentic AI models are not within its scope, so this document applies those principles to LLM
+agents by analogy, not as an extension of SR 26-2.
 
 This document does not certify a model, a model provider, or a management system.
 It addresses what an agent may commit, and the evidence an institution must produce that the
@@ -27,8 +39,8 @@ right checks ran, by the right party, before the action took effect.
 
 ## Background
 
-Supervisory guidance on model risk management (SR 11-7) was written for models that produce an
-estimate a human then acts upon. Autonomous agents collapse that separation: the agent both
+Supervisory guidance on model risk management (SR 11-7, since superseded by SR 26-2) was
+written for models that produce an estimate a human then acts upon. Autonomous agents collapse that separation: the agent both
 produces the output and commits the action, at machine speed and scale. Traditional governance
 checkpoints (periodic validation, human review of material decisions, and post-hoc outcome
 analysis) do not bound the rate at which an undetected error in an agent's output reaches and is
@@ -41,7 +53,7 @@ commit an irreversible high-consequence action before any human is aware it was 
 LAAS addresses this gap by gating each action at a Consequence Tier derived from its observed
 effect surface and by requiring independent pre-commit verification, proportionate to that tier,
 before commitment. The machine source of truth for all thresholds referenced below is the LAAS
-conformance bundle `laas-fin-1.1.1` (`conformance/laas/data.json`), enforced by the OPA policy
+conformance bundle `laas-fin-2.0.0` (`conformance/laas/data.json`), enforced by the OPA policy
 `conformance/laas/laas.rego`, package `kellerai.laas.actions`.
 
 ## Supervisory Expectations
@@ -77,7 +89,7 @@ evaluate against a single machine-readable bundle.
    independent-verification floor tier, a passing independent verifier shall evaluate the action
    *before* commitment. A verdict of fail, abstain, or indeterminate shall block and escalate the
    action. Post-execution review does not satisfy this expectation. This is the agent-action
-   analogue of effective challenge under SR 11-7. (LAAS-OBL-IRR-001.)
+   analogue of effective challenge under SR 11-7 (superseded; now SR 26-2). (LAAS-OBL-IRR-001.)
 
 6. **Verifier independence.** The verifier shall not share the actor's model substrate. Independence
    is satisfied by a deterministic/exact checker, by a distinct model lineage whose measured
@@ -85,41 +97,51 @@ evaluate against a single machine-readable bundle.
    distinct-lineage option applies only below the human-approval floor tier; at that tier a model
    verifier does not satisfy independence, and a deterministic or human verifier is required. A
    verifier that fails the same way as the actor is not a check. (LAAS-OBL-IND-001; correlation
-   ceiling in `conformance/laas/data.json`; `conformance/laas/laas.rego:225-230`.)
+   ceiling in `conformance/laas/data.json`; `conformance/laas/laas.rego:226-231`.)
 
 7. **Verifier qualification.** A verifier gating high-tier actions shall be qualified: documented
    coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a
-   change-controlled version recorded in the trace. A verifier modified after its last qualification
-   is treated as unqualified until re-qualified. This is the validator-qualification analogue under
-   SR 11-7 and DO-330. (LAAS-OBL-VQ-001.)
+   change-controlled version recorded in the trace. As recommended practice (informative; not
+   evaluated by `conformance/laas/laas.rego`), a verifier modified after its last qualification
+   should be treated as unqualified until re-qualified. This is the validator-qualification analogue under
+   SR 11-7 (superseded; now SR 26-2) and DO-330. (LAAS-OBL-VQ-001.)
 
 8. **Bounded residual escape rate.** For open-world (Bucket B) claims, the institution shall
    declare a maximum acceptable residual escape rate per tier, estimate it by backtesting on a
    held-out, adversarially-stressed evaluation set with a stated confidence interval, and re-measure
    on any change to model, prompt, tool, or policy. The measured rate shall not exceed the declared
-   tolerance, which shall not exceed the LAAS minimums. This is the ongoing-monitoring and
-   outcome-analysis analogue under SR 11-7. (LAAS-OBL-RES-001; tolerances by tier in
+   tolerance, which shall not exceed the LAAS minimums. Where the declared tolerance is zero, no
+   finite-sample backtest can demonstrate it; the residual requirement is then met by the
+   deterministic verifier or the human gate, and a recorded bound of exactly 0 is not a backtest
+   bound (`standard/LAAS.md:108-114`). This is the ongoing-monitoring and
+   outcome-analysis analogue under SR 11-7 (superseded; now SR 26-2). (LAAS-OBL-RES-001; tolerances by tier in
    `conformance/laas/data.json`, key `escape_rate_tolerance_by_ct`.)
 
 9. **Human approval at the highest tier.** Every action at the human-approval floor tier shall
-   obtain explicit human approval before commitment, unless blocked, with abstention the default on
-   timeout. Institutions may register standing pre-authorized envelopes with explicit limits so that
-   human attention scales with exceptions rather than volume. (LAAS-OBL-HUM-001;
-   floor in `conformance/laas/data.json`.)
+   obtain an attributed human approval, recorded on its decision record (`human_approval`;
+   `conformance/laas/laas.rego:178-182`), before commitment, unless blocked. The approval shall
+   carry `approved` true, a non-empty `approver_id` and `attestation_ref`, and `basis` set to
+   `per_action`, the only value in `human_approval_bases` (`conformance/laas/data.json:33`). The
+   approver shall differ from the action's `actor_id` and, where the verifier is human, from its
+   id; a missing `actor_id` or human-verifier id fails closed, and a bare `{approved: true}` does
+   not satisfy the floor (`conformance/laas/laas.rego:67`, `:386-416`). As recommended
+   practice (informative), abstention should be the default on approval timeout.
+   (LAAS-OBL-HUM-001; floor in `conformance/laas/data.json`.)
 
 10. **Vendor accountability.** Where an action is produced or informed by a vendor model or
     third-party tool, the institution shall record vendor provenance and confirm the vendor's scope
-    is limited to the authorized envelope; errors attributable to the vendor count against the
-    institution's own escape-rate budget. The deploying institution owns the risk of models it buys.
-    (LAAS-OBL-VEN-001.)
+    is limited (LAAS-OBL-VEN-001; `conformance/laas/laas.rego:149-152`). As recommended practice
+    (informative; not evaluated by the policy), errors attributable to the vendor should count
+    against the institution's own escape-rate budget, and untrusted vendor dependencies should
+    fail closed. The deploying institution owns the risk of models it buys.
 
 11. **Enforcement-plane integrity.** The gate shall run out-of-process in a trust boundary the agent
     cannot disable, bypass, or modify, even under elevated permissions; the policy bundle shall be
-    cryptographically signed and version-pinned; and the decision-trace sink shall be append-only.
+    cryptographically signed and version-pinned.
     A control the constrained party can switch off is not a control. (LAAS-OBL-ENF-001.)
 
-12. **Decision-trace evidence.** The gate shall emit, for every gated action, an append-only,
-    hash-chained decision-trace record capturing the derived tier, verifier identity and verdict,
+12. **Decision-trace evidence.** The decision-trace sink shall be append-only, and the gate shall
+    emit, for every gated action, a hash-chained decision-trace record capturing the derived tier, verifier identity and verdict,
     independence and qualification basis, residual bound, and approval or block. Per-actor hash
     chains are periodically anchored to a shared Merkle root. Personally identifiable information and
     material non-public information shall be tokenized and the searchable index separated from
@@ -134,7 +156,10 @@ in-scope agents, examiners should evaluate the following evidence:
 - **Tier classification in practice.** Decision-trace records demonstrating that the gate derives
   the Consequence Tier from the observed effect surface and that the gate-assigned tier is never
   below the lattice-derived value, including for undetermined inputs (which should default to the
-  highest tier).
+  highest tier), and that a record lacking a valid gate-assigned tier (an integer 0..4) is flagged
+  (one TIER-001) with its gate tier falling back to the lattice tier
+  (`conformance/laas/laas.rego:263-284`); the enforced tier is the maximum of that fallback and
+  the cumulative-window tier, so it can exceed the lattice tier (`conformance/laas/laas.rego:48`).
 - **Verifier independence and qualification.** For high-tier actions, evidence that the verifier is
   independent of the actor (deterministic, distinct lineage with bounded error-correlation, or
   human; distinct lineage is accepted only below the highest tier) and qualified, with a current qualification record referenced in the trace and a negative-
@@ -169,18 +194,20 @@ complexity, and risk profile of their agent deployments, on a phased basis:
 - **Phase 3, input and vendor controls.** Add untrusted-input classification and vendor attribution.
 - **Phase 4, independent verification.** Qualify verifiers and wire them to the high-tier gate.
 - **Phase 5, escape rate and human approval.** Run initial backtests, declare per-tier tolerances,
-  and implement the human-approval path with standing envelopes.
+  and implement the per-action human-approval path.
 
 KellerAI suggests that institutions be prepared to discuss their implementation roadmap and current
 state with their supervisory teams.
 
 ## Supersession / Related Guidance
 
-This document supplements and does not supersede SR 11-7 (*Guidance on Model Risk Management*, 2011)
-or SR 26-2 (its AI/ML successor). It adopts LAAS v1.1 (`standard/LAAS.md`), which supersedes LAAS
+This document does not supersede or amend any supervisory guidance. SR 26-2 (*Revised Guidance on
+Model Risk Management*, April 17, 2026) supersedes and replaces SR 11-7 (*Guidance on Model Risk
+Management*, 2011) and SR 21-8. SR 26-2 places generative and agentic AI models outside its scope
+(attachment, footnote 3), so it does not itself govern the agents this document addresses. It adopts LAAS v1.1 (`standard/LAAS.md`), which supersedes LAAS
 v1.0, as the reference technical control set. Where this document and `conformance/laas/data.json`
 differ on a threshold value, the data file is the machine source of truth. Related supervisory and
-technical references include SR 11-7, SR 26-2, the NIST AI Risk Management Framework (AI 100-1),
+technical references include SR 26-2, SR 11-7 (superseded), the NIST AI Risk Management Framework (AI 100-1),
 and the LAAS design record (`docs/laas/proposal-v1.1.md`).
 
 ## Questions

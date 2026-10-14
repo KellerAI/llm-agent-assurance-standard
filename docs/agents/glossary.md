@@ -36,25 +36,27 @@ Cites into `conformance/laas/` show where the policy implements a term; they add
   "A conforming system MUST NOT trust" the agent's self-classification of its own action, a verifier's soundness or independence without evidence, or the integrity of the enforcement plane (`standard/LAAS.md:26-31`).
   "Any control that lets the constrained party tier, grade, or gate itself is non-conforming" (`standard/LAAS.md:33`).
 - **Effective tier / cumulative window** — "The cumulative effect of a sequence MUST be tiered too: if a windowed aggregate crosses a threshold, subsequent actions are re-tiered to the aggregate's tier (anti-structuring)" (`standard/LAAS.md:59-60`).
-  The policy rule `effective_ct` takes the higher of the gate-assigned tier and the window aggregate's tier (`conformance/laas/laas.rego:47-48`).
+  The policy rule `effective_ct` takes the higher of the gate tier and the window aggregate's tier (`conformance/laas/laas.rego:47-48`).
+  The gate tier is `gate.assigned_ct` when it is an integer in 0..4, otherwise the lattice tier (`conformance/laas/laas.rego:275-277`).
 - **Obligation** — an entry in the authoritative, versioned list in `data.json → obligations`, carrying an ID, severity, CT floor, precedence, and a reference to its rationale (`standard/LAAS.md:64-65`).
   `error`-severity violations are blocking; `warning`-severity violations are reported (`standard/LAAS.md:65-66`).
   The 12 obligation IDs are listed under [Obligation IDs](#obligation-ids).
 - **Verifier independence** — "A verifier is independent of the actor iff one holds, by tier" (`standard/LAAS.md:85`): a different kind of checker (deterministic/exact), valid at any CT for the deterministic class; a distinct model lineage with measured error-correlation ≤ `max_error_correlation`, valid up to CT3; or a human, required in addition at CT4 (`standard/LAAS.md:87-89`).
   "A verifier sharing the actor's model lineage is presumed non-independent" (`standard/LAAS.md:91`).
   The policy rule is `independence_ok` (`conformance/laas/laas.rego:76-84`).
-  At CT4 a separate rule rejects any passed model verifier (`conformance/laas/laas.rego:225-230`).
+  At CT4 a separate rule rejects any passed model verifier on a non-blocked record; blocked records are exempt because the rule requires `not blocked` (`conformance/laas/laas.rego:226-231`).
 - **Verifier qualification** — "A verifier gating CT≥3 MUST be qualified: documented coverage of its claim class, a negative-test suite of known-bad inputs it must catch, and a change-controlled version recorded in the trace" (`standard/LAAS.md:95-96`).
-- **Escape rate** — the residual undetected-error rate of the open-world ("Bucket B") class (`standard/LAAS.md:100-101`).
-  The operator declares a maximum escape rate per CT, estimates it by backtesting on a held-out adversarial set, and re-measures it on any model, prompt, tool, or policy change; conformance requires measured escape rate ≤ tolerance, with evidence referenced in the trace (`standard/LAAS.md:100-103`).
+- **Escape rate** — the residual undetected-error rate of the open-world ("Bucket B") class (`standard/LAAS.md:100-104`).
+  The operator declares a maximum escape rate per CT, estimates it by backtesting on a held-out adversarial set, and re-measures it on any model, prompt, tool, or policy change; conformance requires measured escape rate ≤ tolerance, with evidence referenced in the trace (`standard/LAAS.md:103-106`).
   The tolerances are `escape_rate_tolerance_by_ct` (`conformance/laas/data.json:15`).
-- **Bucket B / Bucket A** — Bucket B is the open-world class whose escape rate is bounded (`standard/LAAS.md:100`).
-  `standard/LAAS.md` does not define Bucket A.
-  The policy treats an action whose deterministic verifier passed as Bucket A (`conformance/laas/laas.rego:243-246`).
-  At CT≥2 a non-blocked action that is not Bucket A and has no numeric `residual_error_bound` violates RES-001 (`conformance/laas/laas.rego:255-260`); on a non-blocked CT≥2 action, a numeric bound without non-empty `evidence_refs` also violates it (`conformance/laas/laas.rego:248-253`).
-- **Decision trace** — each gated action emits one decision-trace record, written to an append-only, content-addressed store the actor cannot rewrite (`standard/LAAS.md:107-110`).
+- **Bucket B / Bucket A** — Bucket A is an action whose claim a deterministic verifier checks and passes; every other action is the open-world Bucket B, whose escape rate is bounded (`standard/LAAS.md:100-101`).
+  The policy treats an action whose deterministic verifier passed as Bucket A (`conformance/laas/laas.rego:244-247`).
+  At CT≥2 a non-blocked action that is not Bucket A and has no numeric `residual_error_bound` violates RES-001 (`conformance/laas/laas.rego:256-261`); on a non-blocked CT≥2 action, a numeric bound without non-empty `evidence_refs` also violates it (`conformance/laas/laas.rego:249-254`).
+  A supplied `residual_error_bound` that is not `null` and not a number >= 0 also violates RES-001, at any CT, blocked or not, and is never compared to the tolerance; `null` counts as absent (`conformance/laas/laas.rego:286-301`).
+  At a zero tolerance the over-tolerance comparison is skipped for Bucket-A and human-gated actions, and a non-blocked non-Bucket-A action recording a bound of exactly 0 violates RES-001 (`conformance/laas/laas.rego:318-356`; `standard/LAAS.md:108-114`).
+- **Decision trace** — each gated action emits one decision-trace record, written to an append-only, content-addressed store the actor cannot rewrite (`standard/LAAS.md:118-121`).
 - **Decision record** — the policy's `input`: one gate-produced decision record, evaluated against the obligation bundle (`conformance/laas/laas.rego:5-6`).
-- **Conformance predicate** — "If an obligation's trigger matched, then either the action **passed** an independent, qualified verifier (plus human approval at CT4, plus residual ≤ tolerance) **or** the action was **blocked** and escalated. Nothing else conforms." (`standard/LAAS.md:115-117`).
+- **Conformance predicate** — "If an obligation's trigger matched, then either the action **passed** an independent, qualified verifier (plus human approval at CT4, plus residual ≤ tolerance or, at a zero tolerance, the §4.3 deterministic or human gate) **or** the action was **blocked** and escalated. Nothing else conforms." (`standard/LAAS.md:126-129`).
 - **`kellerai.laas.actions`** — the package of the LAAS policy (`conformance/laas/laas.rego:19`).
   Its declared entry points are `violations`, `summary`, `compliant`, and `error_ids` (`conformance/laas/laas.rego:10-14`).
   The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
