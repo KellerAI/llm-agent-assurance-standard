@@ -73,7 +73,15 @@ jobs:
           CHANGED_FILES: ${{ steps.changed.outputs.files }}
         run: |
           set -euo pipefail
+          # The outcome workflow writes state to the audit-trail branch.
+          # Read it from there; fall back to the in-tree copy until the
+          # branch exists.
           state="audit/trust-dial-state.json"
+          if git fetch --no-tags origin audit-trail 2>/dev/null \
+             && git show FETCH_HEAD:audit/trust-dial-state.json > .trust-dial-state.json; then
+            state=".trust-dial-state.json"
+          fi
+          echo "trust-dial state read from: $state"
           tier="$(jq -r '.tier' "$state")"
           cycle_count="$(jq -r '.cycle_merge_count' "$state")"
 
