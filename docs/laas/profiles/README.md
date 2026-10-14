@@ -48,6 +48,7 @@ These profiles are **informative**. They define no obligation, no Consequence Ti
 threshold.
 Nothing here changes `standard/LAAS.md`, `conformance/laas/data.json`, or
 `conformance/laas/laas.rego`.
+No reference checker for `LC-2` ships with these profiles ([`ste-core.md`](ste-core.md) §4).
 
 **Precedence.**
 Where a profile and `standard/LAAS.md` conflict, the standard takes precedence.
@@ -70,7 +71,7 @@ the Consequence Tier:
 
 A deviation from the core **rule base** is a separate matter and is not listed here.
 [`legal.md`](legal.md) §2.1, for example, states two rule-base deviations and adopts the gate
-policy without deviation (`docs/laas/profiles/legal.md:454-455`).
+policy without deviation (`docs/laas/profiles/legal.md:471-472`).
 
 ## Recommended gate policy
 
@@ -88,7 +89,7 @@ Two constraints apply at every tier.
 A checker reports findings and blocks; it never rewrites the record, because a checker that
 repairs prose has authored a claim the actor did not make.
 A rewrite is an **append**, not an edit — `LAAS-OBL-TRC-001` requires an append-only trace
-(`standard/LAAS.md:108-111`), and the sequence of a hedged draft followed by a conforming
+(`standard/LAAS.md:119-122`), and the sequence of a hedged draft followed by a conforming
 rewrite is itself an audit signal.
 
 ## Glossary file shape
@@ -154,6 +155,16 @@ table.
 6. Add any new load-bearing vocabulary to `docs/agents/glossary.md` in the same pull request
    (`docs/agents/glossary.md:142`).
 7. Record the profile in `CHANGELOG.md`.
+
+## Changing an approved term
+
+An approved term keeps one meaning for the life of a profile designation.
+A record written under that meaning must keep it when the glossary changes
+([`ste-core.md`](ste-core.md) §6, `LAAS-OBL-TRC-001`).
+To change a meaning, add a new approved term.
+Move the old term to the forbidden table, with the new term as its replacement.
+Then bump the profile designation and the glossary `version`, and record the change in
+`CHANGELOG.md`.
 
 ## Reference
 

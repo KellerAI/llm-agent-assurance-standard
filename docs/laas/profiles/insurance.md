@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-INS-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/insurance.json`](glossary/insurance.json)
@@ -112,7 +112,7 @@ Each states the LAAS obligation it protects, which is the domain justification
 | `STE-INS-07` | Name every third party by identifier and state the scope limit of its work. Write `third-party administrator TPA-NORTHFIELD adjusted the property damage only`. Do not write "the adjuster". | `LAAS-OBL-VEN-001` | Vendor attribution and scope limits are prose claims. An unnamed third party leaves the reader unable to tell which findings the insurer made and which it received. |
 | `STE-INS-08` | State the date type: `date of loss`, `date of notice`, `policy period start`, or `policy period end`. Never write the bare word *date*. | `LAAS-OBL-IRR-001` | Pre-commit verification at CT≥3 checks that the policy was in force on the date of loss. A bare date gives the verifier nothing to check against. |
 | `STE-INS-09` | Write *material* only as the `consequence` lattice value from `conformance/laas/data.json:9`. Write `material misrepresentation` in full when the subject is the contract-law ground for rescission. Do not use *material* as ordinary English. | `LAAS-OBL-SELF-001` | The word is simultaneously a LAAS enum value and a term of art that voids a policy. Loose use dilutes the enum, and a diluted enum is a second, softer channel through which the actor describes its own consequence. |
-| `STE-INS-10` | State the rollback plan as a sequence of completed-tense steps with a named actor and a time bound. State plainly when recovery depends on repayment by a party outside the insurer. | `LAAS-OBL-IRR-001` | A rollback plan written in the conditional is not a plan (`STE-C-08`). A plan that depends on a claimant returning money is a request, and the record must say so. |
+| `STE-INS-10` | State the rollback plan as a sequence of completed-tense steps with a named actor and a time bound. State plainly when recovery depends on repayment by a party outside the insurer. | `LAAS-OBL-IRR-001` | The CT3 regime requires a rollback plan (`standard/LAAS.md:56`); `LAAS-OBL-IRR-001` requires independent pre-commit verification for CT≥3 (`conformance/laas/data.json:27`). A rollback plan written in the conditional is not a plan (`STE-C-08`). A plan that depends on a claimant returning money is a request, and the record must say so. |
 | `STE-INS-11` | State a denial with the reason code, the policy clause relied on, and the appeal path available to the claimant. Do not write "the claim does not qualify". | `LAAS-OBL-HUM-001` | A human approver can only approve a denial whose ground is stated. A category is not a ground, and an unstated appeal path converts a reviewable decision into a final one. |
 | `STE-INS-12` | For repeated payments on one claim or one claimant, state the count, the total, the currency code, and the window. Do not describe a payment as if it stood alone. | `LAAS-OBL-AGG-001` | `standard/LAAS.md:59-60` re-tiers a sequence whose windowed aggregate crosses a threshold. A payment described in isolation is uncountable, and the aggregate silently under-counts. |
 
@@ -297,13 +297,24 @@ The coverage grant is <clause reference>. The exclusions checked are <clause ref
 The policy was in force on the date of loss.
 The remaining <named limit> before this payment is <currency code> <amount>.
 The documents relied on are <identifier> from <source>, <identifier> from <source>.
-The measured residual error bound is <number> on <named evaluation set>, measured on <date>.
+The exact-verified claim class is <claim class>. The gate verifier for it is <verifier_id>.
+The open-world claim class is <claim class, or none>.
+The backtest observed <k> escapes in <n> samples on <named evaluation set>, measured on <date>.
+The residual error bound is <number>, the one-sided <confidence> upper bound by the <Wilson|Clopper-Pearson> method.
 The tolerance for CT<n> is <number> from conformance/laas/data.json.
-The residual bound is <at or below|above> the tolerance.
+The backtest verdict is <pass|fail|indeterminate>. The evidence is <evidence_id>.
 The rollback plan is: <step 1>. <step 2>. <step 3>. The named actor is <party>. The time bound is <duration>.
 ```
 
+The residual-risk lines follow [`ste-core.md`](ste-core.md) §3.3.
+Write `none` for the open-world claim class only when the gate verifier checks every claim
+the action depends on, and then omit the four backtest sentences.
+At CT4 the tolerance is `0`, and no finite backtest demonstrates it
+(`docs/laas/backtest.md:116`), so the backtest verdict at CT4 is `indeterminate`.
+
 Filled:
+
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
 
 ```text
 agent.claimbot.v3 indemnified the claim because the adjusted water-damage loss of
@@ -316,10 +327,14 @@ The remaining water-damage sub-limit before this payment is USD 100,000.00.
 The documents relied on are claimant-supplied invoice INV-4471 from Fairwater Logistics LLC,
 proof of loss POL-5512 from Fairwater Logistics LLC, and inspection report INS-2026-3390 from
 third-party administrator TPA-NORTHFIELD.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial set, measured on
-2026-06-30.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the policy period, the sub-limit balance, and the
+deductible application. The gate verifier for it is VRF-POLICY-EXACT.
+The open-world claim class is the adjusted loss amount taken from claimant-supplied documents.
+The backtest observed 0 escapes in 500 samples on the CT4 held-out adversarial set,
+measured on 2026-06-30.
+The residual error bound is 0.005382, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_b0696a76b002ea60.
 The rollback plan is: the claims recovery desk issued a demand for repayment to Fairwater
 Logistics LLC. The desk recorded the demand against CLM-2026-5512. The desk recorded the
 outcome of the demand against CLM-2026-5512. The named actor is the claims recovery desk. The
@@ -338,7 +353,8 @@ A plan that depends on repayment is not a rollback. Saying so is the point.
 The independence basis is <different kind of checker|distinct model lineage with measured
 error correlation <number>|human>.
 <verifier_id> checked <the claim, in one sentence>.
-The verdict is <pass|fail|abstain|indeterminate>.
+The verdict is <pass|fail|indeterminate> for a deterministic verifier.
+The verdict is <pass|fail|abstain|indeterminate> for a model or human verifier.
 The evidence is <evidence_ref>.
 ```
 
@@ -427,8 +443,8 @@ position, and advisory for everything else.
 
 A language finding is a finding about the **record**, not about the action.
 The recommended handling mirrors the split the policy already makes between
-`error_violations` (`conformance/laas/laas.rego:199`) and `warning_violations`
-(`conformance/laas/laas.rego:204`).
+`error_violations` (`conformance/laas/laas.rego:200`) and `warning_violations`
+(`conformance/laas/laas.rego:205`).
 At CT2 the finding is recorded and the action proceeds.
 At CT3 and CT4 the record is rejected and the actor must rewrite it.
 
@@ -439,7 +455,7 @@ A checker that repairs prose has authored a claim the actor did not make, and th
 longer records what the actor asserted.
 
 A rewrite is an **append**, not an edit.
-`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:108-111`).
+`LAAS-OBL-TRC-001` requires an append-only trace (`standard/LAAS.md:119-122`).
 The rejected record and the corrected record both stay in the chain.
 
 ## 6. Worked example
@@ -482,6 +498,8 @@ Both are in the same trace, and the human read the prose.
 
 ### 6.2 Conforming record
 
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
+
 ```text
 ACTION
 agent.claimbot.v3 indemnified 1 claim under policy CP-2026-11408.
@@ -516,10 +534,14 @@ made no coverage position finding.
 The claim reserve is revalued from USD 100,000.00 to USD 0.00. The difference is
 USD 100,000.00.
 The claimant has received 0 prior indemnity payments on CLM-2026-5512 in the policy period.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial set, measured on
-2026-06-30.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the policy period, the sub-limit balance, and the
+deductible application. The gate verifier for it is VRF-POLICY-EXACT.
+The open-world claim class is the adjusted loss amount taken from claimant-supplied documents.
+The backtest observed 0 escapes in 500 samples on the CT4 held-out adversarial set,
+measured on 2026-06-30.
+The residual error bound is 0.005382, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_b0696a76b002ea60.
 The rollback plan is: the claims recovery desk issued a demand for repayment to Fairwater
 Logistics LLC. The desk recorded the demand against CLM-2026-5512. The desk recorded the
 outcome of the demand against CLM-2026-5512. The named actor is the claims recovery desk. The
@@ -561,8 +583,8 @@ Required independent checks at CT4:
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented coverage of the claim class "policy in force on the date of loss, and remaining limit", a negative-test suite of expired policies and exhausted sub-limits it must catch, and a change-controlled version in the trace (`standard/LAAS.md:95-96`). |
 | `LAAS-OBL-INP-001` | The claimant-supplied invoice and the proof of loss are named as untrusted input, and the inspection report from TPA-NORTHFIELD is named as the independent corroboration. |
 | `LAAS-OBL-VEN-001` | TPA-NORTHFIELD is named with its scope limit: property damage adjustment only, no coverage position. |
-| `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0.0` (`data.json:15`). |
-| `LAAS-OBL-HUM-001` | A human approver approves before release, and `escalation_approved` is `true`. |
+| `LAAS-OBL-RES-001` | `VRF-POLICY-EXACT` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
+| `LAAS-OBL-HUM-001` | A human approver approves each action before release. `human_approval` has `approved: true`, a non-empty `approver_id`, a non-empty `attestation_ref`, and `basis: "per_action"`. The approver is not `actor_id`. A human verifier is not the approver. A missing `actor_id` or verifier id fails closed. `{approved: true}` alone fails (`conformance/laas/laas.rego:386-416`). |
 | `LAAS-OBL-AGG-001` | The windowed aggregate is checked. The record states 0 prior indemnity payments on this claim, so the sequence does not re-tier (`standard/LAAS.md:59-60`). |
 
 **Language conformance: `LC-3`** — tool-checked, plus review of the free-text fields by the

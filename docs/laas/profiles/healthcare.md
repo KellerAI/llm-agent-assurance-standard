@@ -3,7 +3,7 @@
 **Designation:** LAAS-STE-HLTH-DRAFT-1.0
 **Document type:** Industry controlled-language profile
 **Source standard:** LLM-Agent Assurance Standard (LAAS) v1.1, `standard/LAAS.md`
-**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-1.1.1`)
+**Machine source of truth:** `conformance/laas/data.json` (bundle `laas-fin-2.0.0`)
 **Enforcing policy:** `conformance/laas/laas.rego`, package `kellerai.laas.actions`
 **Base profile:** [`ste-core.md`](ste-core.md) (`LAAS-STE-CORE-DRAFT-1.0`)
 **Derived glossary:** [`glossary/healthcare.json`](glossary/healthcare.json)
@@ -284,13 +284,24 @@ The record must state the point.
 The source of the order is <named source, with timestamp>.
 <If an alert was overridden:> Alert <alert id> stated: "<alert text>". The clinical reason is
 <reason>. The responsible clinician is <name and role>.
-The measured residual error bound is <number> on <named evaluation set>, measured on <date>.
+The exact-verified claim class is <claim class>. The gate verifier for it is <verifier_id>.
+The open-world claim class is <claim class, or none>.
+The backtest observed <k> escapes in <n> samples on <named evaluation set>, measured on <date>.
+The residual error bound is <number>, the one-sided <confidence> upper bound by the <Wilson|Clopper-Pearson> method.
 The tolerance for CT<n> is <number> from conformance/laas/data.json.
-The residual bound is <at or below|above> the tolerance.
+The backtest verdict is <pass|fail|indeterminate>. The evidence is <evidence_id>.
 The rollback plan is: <step 1>. <step 2>. The named actor is <party>. The time bound is <duration>.
 ```
 
+The residual-risk lines follow [`ste-core.md`](ste-core.md) §3.3.
+Write `none` for the open-world claim class only when the gate verifier checks every claim
+the action depends on, and then omit the four backtest sentences.
+At CT4 the tolerance is `0`, and no finite backtest demonstrates it
+(`docs/laas/backtest.md:116`), so the backtest verdict at CT4 is `indeterminate`.
+
 Filled:
+
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
 
 ```text
 agent.orderbot.v2 transcribed the medication order because Dr A. Okonkwo entered a verbal
@@ -300,10 +311,14 @@ Alert CDS-INSULIN-DOSE stated: "Insulin dose exceeds the starting-dose threshold
 patient with no prior insulin order". The clinical reason is that the patient has a
 documented prior insulin glargine order at 10 units from encounter ENC-2025-3391. The
 responsible clinician is Dr A. Okonkwo, attending endocrinologist.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial dose-transcription
-set, measured on 2026-07-11.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the formulary dose range. The gate verifier for it is
+VRF-DOSE-RANGE.
+The open-world claim class is the transcription of a verbal order into a medication order.
+The backtest observed 0 escapes in 1200 samples on the CT4 held-out adversarial
+dose-transcription set, measured on 2026-07-11.
+The residual error bound is 0.002250, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_26a596012e482769.
 The rollback plan is: the ward pharmacist discontinues the medication order before the
 scheduled dose time. The pharmacist documents the discontinuation against MRN-4417902. The
 named actor is the ward pharmacist. The time bound is until the scheduled dose time of
@@ -317,7 +332,8 @@ named actor is the ward pharmacist. The time bound is until the scheduled dose t
 The independence basis is <different kind of checker|distinct model lineage with measured
 error correlation <number>|human>.
 <verifier_id> checked <the claim, in one sentence>.
-The verdict is <pass|fail|abstain|indeterminate>.
+The verdict is <pass|fail|indeterminate> for a deterministic verifier.
+The verdict is <pass|fail|abstain|indeterminate> for a model or human verifier.
 The evidence is <evidence_ref>.
 ```
 
@@ -391,8 +407,8 @@ Neither changes a LAAS obligation, a tier, or a threshold.
 
 A language finding is a finding about the record, not about the action, and it enters the
 same structure the policy already uses to separate `error_violations`
-(`conformance/laas/laas.rego:199`) from `warning_violations`
-(`conformance/laas/laas.rego:204`).
+(`conformance/laas/laas.rego:200`) from `warning_violations`
+(`conformance/laas/laas.rego:205`).
 
 The checker must not rewrite the record (see [`ste-core.md`](ste-core.md) §5).
 This constraint is stronger here than elsewhere.
@@ -401,7 +417,7 @@ readings the notation rule exists to prevent, and it has chosen it without clini
 authority.
 The correct behaviour is to reject the record and require the actor to restate the dose.
 
-A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:108-111`).
+A rewrite is an append, not an edit (`LAAS-OBL-TRC-001`, `standard/LAAS.md:119-122`).
 The rejected record stays in the chain.
 In a clinical setting this is also a patient-safety record: a pattern of ambiguous dose
 notation from one actor is a signal about that actor, and erasing the drafts erases the
@@ -445,6 +461,8 @@ frequency, and every character of it is ordinary clinical shorthand.
 
 ### 6.2 Conforming record
 
+> Illustrative values. The sample size, escape count, bound, and evidence IDs in this example are not measured data.
+
 ```text
 ACTION
 agent.orderbot.v2 transcribed 1 medication order for patient identifier MRN-4417902 in the
@@ -471,10 +489,14 @@ Alert CDS-INSULIN-DOSE stated: "Insulin dose exceeds the starting-dose threshold
 patient with no prior insulin order". The clinical reason is that the patient has a
 documented prior insulin glargine order at 10 units from encounter ENC-2025-3391. The
 responsible clinician is Dr A. Okonkwo, attending endocrinologist.
-The measured residual error bound is 0.0 on the CT4 held-out adversarial dose-transcription
-set, measured on 2026-07-11.
-The tolerance for CT4 is 0.0 from conformance/laas/data.json.
-The residual bound is at the tolerance.
+The exact-verified claim class is the formulary dose range. The gate verifier for it is
+VRF-DOSE-RANGE.
+The open-world claim class is the transcription of a verbal order into a medication order.
+The backtest observed 0 escapes in 1200 samples on the CT4 held-out adversarial
+dose-transcription set, measured on 2026-07-11.
+The residual error bound is 0.002250, the one-sided 0.95 upper bound by the Wilson method.
+The tolerance for CT4 is 0 from conformance/laas/data.json.
+The backtest verdict is indeterminate. The evidence is ev_backtest_26a596012e482769.
 The rollback plan is: the ward pharmacist discontinues the medication order before the
 scheduled dose time. The pharmacist documents the discontinuation against MRN-4417902. The
 named actor is the ward pharmacist. The time bound is until the scheduled dose time of
@@ -507,9 +529,9 @@ Required independent checks at CT4:
 | Obligation | What it requires here |
 |------------|----------------------|
 | `LAAS-OBL-IRR-001` | Independent pre-commit verification. `VRF-DOSE-RANGE` runs before the order is signed. |
-| `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic dose-range checker is a different *kind* of checker (`standard/LAAS.md:87`). A second LLM reading the same order would not qualify at CT4 at any measured error correlation: model-lineage independence is valid only up to CT3 (`standard/LAAS.md:88`; `conformance/laas/laas.rego:225-230`). |
+| `LAAS-OBL-IND-001` | The verifier is independent. Basis: a deterministic dose-range checker is a different *kind* of checker (`standard/LAAS.md:87`). A second LLM reading the same order would not qualify at CT4 at any measured error correlation: model-lineage independence is valid only up to CT3 (`standard/LAAS.md:88`; `conformance/laas/laas.rego:226-231`). |
 | `LAAS-OBL-VQ-001` | The verifier is qualified: documented claim-class coverage for dose-range checks, a negative-test suite of known tenfold and route errors it must catch, and a change-controlled version in the trace. |
-| `LAAS-OBL-RES-001` | Measured residual bound at or below `escape_rate_tolerance_by_ct["4"]`, which is `0.0` (`data.json:15`). |
+| `LAAS-OBL-RES-001` | `VRF-DOSE-RANGE` passed, so the gate treats the action as Bucket A and does not require a numeric `residual_error_bound` (`conformance/laas/laas.rego:244-247`, `:256-261`). That `pass` does not cover the open-world claim class. The CT4 tolerance is `0` (`data.json:15`), no finite backtest demonstrates it, and the backtest verdict is `indeterminate` (`docs/laas/backtest.md:116`). The human approver is the control for the open-world claim class. |
 | `LAAS-OBL-HUM-001` | Dr Okonkwo approves the transcribed order before it becomes active. `standard/LAAS.md:89` makes the human required *in addition* to the deterministic verifier, not instead of it. |
 | `LAAS-OBL-INP-001` | The verbal order is untrusted input until it is confirmed against VO-2026-11884. `untrusted_input_min_ct` is `3` (`data.json:18`). |
 
