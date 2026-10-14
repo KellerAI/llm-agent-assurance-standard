@@ -549,14 +549,17 @@ def _read_spec(path: Optional[str]) -> Any:
     invalid-JSON message reports the same line, column and offset.
     stdin is decoded as strict UTF-8 from sys.stdin.buffer, not read
     through sys.stdin, whose error handler depends on the locale: under
-    UTF-8 mode it is surrogateescape, which turns non-UTF-8 bytes into an
-    invalid-JSON error instead of a read error.
+    UTF-8 mode and the C, POSIX and C.UTF-8 locales it is surrogateescape,
+    which turns non-UTF-8 bytes into an invalid-JSON error instead of a
+    read error. A closed stdin (sys.stdin is None) is an unreadable spec.
     """
     where = f"spec {path or '<stdin>'}"
     try:
         if path:
             with open(path, encoding="utf-8") as fh:
                 raw = fh.read()
+        elif sys.stdin is None:
+            raise EmitterInputError(f"cannot read {where}: stdin is closed")
         else:
             buffer = getattr(sys.stdin, "buffer", None)
             if buffer is None:  # stdin already replaced by a text stream

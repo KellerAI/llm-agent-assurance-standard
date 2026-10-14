@@ -404,6 +404,20 @@ class TestEmitterCli(unittest.TestCase):
         self._assert_input_error(proc, "<stdin>")
         self.assertIn("cannot read spec", proc.stderr)
 
+    @unittest.skipIf(os.name != "posix", "closing fd 0 for a child needs POSIX")
+    def test_stdin_closed_exits_2(self):
+        # With fd 0 closed at startup, Python sets sys.stdin to None.
+        proc = subprocess.run(
+            [sys.executable, _EMITTER, "-b", _DATA_JSON],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+            preexec_fn=lambda: os.close(0),
+        )
+        self._assert_input_error(proc, "<stdin>")
+        self.assertIn("cannot read spec <stdin>: stdin is closed", proc.stderr)
+
     def test_spec_too_deep_exits_2(self):
         spec = self._write("deep.effect-surface.json", "[" * 200000 + "]" * 200000)
         proc = _run("-i", spec, "-b", _DATA_JSON)
