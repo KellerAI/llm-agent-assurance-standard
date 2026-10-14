@@ -87,7 +87,7 @@ Each industry doctrine, followed to its conclusion, reconstructs a face of LAAS.
 Three industries — aviation, banking, and autonomous driving — independently learned to operate unreliable components in irreversible, high-consequence regimes.
 Each scaled rigor by consequence, earned authority by measured reliability, kept a reachable point of safe return, and governed integrity over accuracy.
 Followed to its conclusion, each reconstructs a face of LAAS — and the third does so while running the very class of model in question.
-LAAS is therefore not a novel imposition on AI; it is the first faithful port of ETOPS, SR 26-2, and UL 4600 discipline to the agent-action layer.
+LAAS is therefore not a novel imposition on AI; it adapts the discipline of ETOPS, SR 26-2, and UL 4600 to the agent-action layer. It is an adaptation, not a faithful port: each source governs a different kind of system, and SR 26-2 itself places generative and agentic AI models outside its scope.
 To reject LAAS is to claim that the only three industries that safely fly twins over oceans, let models move billions, and drive neural networks at highway speed were each wrong to do so — and to inherit the burden of explaining why.
 These precedents show that burden cannot be discharged.
 
