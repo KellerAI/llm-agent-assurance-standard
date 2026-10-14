@@ -102,8 +102,7 @@ The test suite lives at `conformance/laas/laas_test.rego`.
 `opa test` must exit zero before any change to `conformance/laas/laas.rego`
 or `conformance/laas/data.json` is committed.
 Run it locally first; CI runs it again in the `OPA test (conformance/)` job.
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus `opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job `OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`). It is not a required status check until it is added to the branch rulesets. The Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
-Sources: `.github/workflows/ci.yml:33–34`, `.github/workflows/ci.yml:37`, `.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`, `scripts/pulse.sh:242`, `.github/workflows/ci.yml` job `opa-test`.
+The full list of CI gates, with sources, is in `docs/agents/conventions.md` ("Local gates").
 
 ## The LaaS action-conformance policy
 
