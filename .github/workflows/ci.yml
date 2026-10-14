@@ -36,7 +36,7 @@ jobs:
         run: bash scripts/check-sanitization.sh
 
   conformance:
-    uses: KellerAI/kellerai-oss-template/.github/workflows/conformance.yml@8c0f533df8d19f1ebbb560b31021436c05ff537d
+    uses: jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml@8c0f533df8d19f1ebbb560b31021436c05ff537d
     with:
       artifact_type: "rego-policy"
 
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      PY_MIN_TESTS: "80"     # scripts/laas/test_*.py
+      PY_MIN_TESTS: "81"     # scripts/laas/test_*.py
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -117,6 +117,13 @@ jobs:
         uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
         with:
           version: "1.14.1"
+
+      # The unit tests are run on 3.13: the recursion-depth tests in
+      # scripts/laas/test_emitter.py do not reach their limit on 3.11 or 3.12.
+      - name: Install Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
 
       - name: Python unit tests (scripts/laas/)
         run: |
@@ -127,6 +134,10 @@ jobs:
           echo "scripts/laas: ran ${ran:-0} tests (floor ${PY_MIN_TESTS})"
           if [ "${ran:-0}" -lt "$PY_MIN_TESTS" ]; then
             echo "::error::scripts/laas ran ${ran:-0} tests, below the floor of ${PY_MIN_TESTS}"
+            exit 1
+          fi
+          if grep -q 'skipped=' unittest.log; then
+            echo "::error::scripts/laas skipped tests; every test must run in CI"
             exit 1
           fi
 
