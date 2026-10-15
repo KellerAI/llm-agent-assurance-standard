@@ -23,7 +23,7 @@ Agents should start at [`AGENTS.md`](AGENTS.md) — it and [`docs/agents/`](docs
   Edge cases are documented in [`docs/agents/conventions.md`](docs/agents/conventions.md).
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org):
   `<type>(<scope>): <subject>`, imperative mood, subject ideally ≤ 50 characters.
-  `commitlint` checks every pull request commit against the Conventional Commits format as a hard CI gate (`commitlint.config.js:2`, `:7`; `.github/workflows/commitlint.yml:18`).
+  `commitlint` checks every pull request commit against the Conventional Commits format as a hard CI gate (`commitlint.config.js:2`, `:7`; `.github/workflows/commitlint.yml:21`).
   The ≤ 50-character subject is a convention, not a build-breaking rule (`commitlint.config.js:3-5`), and subject case is not checked (`commitlint.config.js:9`).
 
 ## Validation

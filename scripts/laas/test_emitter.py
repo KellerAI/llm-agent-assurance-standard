@@ -4,7 +4,9 @@
 Run: python3 -m unittest discover scripts/laas
 
 Each test runs the real CLI in a subprocess, so the exit code and stderr are
-what a caller of `python3 emitter.py` observes.
+what a caller of `python3 emitter.py` observes. The exception is
+test_stdin_closed_is_input_error, which calls _read_spec directly because a
+closed stdin cannot be passed to a subprocess portably.
 - positive: the transfer fixture plus the real data.json still emits a record.
 - negative: an unreadable, malformed, non-UTF-8, too-deep, or wrong-shape
   effect-surface spec (file or stdin) exits 2 with a one-line message naming

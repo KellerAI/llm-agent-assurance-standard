@@ -146,9 +146,10 @@ CI runs every one of these gates on each pull request and on pushes to `dev` and
   fails unless its last line is `true`), and `osi_check.sh` (`.github/workflows/ci.yml:106-155`).
 - `links` runs a link check (`.github/workflows/ci.yml:157-167`).
 
-The trust-dial gate and blast-radius pulse workflows also run `opa eval` on pull requests
-(`.github/workflows/trust-dial-gate.yml:121`; `.github/workflows/blast-radius-pulse.yml:60`,
-which runs `scripts/pulse.sh:239`). The `OPA test (conformance/)` and
+The blast-radius pulse workflow also runs `opa eval` on pull requests
+(`.github/workflows/blast-radius-pulse.yml:60`, which runs `scripts/pulse.sh:239`), and the
+trust-dial gate does so on Dependabot and maintainer pull requests
+(`.github/workflows/trust-dial-gate.yml:31`, `:121`). The `OPA test (conformance/)` and
 `Python tests and proof scripts` jobs are not required status checks until a maintainer adds
 them to the branch rulesets. What the external reusable conformance workflow called at
 `.github/workflows/ci.yml:39` runs cannot be inspected from this repository.

@@ -25,7 +25,8 @@ It is a **standard of care**, not a correctness guarantee.
 
 ## Try it
 
-You need `opa` (CI pins 1.14.1) and Python 3.13 (CI pins 3.13). From the repository root:
+You need `opa` (CI pins 1.14.1) and Python 3.13; on 3.11 and 3.12 the recursion-depth tests in
+`scripts/laas/` fail. From the repository root:
 
 ```sh
 opa test conformance/ -v                    # 194 policy tests
@@ -48,7 +49,7 @@ Three version labels are in use, and each tracks a different thing:
 
 What is and is not measured:
 
-- The policy suites, the reference-tooling tests, and both proof scripts pass in CI on every
+- The policy suites, the reference-tooling tests, and both proof scripts run in CI on every
   pull request (see [What CI runs](#what-ci-runs)).
 - The escape-rate backtest harness (`scripts/laas/backtest.py`) has run only on its bundled
   synthetic fixture: 1,240 samples built to show a pass, a fail, and an indeterminate result
@@ -131,8 +132,9 @@ opa eval -d laas.rego -d data.json \
 ## What CI runs
 
 CI runs every gate below on each pull request and on pushes to `dev` and `main`, plus a JSON
-well-formedness check, Markdown lint, and a link check. The trust-dial and blast-radius
-workflows also evaluate their verdict policies with `opa eval` on pull requests. The OPA and
+well-formedness check, Markdown lint, and a link check. The blast-radius workflow also evaluates
+its verdict policy with `opa eval` on pull requests, and the trust-dial workflow does so on
+Dependabot and maintainer pull requests. The OPA and
 Python test jobs are not yet required status checks. Line-level detail and sources:
 [`docs/agents/conventions.md`](docs/agents/conventions.md) ("Local gates").
 
