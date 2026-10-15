@@ -141,7 +141,7 @@ LAAS applies **Zero-Trust to the model's outputs *and* to the apparatus around t
 
 **Bucket B — open-world (bound, measure, control).** No exact oracle. (1) **Bound:** the operator declares a maximum acceptable **escape rate** for the claim class *at the relevant CT*. (2) **Measure:** estimate by **backtesting** on a held-out, representative, adversarially-stressed set with a stated confidence interval; re-measure on any model/prompt/tool/policy change. (3) **Control:** route to independent verification (different *kind* of checker, distinct + de-correlated model lineage, or human) above tolerance; **abstain/escalate** below confidence or out of envelope.
 
-**Escape rate** is the governing metric: the rate at which a wrong output passes every applicable check and is committed. Conformance asserts **measured escape rate ≤ declared tolerance at every CT, with traceable evidence**. (If a higher-is-better figure is wanted, report `integrity = 1 − escape rate`.) LAAS is a **standard of care**, not a correctness guarantee.
+**Escape rate** is the governing metric: the rate at which a wrong output passes every applicable check and is committed. Conformance asserts **measured escape rate ≤ declared tolerance at every CT, with traceable evidence** (zero-tolerance tiers: see `standard/LAAS.md:108-114`). (If a higher-is-better figure is wanted, report `integrity = 1 − escape rate`.) LAAS is a **standard of care**, not a correctness guarantee.
 
 ---
 
@@ -264,6 +264,8 @@ conformance_predicate: >
       AND (residual_error_bound == null OR residual_error_bound <= residual_tolerance) )
     OR ( verdict in ["fail","abstain","indeterminate"] AND action_blocked == true )
 ```
+
+Superseded at a zero tolerance by `standard/LAAS.md:108-114` (laas-o4c): the deterministic or human gate meets the residual clause, and a recorded bound of exactly 0 on a non-blocked non-Bucket-A action does not conform.
 
 Every identifier in `conformance_predicate` now appears in `emit_decision_trace` — the predicate is mechanically evaluable.
 

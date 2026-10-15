@@ -75,15 +75,15 @@ Always branch; never open a pull request from your fork's `main`.
 
 ### Branch tiers (`validate-branch-tier`)
 
-The `validate-branch-tier` workflow checks every pull request's source branch against its target (`.github/workflows/validate-branch-tier.yml:10-13`, rules at `:50-54`):
+The `validate-branch-tier` workflow checks every pull request's source branch against its target (`.github/workflows/validate-branch-tier.yml:10-13`, rules at `:37-41`):
 
-- `main` accepts pull requests only from `qa` or `qa/…` branches (`:51`).
-- `qa` accepts pull requests only from `dev` or `dev/…` branches (`:52`).
-- `dev` accepts pull requests from `external/…` and `dependabot/…` branches (`:53`),
-  or from any branch when the pull request author is listed in `.github/CODEOWNERS` (`.github/workflows/validate-branch-tier.yml:33-47`, `:67`).
-- A target with no rule (any other branch) is not checked (`:56-59`).
+- `main` accepts pull requests only from `qa` or `qa/…` branches (`:38`).
+- `qa` accepts pull requests only from `dev` or `dev/…` branches (`:39`).
+- `dev` accepts pull requests from `external/…` and `dependabot/…` branches (`:40`),
+  or from any branch when the pull request author is `son-of-anton-ai`, compared case-insensitively (`.github/workflows/validate-branch-tier.yml:33-34`, `:54`).
+- A target with no rule (any other branch) is not checked (`:43-46`).
 
-Agent branches such as `claude/<scope>` pass the `dev` check only when a CODEOWNER opens the pull request.
+Agent branches such as `claude/<scope>` pass the `dev` check only when `son-of-anton-ai` opens the pull request; a CODEOWNER opening it does not pass.
 
 ### External branch names (`validate-branch-name`)
 
@@ -130,11 +130,29 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 44/44` for `conformance/laas/` and `PASS: 115/115` for all of `conformance/`.
+Expected: `PASS: 123/123` for `conformance/laas/`, `PASS: 194/194` for all of `conformance/`,
+`OK` from the sanitization script, `true` as the last line of `check.sh` (the `compliant`
+verdict), `PASS` from `osi_check.sh`, and `Ran 81 tests` then `OK` from the unit tests.
 
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
+CI runs every one of these gates on each pull request and on pushes to `dev` and `main`
+(`.github/workflows/ci.yml:3-8`):
 
-Sources: `.github/workflows/ci.yml:33-34` (sanitization gate), `.github/workflows/ci.yml:37` (external reusable conformance workflow), `.github/workflows/trust-dial-gate.yml:113` and `scripts/pulse.sh:242` (`opa eval`), `.github/workflows/blast-radius-pulse.yml:60` (runs `scripts/pulse.sh`).
+- `validate` runs the sanitization gate, a JSON well-formedness check, and Markdown lint
+  (`.github/workflows/ci.yml:14-36`).
+- `OPA test (conformance/)` runs `opa check conformance/` and both `opa test` suites, and fails
+  below a test-count floor of 123 for `conformance/laas/` and 194 for `conformance/`
+  (`.github/workflows/ci.yml:49-100`).
+- `Python tests and proof scripts` runs the unit tests with a floor of 81 on Python 3.13, failing on any skipped test, `check.sh` (the step
+  fails unless its last line is `true`), and `osi_check.sh` (`.github/workflows/ci.yml:106-155`).
+- `links` runs a link check (`.github/workflows/ci.yml:157-167`).
+
+The blast-radius pulse workflow also runs `opa eval` on pull requests
+(`.github/workflows/blast-radius-pulse.yml:60`, which runs `scripts/pulse.sh:239`), and the
+trust-dial gate does so on Dependabot and maintainer pull requests
+(`.github/workflows/trust-dial-gate.yml:31`, `:121`). The `OPA test (conformance/)` and
+`Python tests and proof scripts` jobs are not required status checks until a maintainer adds
+them to the branch rulesets. What the external reusable conformance workflow called at
+`.github/workflows/ci.yml:39` runs cannot be inspected from this repository.
 
 ## Citations
 
@@ -156,3 +174,29 @@ When you change it:
 Publishable files (`standard/**`, `conformance/**`, `docs/**`, `README.md`) change through a PR.
 A PR states what changed and how the change was verified.
 Staging files — anything matched by `.gitignore` — need no PR and can be edited directly.
+
+## Capability Roster
+
+When a task needs a specialist capability, prefer the canonical plugin for the
+domain. The roster lists KellerAI's defaults; adopters may substitute rows.
+
+| Domain | Canonical capability | Secondary |
+| ------ | -------------------- | --------- |
+| Session mining | `thoughtbox` | — |
+| Capability analysis | `kellerai-repo-audit` | — |
+| Repo architecture & scaffolding | `kellerai-repo-audit` | `kellerai-skill-creator` |
+| Conformance & policy | `opa-rego` | `kellerai-grc` |
+| CI/CD authoring | `git-workflow-tools` | `beads-workflow` |
+| Governance & traceability | `kellerai-feature-spec` | `thoughtbox` |
+| Documentation | `documentation-audit` | `claude-md-management` |
+
+<!-- BEGIN LOCAL AGENT MODERNIZATION v:1 -->
+
+## Shared agent scope and worktrees
+
+- `AGENTS.md` is the shared project instruction entrypoint. Put shared agent resources in `.agents/`; retain Claude-specific settings, hooks, and plugins in `.claude/`.
+- Keep project rules in repository or nested `AGENTS.md` files. Keep machine-local configuration outside tracked shared instructions; do not copy credentials or runtime state into `.agents/`.
+- New manually managed worktrees use `<main-checkout>/.worktrees/<branch-slug>`. Verify the exact path is ignored before creation. Preserve existing worktrees and the roots used by Codex/Claude managed worktree tools.
+- Before changing tracker storage or commands, verify the intended store and supported CLI. Preserve issue IDs, existing data, uncommitted files, and registered worktrees. Instruction modernization does not authorize storage conversion or checkout relocation.
+
+<!-- END LOCAL AGENT MODERNIZATION -->

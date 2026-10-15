@@ -10,7 +10,7 @@ permissions:
 # Enforces the 4-tier merge model:
 #   main  <- qa/**  only
 #   qa    <- dev/** only
-#   dev   <- external/** (contributors) or a CODEOWNER branch
+#   dev   <- external/**, dependabot/**, or any branch opened by son-of-anton-ai
 # external/* naming is validated separately by validate-branch-name.yml.
 jobs:
   validate-branch-tier:
@@ -30,27 +30,14 @@ jobs:
           head = os.environ["HEAD_REF"]   # source branch (e.g. qa/something)
           actor = os.environ["ACTOR"]     # PR author GitHub login
 
-          # Read .github/CODEOWNERS to determine if the author is a maintainer.
-          codeowners = set()
-          try:
-              with open(".github/CODEOWNERS") as f:
-                  for line in f:
-                      line = line.strip()
-                      if not line or line.startswith("#"):
-                          continue
-                      for token in line.split():
-                          if token.startswith("@"):
-                              codeowners.add(token.lstrip("@").lower())
-          except FileNotFoundError:
-              pass
-
-          is_maintainer = actor.lower() in codeowners
+          # The one PR author who may open a PR into dev from any branch.
+          DEV_AUTHOR = "son-of-anton-ai"
 
           # Tier rules: maps target branch to (allowed-source-pattern, error-message).
           RULES = {
               "main": (r"^qa(/.*)?$",    "PRs into main must come from qa/**"),
               "qa":   (r"^dev(/.*)?$",   "PRs into qa must come from dev/**"),
-              "dev":  (r"^(external/|dependabot/)",    "PRs into dev must come from external/**, dependabot/**, or a CODEOWNER branch"),
+              "dev":  (r"^(external/|dependabot/)",    "PRs into dev must come from external/** or dependabot/**, or be opened by son-of-anton-ai"),
           }
 
           if base not in RULES:
@@ -64,8 +51,8 @@ jobs:
               print(f"Tier check passed: {head} -> {base}")
               sys.exit(0)
 
-          if base == "dev" and is_maintainer:
-              print(f"Tier check passed: CODEOWNER '{actor}' may merge directly into dev.")
+          if base == "dev" and actor.lower() == DEV_AUTHOR:
+              print(f"Tier check passed: '{actor}' may open PRs into dev from any branch.")
               sys.exit(0)
 
           print(f"::error::{message}")
