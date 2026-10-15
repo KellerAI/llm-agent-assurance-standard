@@ -7,25 +7,56 @@ How the conventions in **llm-agent-assurance-standard** are enforced — what is
 
 | Gate | Where it runs | What it checks |
 |------|--------------|----------------|
-| JSON well-formedness | CI (`.github/workflows/ci.yml:18`) | `jq empty` parses every `*.json` file in the tree. |
-| `scripts/check-sanitization.sh` | CI (`.github/workflows/ci.yml:34`) and the pre-commit hook (`lefthook.yml:7–8`) | No internal term from the denylist appears in the publishable tree. The denylist is base64-encoded inside the script so the script does not itself republish those terms. |
-| Markdown lint | CI (`.github/workflows/ci.yml:31`) | `markdownlint-cli2` over every Markdown file. |
-| Link check | CI (`.github/workflows/ci.yml:48`) | `lychee` resolves every link. |
-| `commitlint` | CI, on every pull request (`.github/workflows/commitlint.yml:18`) | Every commit message is a valid Conventional Commit. |
-| Conformance workflow | CI (`.github/workflows/ci.yml:37`) | The external reusable workflow `jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml`; what it evaluates cannot be inspected from this repository. |
+| JSON well-formedness | CI (`.github/workflows/ci.yml:20`) | `jq empty` parses every `*.json` file in the tree. |
+| `scripts/check-sanitization.sh` | CI (`.github/workflows/ci.yml:36`) and the pre-commit hook (`lefthook.yml:7–8`) | No internal term from the denylist appears in the publishable tree. The denylist is base64-encoded inside the script so the script does not itself republish those terms. |
+| Markdown lint | CI (`.github/workflows/ci.yml:33`) | `markdownlint-cli2` over every Markdown file. |
+| Link check | CI (`.github/workflows/ci.yml:164`) | `lychee` resolves every link. |
+| `commitlint` | CI, on every pull request (`.github/workflows/commitlint.yml:21`) | Every commit message is a valid Conventional Commit. |
+| Conformance workflow | CI (`.github/workflows/ci.yml:39`) | The external reusable workflow `jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml`; what it evaluates cannot be inspected from this repository. |
 | Agentic gates | CI (`.github/workflows/conformance.yml:7`) | Repo-hygiene checks IC-1..IC-7 (`.github/workflows/conformance.yml:19`) and the D6 ADR citation check (`.github/workflows/conformance.yml:88`). |
 | Branch tier | CI, on every pull request (`.github/workflows/validate-branch-tier.yml:24`) | The pull request follows the tiered merge model (`.github/workflows/validate-branch-tier.yml:10–13`). |
 | External branch name | CI, on pull requests from `external/*` branches only (`.github/workflows/validate-branch-name.yml:14`) | The branch name matches the `external/` naming pattern. |
 | Linked issue | CI, on pull requests from `external/*` branches only (`.github/workflows/validate-linked-issue.yml:19`) | The issue named in the branch is open and carries the `codeowner-approved` label (`.github/workflows/validate-linked-issue.yml:12–13`, `:23`). |
-| Trust-dial gate | CI, on pull requests only (`.github/workflows/trust-dial-gate.yml:113`) | `opa eval` of `data.kellerai.oss.trust_dial.decision` against `conformance/`. |
-| Blast-radius pulse | CI, on pull requests only (`.github/workflows/blast-radius-pulse.yml:60`) | `scripts/pulse.sh` runs `opa eval` of `data.kellerai.oss.blast_radius.result` (`scripts/pulse.sh:242`). |
+| Trust-dial gate | CI, on pull requests only (`.github/workflows/trust-dial-gate.yml:121`) | `opa eval` of `data.kellerai.oss.trust_dial.decision` against `conformance/`. |
+| Blast-radius pulse | CI, on pull requests only (`.github/workflows/blast-radius-pulse.yml:60`) | `scripts/pulse.sh` runs `opa eval` of `data.kellerai.oss.blast_radius.result` (`scripts/pulse.sh:239`). |
+| OPA test | CI (`.github/workflows/ci.yml:49-100`, job `opa-test`); not a required check until added to the rulesets | `opa check conformance/`, then `opa test conformance/laas/` and `opa test conformance/`, failing on any failing, erroring, or skipped test or a count below 123 and 194. |
+| Python tests and proof scripts | CI (`.github/workflows/ci.yml:106-155`, job `python-gates`); not a required check until added to the rulesets | `python3 -m unittest discover scripts/laas` on Python 3.13, failing on any skipped test or a count below 81; `scripts/laas/check.sh`, which must end with the `compliant` verdict `true`; and `scripts/laas/osi_check.sh`. |
 
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`, `conformance/blast_radius.rego:15`.
+External conformance workflow: `.github/workflows/conformance.yml:4-5`, `.github/workflows/ci.yml:39`.
 
 The pre-commit hook is managed by `lefthook`.
 Install it once with `lefthook install`; it then runs the sanitization gate before every commit.
 CI runs the same gates, so the hook is a convenience — not the sole line of defence.
+
+## Repository audit trail (`audit-trail` branch)
+
+The blast-radius and trust-dial outcome workflows write their records to the `audit-trail`
+branch, not to `main`, `qa`, or `dev` (PRs #24 and #25). The files keep their paths:
+`audit/blast-radius.jsonl`, `audit/decision-trace.jsonl`, and `audit/trust-dial-state.json`.
+The trust-dial gate reads `audit/trust-dial-state.json` from `audit-trail` and falls back to
+the in-tree copy while that branch does not exist.
+
+- **Why a separate branch.** `main`, `qa`, and `dev` are ruleset-protected, and
+  `github-actions` is not a bypass actor, so a direct write-back push is rejected with GH013.
+  No ruleset applies to `audit-trail`, so the default `GITHUB_TOKEN` can push to it without a
+  new bypass actor or a ruleset change.
+- **Created once by hand.** A maintainer creates `audit-trail` once, by hand, before the
+  writers first run. The writers never create it: if `origin/audit-trail` is missing, the
+  write-back step fails with an error saying the branch must be created first. This avoids
+  two writers each creating the branch from a different starting commit.
+- **Append-only, no force-push.** Every write appends and pushes as a fast-forward.
+  A rejected push is retried on a fresh base (blast-radius) or rebased (trust-dial), up to
+  five times. No writer force-pushes.
+- **When it takes effect.** `workflow_run` workflows run the copy of the workflow file on the
+  default branch, so the new writers run only after #24 and #25 reach `main` and
+  `audit-trail` exists. Until then, `audit/` on `main` holds the latest records
+  (last entry 2026-06-26). After the switch, `audit/` on `main`, `qa`, and `dev` is frozen history.
+- **Open option (maintainer decision).** `audit-trail` is unprotected, so a repository admin
+  could rewrite or delete it. A ruleset on `refs/heads/audit-trail` with only the `deletion`
+  and `non_fast_forward` rules, and no pull-request rule or bypass actor, would make it
+  append-only without blocking the writers. Adding it is Jonathan's decision.
 
 ## Reviewed, not automated
 
@@ -71,9 +102,8 @@ opa test conformance/laas/
 The test suite lives at `conformance/laas/laas_test.rego`.
 `opa test` must exit zero before any change to `conformance/laas/laas.rego`
 or `conformance/laas/data.json` is committed.
-This is a local contributor gate, not a CI gate.
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
-Sources: `.github/workflows/ci.yml:33–34`, `.github/workflows/ci.yml:37`, `.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`, `scripts/pulse.sh:242`.
+Run it locally first; CI runs it again in the `OPA test (conformance/)` job.
+The full list of CI gates, with sources, is in `docs/agents/conventions.md` ("Local gates").
 
 ## The LaaS action-conformance policy
 
@@ -87,29 +117,41 @@ checks that the tier assignment, verification, and enforcement are correct.
 
 - **Package:** `kellerai.laas.actions` (`laas.rego:19`).
 - **Sibling data:** `conformance/laas/data.json` carries the obligation registry,
-  the CT lattice, and enforcement thresholds (`conformance/laas/data.json:1–34`).
+  the CT lattice, and enforcement thresholds (`conformance/laas/data.json:1–35`).
 - **Entry points:** `violations` (set of `{obligation, severity, msg}`),
   `summary` (`bundle`, `expected_ct`, `effective_ct`, `errors`, `warnings`, `compliant`;
-  `bundle` at `laas.rego:216`),
+  `bundle` at `laas.rego:217`),
   `compliant` (bool — true when no error-severity violations exist),
-  and `error_ids` (set of obligation IDs with error-severity violations; rule at `laas.rego:209`)
+  and `error_ids` (set of obligation IDs with error-severity violations; rule at `laas.rego:210`)
   (`laas.rego:11–14`).
 - **CT classification** — tier is the lattice max of three axes; an unknown or
-  undetermined surface defaults to CT4 (`laas.rego:30`; `data.json:11`):
+  undetermined surface defaults to `default_ct_when_undetermined` (CT4 as shipped;
+  `laas.rego:30`, `:366–374`; `data.json:11`):
   - **CT0** — no external effect; read-only or fully sandboxed. Assigned only when
     `external_effect` is boolean `false` (`laas.rego:33–35`); an absent, `null`, or
-    non-boolean value gives CT4 (`laas.rego:30`).
+    non-boolean value gives `default_ct_when_undetermined` (CT4 as shipped;
+    `laas.rego:30`, `:366–374`).
   - **CT1** — reversible, single-system internal write
-    (reversibility rank 1, scope rank 1; `data.json:7–9`).
-  - **CT2** — reversible or low-consequence external effect.
-  - **CT3** — hard-to-reverse or material-consequence action; triggers
-    independent pre-commit verification (`data.json:12`).
-  - **CT4** — irreversible or high-consequence; requires independent
-    verification **plus** human approval; default when surface is undetermined
-    (`data.json:13`).
-- **Effective tier:** max of the gate-assigned CT and the cumulative window CT,
+    (reversibility rank 1, scope rank 1; `data.json:7–9`), and consequence `none` or `low` (rank 0–1).
+  - **CT2** — external effect that is reversible (rank 1), multi-party scope (rank 2), and consequence
+    `none` or `low` (rank 0–1); `multi` is the only lattice key of rank 2 (`data.json:7–9`).
+  - **CT3** — any axis at rank 3 and none at rank 4: reversibility `hard`, scope `org`, or consequence
+    `material` (`data.json:7–9`); triggers independent pre-commit verification (`data.json:12`).
+  - **CT4** — any axis at rank 4: reversibility `irreversible` or `none`, scope `public`, or consequence
+    `high` (`data.json:7–9`); requires independent verification **plus** human approval (`data.json:12–13`);
+    default when surface is undetermined (`laas.rego:30`; `data.json:11`).
+- **Effective tier:** max of the gate tier and the cumulative window CT,
   preventing structuring attacks (`laas.rego:48`).
-- **Fail-safe default:** `default expected_ct := 4` (`laas.rego:30`).
+  The cumulative window CT is supplied by the caller (the policy does not compute it);
+  the max rule only consumes it, so preventing structuring also depends on that supplied value
+  (`input.aggregate.window_effect_ct`, `laas.rego:311`).
+  The gate tier is `gate.assigned_ct`, or the lattice CT when `assigned_ct` is absent or not an integer 0..4
+  (`laas.rego:266–277`).
+- **Fail-safe default:** an undetermined surface takes `default_ct_when_undetermined`
+  (`laas.rego:30`; `data.json:11`, shipped 4). A missing value, or one that is not an integer
+  in 0..4, fails closed to CT4 (`_default_ct`, `laas.rego:366–374`). `_ct_determined`
+  (`laas.rego:377–385`) mirrors the two determined `expected_ct` rules.
+  An absent or invalid `assigned_ct` falls back to the lattice CT and raises TIER-001 (`laas.rego:263–284`).
 
 ### LaaS obligation families
 
@@ -117,40 +159,62 @@ Each obligation maps to a violation rule in `laas.rego`; severities are
 recorded in `conformance/laas/data.json:19–32`.
 
 - **`LAAS-OBL-TIER-001`** — CT is gate-derived from the observed effect surface;
-  a gate-assigned tier below the lattice-derived tier is an error
+  a valid gate-assigned tier below the lattice-derived tier is an error
   (`laas.rego:99–104`; `data.json:20`).
+  It also fires when the gate did not record an integer `assigned_ct` in 0..4,
+  and the lattice tier is then enforced (`laas.rego:279–284`; `data.json:20`).
 - **`LAAS-OBL-SELF-001`** — a self-reported tier may not lower the gate-derived
-  tier; the gate always prevails (warning, `laas.rego:107–112`; `data.json:21`).
+  tier; the gate always prevails
+  (compared against the lattice CT when `assigned_ct` is invalid;
+  warning, `laas.rego:107–112`; `data.json:21`).
 - **`LAAS-OBL-ENF-001`** — enforcement-plane integrity: the policy bundle must
   be signed and the gate must run out-of-process (`laas.rego:115–123`; `data.json:22`).
-- **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained
-  (`laas.rego:126–128`; `data.json:23`).
-- **`LAAS-OBL-AGG-001`** — the assigned tier must not be below the cumulative
+  OPA checks only the recorded `gate.bundle_signed` and `gate.out_of_process` flags;
+  the actual signature and process boundary require separate verification.
+- **`LAAS-OBL-TRC-001`** — the decision trace must be append-only and chained.
+  The cited OPA rule checks only the `append_only` flag; it does not reference
+  the chain hash or Merkle anchor, so chaining needs separate verification or a
+  deployment control (`laas.rego:126–128`; `data.json:23`).
+- **`LAAS-OBL-AGG-001`** — a valid assigned tier must not be below the cumulative
   window CT; guards against structuring (`laas.rego:131–136`; `data.json:24`).
+  An invalid `assigned_ct` is handled by TIER-001 (`laas.rego:279–284`).
 - **`LAAS-OBL-INP-001`** — untrusted input must raise the tier to the configured
   floor (CT≥3 by default) or the action must be blocked
   (`laas.rego:139–146`; `data.json:18,25`).
 - **`LAAS-OBL-VEN-001`** — third-party or vendor dependencies require attribution
   and scope limits (`laas.rego:149–152`; `data.json:26`).
 - **`LAAS-OBL-IRR-001`** — CT≥3 actions require a passing independent pre-commit
-  verifier unless the action is blocked (`laas.rego:155–159`; `data.json:27`).
+  verifier unless the action is blocked. OPA's IRR-001 rule checks only that a
+  non-blocked CT≥3 verifier verdict is `pass` (`laas.rego:155–159`; `data.json:27`);
+  independence and qualification are checked by IND-001 and VQ-001 below.
 - **`LAAS-OBL-IND-001`** — the pre-commit verifier must be independent: deterministic,
   human, or a model of a different lineage with error-correlation ≤ 0.2
-  (`laas.rego:76–84`, `:162–167`). At CT4 a passed model verifier always violates it;
-  a deterministic or human verifier is required (`laas.rego:225–230`; `data.json:13,14,28`).
+  (`laas.rego:76–84`, `:162–167`). At CT4 a passed model verifier on a non-blocked
+  action violates it;
+  a deterministic or human verifier is required (`laas.rego:226–231`; `data.json:13,14,28`).
 - **`LAAS-OBL-VQ-001`** — the verifier must be qualified (DO-330 analogue)
   (`laas.rego:170–175`; `data.json:29`).
 - **`LAAS-OBL-RES-001`** — the Bucket-B residual escape rate must be within
-  tolerance for the effective tier (`laas.rego:185–193`). At CT≥2 on a non-blocked
-  action, a numeric bound also needs non-empty `evidence_refs` (`laas.rego:248–253`),
+  tolerance for the effective tier (`laas.rego:185–194`). At CT≥2 on a non-blocked
+  action, a numeric bound also needs non-empty `evidence_refs` (`laas.rego:249–254`),
   and a Bucket-B action (no passed deterministic verifier) must supply a bound
-  (`laas.rego:255–260`; `data.json:15,30`).
-- **`LAAS-OBL-HUM-001`** — CT4 actions require human approval unless the action
-  is blocked (`laas.rego:178–182`; `data.json:13,31`).
+  (`laas.rego:256–261`; `data.json:15,30`).
+  A supplied `residual_error_bound` that is not a number >= 0 also fires RES-001 at any CT, blocked or not
+  (`laas.rego:286–301`).
+  A `null` bound counts as absent, and an invalid bound is never compared to the tolerance.
+  At a zero tolerance (CT4 by default, `data.json:15`) the over-tolerance comparison is skipped for a Bucket-A or
+  human-gated action, and a non-blocked action outside Bucket A that records a bound of exactly 0 violates RES-001
+  (`laas.rego:318–356`; `standard/LAAS.md:108–114`).
+- **`LAAS-OBL-HUM-001`** — CT4 actions require an attributed human approval unless the action
+  is blocked (`laas.rego:67`, `:178–182`; `data.json:13,31`). `human_approval` needs `approved: true`,
+  non-empty string `approver_id` and `attestation_ref`, and a `basis` in `human_approval_bases`
+  (`["per_action"]`, `data.json:33`). The approver must differ from `action.actor_id` and, when the verifier is
+  human, from `verifier.id`; a missing `actor_id` or human verifier `id` fails closed. A bare
+  `{approved: true}` no longer suffices (`laas.rego:396–416`).
 
 ### Audit trail — `violations` and `summary`
 
-Every evaluation produces a `summary` record (`laas.rego:215–222`) containing
+Every evaluation produces a `summary` record (`laas.rego:216–223`) containing
 `bundle`, `expected_ct`, `effective_ct`, `errors`, `warnings`, and `compliant`.
 The `violations` set carries the full obligation ID, severity, and a diagnostic
 message for each firing rule.
@@ -167,7 +231,7 @@ so contributors run them on demand.
 
 | Script | Invocation | Purpose |
 |--------|------------|---------|
-| `scripts/laas/emitter.py` | `python3 scripts/laas/emitter.py -i <effect-surface.json> -b conformance/laas/data.json -o <out.json>` | Emit a gate-derived decision record from an effect surface. |
+| `scripts/laas/emitter.py` | `python3 scripts/laas/emitter.py -i <effect-surface.json> -b conformance/laas/data.json -o <out.json>` | Emit a gate-derived decision record from an effect surface. A non-boolean `external_effect` maps to the undetermined tier (CT4 as shipped; `scripts/laas/emitter.py:319-322`, `docs/laas/emitter.md:44`). An optional spec `evidence_refs` array is passed through to the record and read by `RES-001` (`scripts/laas/emitter.py:467-471`, `docs/laas/emitter.md:56`). Every record carries `effect_surface_hash` (`scripts/laas/emitter.py:465`, `docs/laas/emitter.md:125`). |
 | `scripts/laas/backtest.py` | `python3 scripts/laas/backtest.py --dataset <fixture.json> --data-json conformance/laas/data.json --ct <CT>` | Measure the Bucket-B escape rate against a labeled backtest fixture and validate it against the per-CT tolerance in `conformance/laas/data.json`. |
 | `scripts/laas/check.sh` | `bash scripts/laas/check.sh` | Emit a sample decision record from `scripts/laas/fixtures/transfer.effect-surface.json` and (if `opa` is present) evaluate it against `package kellerai.laas.actions`; skips the OPA step when `opa` is absent. |
 | `scripts/laas/osi_to_surface.py` | `python3 scripts/laas/osi_to_surface.py -m <model.json> --kind dataset\|metric --name <name> --operation read\|write\|delete` (add `--unsigned` for an untrusted model) | OSI (Open Semantic Interchange) → LaaS adapter: build an effect surface from an annotated OSI model and emit a decision record via the canonical emitter — no tier math lives in the adapter. |

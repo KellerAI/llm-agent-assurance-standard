@@ -1,13 +1,15 @@
-# ISO/IEC XXXXX:2026(E)
+# Information technology - Artificial intelligence - Action-level assurance for autonomous agents (LAAS)
 
-## Information technology - Artificial intelligence - Action-level assurance for autonomous agents (LAAS)
+*ISO-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
 
-> **NOTICE:** This document is a draft illustration in the ISO/IEC Directives Part 2 format,
-> aligned to the drafting style of ISO/IEC 42001:2023 with a normative Annex A modelled on
-> ISO/IEC 27001:2022. It is **not** an official ISO/IEC deliverable, has not been submitted
-> to any standards body, and carries no endorsement from ISO, IEC, or any national body.
-> All rights reserved by the authors. © KellerAI / contributors (placeholder copyright,
-> draft only).
+KellerAI LAAS 1.1 · ISO-format rendering · Draft 1 (2026)
+
+> **NOTICE:** Published by KellerAI.
+> Formatted after the drafting conventions of ISO and IEC. Not issued, approved, or endorsed by ISO and IEC.
+> This draft follows the ISO/IEC Directives Part 2 format and the drafting style of ISO/IEC 42001:2023,
+> with a normative Annex A modelled on ISO/IEC 27001:2022.
+> It has not been submitted to any standards body.
+> © 2026 KellerAI contributors. Licensed under Apache-2.0.
 >
 > This document is a rendering of `standard/LAAS.md` (LAAS Draft v1.1,
 > `standard/LAAS.md:3`), the canonical prose specification from which
@@ -17,18 +19,16 @@
 
 ## Foreword
 
-This document was prepared by an independent working group modelled on ISO/IEC JTC 1/SC 42
-drafting conventions. The structure follows ISO/IEC Directives, Part 2, 2021 and the
+KellerAI prepared this document following ISO/IEC JTC 1/SC 42 drafting conventions.
+The structure follows ISO/IEC Directives, Part 2, 2021 and the
 ISO Harmonized Structure (Annex SL).
 
-Attention is drawn to the possibility that some elements of this document may be the subject
-of patent rights. ISO and IEC shall not be held responsible for identifying any or all such
-patent rights.
+Some elements of this document may be the subject of patent rights.
+KellerAI is not responsible for identifying patent rights.
 
-This document will be reviewed at five-year intervals and, if necessary, revised.
+KellerAI intends to review this document and revise it as needed.
 
-Direct any feedback or questions on this document to your national standards body. These
-bodies are listed at [https://www.iso.org/members.html](https://www.iso.org/members.html).
+Questions: open an issue at https://github.com/KellerAI/llm-agent-assurance-standard/issues.
 
 ---
 
@@ -46,6 +46,8 @@ Existing assurance frameworks address complementary but distinct problems:
   deterministic software artefacts through structural coverage and bidirectional traceability.
 - **SR 11-7 / SR 26-2 (Federal Reserve / OCC model-risk guidance)** mandate independent
   effective challenge, backtesting against held-out data, and vendor-model risk attribution.
+  SR 26-2 superseded SR 11-7 in April 2026 and places generative and agentic AI models
+  outside its scope; this document borrows its principles by analogy.
 - **UL 4600** establishes a standard of care for autonomous vehicle safety cases bounded by
   an Operational Design Domain.
 - **ISO/IEC 42001:2023** provides an AI management system at the organisational lifecycle level
@@ -123,12 +125,15 @@ content constitutes requirements of this document. For dated references, only th
 cited applies. For undated references, the latest edition of the referenced document
 (including any amendments) applies.
 
-- **ISO/IEC 42001:2023**, *Information technology - Artificial intelligence - Management system*
-- **ISO/IEC 27001:2022**, *Information security, cybersecurity and privacy protection -
-  Information security management systems - Requirements*
-- **ISO/IEC 42006:2025**, *Information technology - Artificial intelligence - Requirements
-  for bodies providing audit and certification of AI management systems*
-- **ISO 21448:2022**, *Road vehicles - Safety of the intended functionality*
+- `standard/LAAS.md`, *LLM-Agent Assurance Standard (LAAS)*, v1.1 (normative prose; canonical).
+- `conformance/laas/data.json`, obligation bundle `laas-fin-1.1.1` (machine source of truth for
+  tier-lattice values, escape-rate tolerances, and obligation metadata).
+- `conformance/laas/laas.rego`, OPA policy implementing the conformance predicate, package
+  `kellerai.laas.actions`.
+
+No other document is normative for this document. ISO/IEC 42001:2023, ISO/IEC 27001:2022,
+ISO/IEC 42006:2025 and ISO 21448:2022 are cited for drafting style, scope boundaries and
+alignment only; they impose no requirement of this document and are listed in the Bibliography.
 
 Informative alignment with DO-178C, SR 11-7/SR 26-2, and UL 4600 is given in Annex B.
 
@@ -138,9 +143,9 @@ Informative alignment with DO-178C, SR 11-7/SR 26-2, and UL 4600 is given in Ann
 
 For the purposes of this document, the following terms and definitions apply.
 
-ISO and IEC maintain terminology databases for use in standardisation at the following
-addresses: ISO Online browsing platform at [https://www.iso.org/obp](https://www.iso.org/obp)
-and IEC Electropedia at [https://www.electropedia.org/](https://www.electropedia.org/).
+Related terminology databases: ISO Online browsing platform at
+[https://www.iso.org/obp](https://www.iso.org/obp) and IEC Electropedia at
+[https://www.electropedia.org/](https://www.electropedia.org/).
 
 ### 3.1 action
 
@@ -187,7 +192,8 @@ DO-178C Design Assurance Level (DAL) letters (A highest risk; E lowest risk). Th
 shall be accounted for in any cross-mapping.
 
 Note 3 to entry: The effective consequence tier accounts for cumulative window effects (4.4)
-and is `max(gate_assigned_ct, cumulative_window_ct)`.
+and is `max(gate_ct, cumulative_window_ct)`, where `gate_ct` is the gate-assigned CT when it is an
+integer in 0..4 and otherwise the lattice `expected_ct` (`conformance/laas/laas.rego:266–277`).
 
 Note 4 to entry: `default_ct_when_undetermined = 4` as specified in
 `conformance/laas/data.json:11`.
@@ -286,7 +292,9 @@ Note 2 to entry: The escape rate shall be estimated by backtesting on a held-out
 representative, adversarially-stressed evaluation set with a stated confidence interval.
 
 Note 3 to entry: Tolerances by tier: CT2 ≤ 0.02, CT3 ≤ 0.005, CT4 = 0.
-Verified in `conformance/laas/data.json:15`.
+Verified in `conformance/laas/data.json:15`. No finite-sample backtest can demonstrate a
+tolerance of 0; at a zero tolerance the residual requirement is met by the deterministic or
+human gate (5.5.2; `standard/LAAS.md:108–114`).
 
 ### 3.12 verifier independence
 
@@ -307,14 +315,6 @@ maintained under change control.
 Note 1 to entry: Qualification shall include: documented coverage of the claim class,
 a negative-test suite of known-bad inputs the verifier must catch, and a change-controlled
 version identifier recorded in the decision trace. This is the DO-330 analogue for LAAS.
-
-### 3.14 authorised operating envelope (AOE)
-
-The operator-declared set of permissions, action classes, tools, scopes, data domains, and
-consequence-tier ceiling within which the agent may operate.
-
-Note 1 to entry: An action outside the AOE shall result in the verdict `abstain` and
-escalation, regardless of the gate-derived consequence tier.
 
 ---
 
@@ -376,8 +376,11 @@ high-consequence action into a sequence of individually lower-consequence action
 The effective consequence tier for any action is:
 
 ```text
-effective_ct = max( gate_assigned_ct, cumulative_window_ct )
+effective_ct = max( gate_ct, cumulative_window_ct )
 ```
+
+where `gate_ct` shall be the gate-assigned CT when the gate recorded an integer in 0..4, and
+otherwise the lattice `expected_ct` (`conformance/laas/laas.rego:266–277`).
 
 *Requirement source: `conformance/laas/laas.rego:48–50`.*
 
@@ -405,7 +408,7 @@ The following minimum verification controls apply at each consequence tier:
 | 1 | Self-check (exact verifier if one exists in the verifier registry) and decision trace |
 | 2 | Independent automated check **or** documented and rehearsed rollback plan, plus bounded residual escape rate and decision trace |
 | 3 | Independent, qualified pre-commit verification (no self-grading); residual escape rate ≤ tolerance; rollback plan; decision trace |
-| 4 | CT3 controls; plus human approval; plus abstention default when out of authorised operating envelope; plus full evidence package |
+| 4 | CT3 controls; plus human approval; plus abstention default; plus full evidence package |
 
 ### 5.2 Verifier independence (LAAS-OBL-IND-001)
 
@@ -424,7 +427,8 @@ b) **Distinct-lineage-and-low-correlation criterion:** The verifier uses a disti
 
 c) **Human criterion:** The verifier is a human reviewer. At CT4, independence is satisfied by
    criterion (a) or by a human verifier; criterion (b) does not satisfy independence at CT4.
-   Human approval (LAAS-OBL-HUM-001) is required at CT4 in addition to the verifier.
+   Attributed human approval (LAAS-OBL-HUM-001, 7.1) is required at CT4 in addition to the verifier;
+   the approver shall be distinct from a human verifier.
 
 A verifier sharing the actor's model lineage shall be presumed non-independent. Where the
 error-correlation between a model verifier and the actor cannot be bounded below 0.2, the
@@ -438,7 +442,10 @@ A verifier that is under the control of, or whose verdict can be modified by, th
 verified shall not satisfy the independence requirement. Any control path that allows the
 constrained party to tier, grade, or gate itself is non-conforming.
 
-*Requirement source: `conformance/laas/laas.rego:76–84`, `:225–230`.*
+*Requirement source: normative. The OPA policy checks only verifier type, model lineage,
+error correlation, tier, verdict and block state (`conformance/laas/laas.rego:61-65`, `conformance/laas/laas.rego:76–84`,
+`:226–231`); it does not check who controls the verifier or can modify its verdict. Control
+independence requires a deployment control.*
 
 ### 5.3 Verifier qualification (LAAS-OBL-VQ-001)
 
@@ -494,11 +501,24 @@ consequence tier. The following maximum tolerances apply:
 
 *Verified in `conformance/laas/data.json:15`.*
 
+Where the declared tolerance for the effective tier is 0, no finite-sample backtest can
+demonstrate it, because any binomial upper bound over a finite sample is greater than 0. At a
+zero tolerance the residual requirement is met by a deterministic verifier that returned pass
+(Bucket A) or by the human gate: a human verifier whose verdict is pass, plus recorded human
+approval. The recorded bound is then evidence, not a pass condition. A recorded
+`residual_error_bound` of exactly 0 on a non-blocked action outside Bucket A is not a
+finite-sample backtest bound and does not conform. This rule applies at a zero tolerance, not at
+CT4 as such.
+
+*Requirement source: `standard/LAAS.md:108–114`; enforced by
+`conformance/laas/laas.rego:318–356`.*
+
 #### 5.5.3 Evidence
 
 The deployer shall reference the backtest report in the `evidence_refs` field of the decision
-trace. The backtest evaluation set shall be independently audited for representative coverage
-and adversarial stress.
+trace. Recommended practice (informative; not evaluated by `conformance/laas/laas.rego`): the
+backtest evaluation set should be independently audited for representative coverage and
+adversarial stress.
 
 ### 5.6 Rollback rehearsal
 
@@ -518,16 +538,20 @@ The gate (3.5) shall operate as an out-of-process component that the agent canno
 modify, or circumvent, including in elevated-permission or override modes.
 
 *Requirement source: `conformance/laas/data.json:17` (`require_out_of_process_gate: true`);
-`conformance/laas/laas.rego:120–123`.*
+`conformance/laas/laas.rego:120–123`, which checks only the recorded `gate.out_of_process`
+flag. The policy does not verify that the gate is isolated or beyond the agent's control;
+that requires a deployment control or separate verification.*
 
 #### 6.1.2 Signed policy bundle
 
 The gate's policy bundle shall be cryptographically signed and version-pinned. The
 `bundle_signed` field of the decision trace shall be `true`. A decision trace asserting an
-unsigned or in-process gate is non-conforming regardless of other verdict fields.
+unsigned or in-process gate is non-conforming regardless of other verdict fields (`LAAS-OBL-ENF-001`, `standard/LAAS.md:72`).
 
 *Requirement source: `conformance/laas/data.json:16` (`require_bundle_signed: true`);
-`conformance/laas/laas.rego:115–118`.*
+`conformance/laas/laas.rego:115–118`, which checks only the `gate.bundle_signed` flag.
+The policy does not consume `gate.bundle_version`; version pinning requires a deployment
+control or separate verification.*
 
 ### 6.2 Decision trace (LAAS-OBL-TRC-001)
 
@@ -566,11 +590,11 @@ Each decision-trace record shall contain, at minimum, the following fields:
 | `verifier_error_correlation` | Measured error-correlation (model verifiers only; `null` otherwise) |
 | `verifier_input_hash` | Hash of the inputs supplied to the verifier |
 | `verdict` | `pass`, `fail`, `abstain`, or `indeterminate` |
-| `residual_error_bound` | Measured escape rate (Bucket B); `null` for pure Bucket A |
+| `residual_error_bound` | Measured escape rate (Bucket B), a number >= 0; `null` for pure Bucket A |
 | `residual_tolerance` | Declared escape-rate tolerance for the effective tier |
 | `evidence_refs` | References to supporting evidence artefacts |
 | `escalation` | Null or `{queue, ticket_id}` if the action was escalated |
-| `escalation_approved` | Whether an escalation was approved by an authorised reviewer |
+| `escalation_approved` | Whether an escalation was approved by an authorised reviewer (not read by `laas.rego`) |
 | `action_blocked` | Whether the action was blocked |
 | `actor_id` | Stable identifier of the acting agent |
 | `policy_bundle_version` | Version of the signed policy bundle applied |
@@ -610,8 +634,13 @@ c) maintain the searchable trace index as a separate component from sensitive pa
 
 #### 7.1.1 Requirement
 
-An action at effective CT4 shall not be committed without human approval. The
-`escalation_approved` field of the decision trace shall be `true`. A CT4 action that is
+An action at effective CT4 shall not be committed without an attributed human approval.
+The decision record shall carry `human_approval.approved == true`, a non-empty `approver_id`,
+a non-empty `attestation_ref`, and a `basis` of `per_action`, the only value in
+`data.laas.human_approval_bases` (`conformance/laas/data.json:33`); a bare `{approved: true}`
+is insufficient. The approver shall be distinct from `action.actor_id` and, where the verifier
+is a human, from that verifier's `id`; a missing `action.actor_id`, or a human verifier with a
+missing `id`, fails closed (`conformance/laas/laas.rego:67`, `:178–182`, `:386–416`). A CT4 action that is
 blocked and escalated satisfies this obligation if the block and escalation are recorded
 in the decision trace.
 
@@ -619,19 +648,13 @@ in the decision trace.
 
 #### 7.1.2 Abstention default
 
-In the absence of human approval for a CT4 action, the gate shall abstain (return
+In the absence of an attributed human approval for a CT4 action, the gate shall abstain (return
 `verdict: abstain`) and escalate. An abstention is a conforming outcome.
 
-#### 7.1.3 Scalable human oversight
+#### 7.1.3 Per-record human approval
 
-Human approval may be implemented via pre-authorised standing envelopes. An operator may
-pre-approve a bounded action class with explicit limits (for example, a defined transaction
-amount ceiling with an explicit counterparty allowlist). The gate shall enforce the declared
-limits and escalate only out-of-envelope actions. This scheme permits human attention to scale
-with exceptions rather than volume.
-
-Batched approval of queued in-envelope actions is permitted provided each action in the batch
-remains within the pre-authorised limits.
+Each non-blocked CT4 decision record shall carry its own attributed approval as specified in
+7.1.1 (`conformance/laas/laas.rego:178–182`, `:396–406`); LAAS defines no standing-envelope mechanism.
 
 ### 7.2 Third-party and vendor components (LAAS-OBL-VEN-001)
 
@@ -646,18 +669,20 @@ b) declared scope limits for that component.
 
 #### 7.2.2 Residual attribution
 
-Residual errors attributable to a vendor model or third-party component shall be counted
-against the deploying operator's escape-rate budget (3.11). The operator is responsible for
-the aggregate escape rate regardless of whether the error originated in a first- or
-third-party component.
+Recommended practice (informative; not evaluated by `conformance/laas/laas.rego`): residual
+errors attributable to a vendor model or third-party component should be counted against the
+deploying operator's escape-rate budget (3.11). The operator is responsible for the aggregate
+escape rate regardless of whether the error originated in a first- or third-party component.
 
 #### 7.2.3 Fail-closed default
 
-Untrusted or unattributed third-party dependencies shall fail closed. A component whose
-provenance or scope limits cannot be established shall cause the gate to block and escalate
-the action.
+Recommended practice (informative): untrusted or unattributed third-party dependencies should
+fail closed. A component whose provenance or scope limits cannot be established should cause
+the gate to block and escalate the action.
 
-*Requirement source: `conformance/laas/laas.rego:149–152`.*
+*Requirement source: normative. `conformance/laas/laas.rego:149–152` (VEN-001) checks only
+that a used vendor has attribution and scope limits (`:69–72`); the block-and-escalate
+behaviour is not evaluated by OPA and requires a deployment control.*
 
 ---
 
@@ -669,8 +694,9 @@ An action is conforming if and only if, for every obligation whose trigger match
 the following holds:
 
 a) **Pass path:** The action passed an independent (Clause 5.2), qualified (5.3) verifier;
-   and, where the effective consequence tier is CT4, human approval was obtained (7.1); and
-   the measured residual escape rate does not exceed the declared tolerance (5.5.2); or
+   and, where the effective consequence tier is CT4, attributed human approval was obtained (7.1); and
+   the measured residual escape rate does not exceed the declared tolerance or, at a zero
+   tolerance, the deterministic or human gate of 5.5.2 is met; or
 
 b) **Block path:** The action was blocked and the block and escalation were recorded in the
    decision trace.
@@ -682,20 +708,33 @@ trigger_matched == true  IMPLIES
   ( verdict == "pass"
     AND verifier_independent == true
     AND verifier_qualified == true
-    AND ( gate_derived_ct < 4  OR  escalation_approved == true )
-    AND ( residual_error_bound == null  OR  residual_error_bound <= residual_tolerance ) )
+    AND ( gate_derived_ct < 4  OR  attributed_approval == true )
+    AND ( residual_error_bound == null  OR  residual_error_bound <= residual_tolerance
+          OR  ( residual_tolerance == 0  AND  zero_tolerance_gate_met == true ) ) )
   OR
   ( verdict IN {"fail", "abstain", "indeterminate"}  AND  action_blocked == true )
 ```
 
 *Predicate source: `docs/laas/proposal-v1.1.md:258–265` (conformance_predicate field);
-evaluated by `conformance/laas/laas.rego:155–193`, `:225–260`.*
+`zero_tolerance_gate_met` denotes the deterministic or human gate of 5.5.2
+(`standard/LAAS.md:126–129`); a subset is checked by `conformance/laas/laas.rego:155–194`,
+`:226–261`, `:318–356`. OPA does not evaluate
+escalation or the restriction of blocking to `fail`/`abstain`/`indeterminate` verdicts; those
+require deployment controls or separate verification. The proposal's `escalation_approved` term
+is historical; HUM-001 reads the attributed approval of 7.1.1 (`conformance/laas/laas.rego:67`,
+`:178–182`, `:396–406`), where `attributed_approval` denotes that predicate.*
 
 The policy is stricter than this predicate on the residual clause. At CT≥2, on a non-blocked action, a null
 `residual_error_bound` conforms only when a deterministic verifier passed
-(`conformance/laas/laas.rego:243–246`, `:255–260`), and a numeric bound requires non-empty
-`evidence_refs` (`conformance/laas/laas.rego:248–253`). At CT4 a model verifier is not
-independent (`conformance/laas/laas.rego:225–230`).
+(`conformance/laas/laas.rego:244–247`, `:256–261`), and a numeric bound requires non-empty
+`evidence_refs` (`conformance/laas/laas.rego:249–254`). At CT4 a model verifier is not
+independent (`conformance/laas/laas.rego:226–231`). At a zero tolerance the policy skips the
+tolerance comparison for a Bucket A or human-gated action (`conformance/laas/laas.rego:331–346`),
+and a non-blocked action outside Bucket A that records a bound of exactly 0 is an RES-001
+non-conformance (`conformance/laas/laas.rego:348–356`). A supplied `residual_error_bound` shall be a
+number >= 0; `null` is equivalent to absent. Any other value constitutes an RES-001
+non-conformance at any CT, whether or not the action is blocked, and is never compared to the
+tolerance (`conformance/laas/laas.rego:286–301`).
 
 ### 8.2 Deployer conformance attestation
 
@@ -719,10 +758,10 @@ evaluation additionally requires the operator-supplied backtest evidence referen
 
 Obligations move through the states `propose → active → deprecated → retired`. Retired
 obligations leave the active set and are not evaluated. When two active obligations fire with
-incompatible required outcomes, precedence is deterministic: the obligation with the highest
-consequence-tier floor wins; ties resolve to the most restrictive outcome (block). Each
-obligation's precedence is recorded in `conformance/laas/data.json` and the gate's resolution
-order is recorded in the decision trace.
+incompatible required outcomes, the deployer's gate resolves precedence deterministically using
+each obligation's `precedence` value recorded in `conformance/laas/data.json`; ties resolve to
+the most restrictive outcome (block). The gate's resolution order is recorded in the decision
+trace. The reference policy does not implement precedence resolution.
 
 ---
 
@@ -734,18 +773,18 @@ justified exception in the conformance evidence.
 
 | Control ref | Control objective | Control | Obligation | CT floor |
 |-------------|------------------|---------|------------|----------|
-| A.1 | Tier determination is gate-derived and ungameable | The gate shall derive the consequence tier from the observed effect surface using the tier lattice (Clause 4). The agent's self-reported tier shall not lower the gate-derived tier. | LAAS-OBL-TIER-001 | CT0 |
+| A.1 | Tier determination is gate-derived and ungameable | The gate shall derive the consequence tier from the observed effect surface using the tier lattice (Clause 4). The agent's self-reported tier shall not lower the gate-derived tier. The gate shall record `assigned_ct` as an integer in 0..4; an absent or invalid value is a TIER-001 non-conformance and the lattice CT is enforced (`conformance/laas/laas.rego:263–284`). | LAAS-OBL-TIER-001 | CT0 |
 | A.2 | Self-reported tier does not suppress gate tier | The system shall flag any self-reported tier that is lower than the gate-derived tier. The gate-derived tier shall prevail. | LAAS-OBL-SELF-001 | CT0 |
 | A.3 | Enforcement-plane integrity | The gate shall operate out-of-process, and the policy bundle shall be cryptographically signed and version-pinned (Clause 6.1). | LAAS-OBL-ENF-001 | CT0 |
 | A.4 | Append-only, hash-chained decision trace | All gated actions shall produce a decision-trace record written to an append-only store the actor cannot rewrite, with per-actor hash-chaining and periodic Merkle anchoring (Clause 6.2). | LAAS-OBL-TRC-001 | CT0 |
 | A.5 | Cumulative blast-radius aggregation | The gate shall aggregate effect surfaces across a time window and re-tier subsequent actions when the aggregate crosses a tier threshold (4.4). | LAAS-OBL-AGG-001 | CT0 |
 | A.6 | Untrusted input raises the tier | When an action is driven by untrusted input, the gate shall raise the effective tier to at least CT3 or block the action (4.5). | LAAS-OBL-INP-001 | CT0 |
-| A.7 | Third-party attribution and scope limits | Vendor and third-party components shall be attributed in the decision trace with declared scope limits; residual errors shall be charged to the deployer's escape-rate budget (7.2). | LAAS-OBL-VEN-001 | CT0 |
+| A.7 | Third-party attribution and scope limits | Vendor and third-party components shall be attributed in the decision trace with declared scope limits (7.2.1; `conformance/laas/laas.rego:149–152`). As recommended practice (informative), residual errors should be charged to the deployer's escape-rate budget (7.2.2). | LAAS-OBL-VEN-001 | CT0 |
 | A.8 | Independent pre-commit verification | CT3 and CT4 actions shall pass an independent, qualified pre-commit verifier before commitment; failing verdicts shall result in a block and escalation (5.4). | LAAS-OBL-IRR-001 | CT3 |
 | A.9 | Verifier independence and low error-correlation | The verifier shall satisfy at least one independence criterion in 5.2; model verifiers shall demonstrate error-correlation ≤ 0.2 and are not accepted at CT4; at CT4, a deterministic or human verifier and human approval are required (5.2). | LAAS-OBL-IND-001 | CT3 |
 | A.10 | Verifier qualification | Verifiers gating CT3 or above shall be qualified with documented claim-class coverage, a negative-test suite, and a change-controlled version identifier in the decision trace (5.3). | LAAS-OBL-VQ-001 | CT3 |
-| A.11 | Bounded residual escape rate | The measured Bucket B escape rate shall not exceed the declared tolerance for the effective tier: CT2 ≤ 2 %, CT3 ≤ 0.5 %, CT4 = 0 %; evidence shall be referenced in the decision trace (5.5). | LAAS-OBL-RES-001 | CT2 |
-| A.12 | Human approval at CT4 | CT4 actions shall not be committed without human approval or a documented block and escalation; the abstention default applies in the absence of approval (7.1). | LAAS-OBL-HUM-001 | CT4 |
+| A.11 | Bounded residual escape rate | The measured Bucket B escape rate shall not exceed the declared tolerance for the effective tier: CT2 ≤ 2 %, CT3 ≤ 0.5 %, CT4 = 0 %; evidence shall be referenced in the decision trace (5.5). At a zero tolerance the requirement is met by the deterministic or human gate, and a recorded bound of exactly 0 on a non-blocked action outside Bucket A does not conform (5.5.2; `standard/LAAS.md:108–114`). | LAAS-OBL-RES-001 | CT2 |
+| A.12 | Human approval at CT4 | CT4 actions shall not be committed without attributed human approval or a documented block and escalation; the abstention default applies in the absence of approval (7.1). | LAAS-OBL-HUM-001 | CT4 |
 
 ---
 
@@ -766,7 +805,7 @@ vocabulary to different domains.
 | Bound undetected error | Structural coverage (MC/DC at DAL A) | Backtesting on held-out data | Safety Performance Indicators (SPIs) | Escape rate per bucket (3.11, 5.5) |
 | Independent verification | Verification objectives "with independence"; verifier ≠ developer | Effective challenge by independent party | Independent safety assessment | Independence criteria (5.2); no self-grading (5.2.2) |
 | Trace to evidence | Bidirectional traceability requirements → certification data package | Validation documentation | Goal Structuring Notation (GSN) evidence | Decision trace (3.6, 6.2); bidirectional traceability (6.2.4) |
-| Declared envelope and abstention | Configuration and operational envelope | Approved use model | Operational Design Domain (ODD) | Authorised Operating Envelope (AOE) (3.14) |
+| Declared envelope and abstention | Configuration and operational envelope | Approved use model | Operational Design Domain (ODD) | Abstention default (5.1, 7.1.2) |
 | No failure, still wrong | Addressed weakly | Conceptual soundness; ongoing monitoring | ISO 21448 (SOTIF) companion | Bucket B bounding and independent review (5.5) |
 
 ### B.2 Key differences
@@ -796,8 +835,8 @@ domain-specific scope restrictions of any antecedent framework:
 
 - **DO-178C** (RTCA/EUROCAE, 2011): independence requirements, bidirectional traceability,
   structural-coverage analogue (verifier claim-class coverage in 5.3).
-- **SR 11-7** (Federal Reserve SR Letter 11-7, 2011) and **SR 26-2** (Federal Reserve
-  SR Letter 26-2, 2026, expected): effective challenge, backtesting, vendor-risk attribution.
+- **SR 11-7** (Federal Reserve SR Letter 11-7, 2011, superseded) and **SR 26-2** (Federal
+  Reserve SR Letter 26-2, April 17, 2026; generative and agentic AI out of scope): effective challenge, backtesting, vendor-risk attribution.
 - **UL 4600** (UL, 2020 and subsequent): standard-of-care model, safety case with ODD,
   abstention outside the operational envelope.
 
@@ -813,9 +852,10 @@ The following documents are cited for informative purposes.
 - RTCA/EUROCAE, **DO-178C / ED-12C**, *Software Considerations in Airborne Systems and
   Equipment Certification*, 2011.
 - RTCA/EUROCAE, **DO-330 / ED-215**, *Software Tool Qualification Considerations*, 2011.
-- Federal Reserve, **SR Letter 11-7**, *Guidance on Model Risk Management*, 2011.
-- Federal Reserve, **SR Letter 26-2** (expected), *Update to Model Risk Management Guidance*,
-  2026 (confirm publication date before citation).
+- Federal Reserve, **SR Letter 11-7**, *Guidance on Model Risk Management*, 2011 (superseded
+  by SR 26-2).
+- Federal Reserve, OCC and FDIC, **SR Letter 26-2**, *Revised Guidance on Model Risk
+  Management*, April 17, 2026 (supersedes SR 11-7 and SR 21-8).
 - UL Solutions, **UL 4600**, *Standard for Safety for the Evaluation of Autonomous Products*,
   2020 (latest edition).
 - ISO, **ISO 21448:2022**, *Road vehicles - Safety of the intended functionality (SOTIF)*.
@@ -836,6 +876,6 @@ The following documents are cited for informative purposes.
 - Five Eyes Intelligence Partnership, *Careful Adoption of Agentic AI Services*, April–May 2026.
 - KellerAI, **LAAS v1.1 proposal**, `docs/laas/proposal-v1.1.md`, 2026-06-18.
 - KellerAI, **LAAS machine-evaluable obligation bundle**, `conformance/laas/data.json`,
-  version 1.1.1, bundle ID `laas-fin-1.1.1`.
+  version 2.0.0, bundle ID `laas-fin-2.0.0`.
 - KellerAI, **LAAS conformance policy**, `conformance/laas/laas.rego`,
   package `kellerai.laas.actions`.
