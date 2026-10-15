@@ -7,7 +7,7 @@ date: 2026-05-22
 > **Erratum (2026-09-29).** This ADR was written for the `kellerai-oss-template`
 > repository and carried into this one, which is why several references below name
 > files that do not exist here. This repository still calls that template's reusable
-> conformance workflow (`.github/workflows/ci.yml:37`). The decision text below is
+> conformance workflow (`.github/workflows/ci.yml:39`). The decision text below is
 > unchanged; this note only records where each reference now points.
 >
 > - `the-trust-dial.md`: the external KellerAI whitepaper *The Trust Dial: Earned
@@ -28,7 +28,7 @@ date: 2026-05-22
 >   `conformance/trust_dial.rego` (package `kellerai.oss.trust_dial`,
 >   `conformance/trust_dial.rego:21`), `audit/decision-trace.jsonl`,
 >   `audit/trust-dial-state.json`, `.github/workflows/trust-dial-gate.yml` (which
->   evaluates the verdict with `opa eval` at `.github/workflows/trust-dial-gate.yml:113`),
+>   evaluates the verdict with `opa eval` at `.github/workflows/trust-dial-gate.yml:121`),
 >   and `.github/workflows/trust-dial-outcome.yml`.
 
 ## Context

@@ -7,7 +7,7 @@ date: 2026-05-22
 > **Erratum (2026-09-29).** This ADR was written for the `kellerai-oss-template`
 > repository and carried into this one, so "the repository" below means that template,
 > and several references name files that do not exist here. This repository still calls
-> that template's reusable conformance workflow (`.github/workflows/ci.yml:37`). The
+> that template's reusable conformance workflow (`.github/workflows/ci.yml:39`). The
 > decision text below is unchanged; this note only records where each reference now
 > points. It does not assert that the template line ranges cited below still hold.
 >
@@ -47,7 +47,7 @@ date: 2026-05-22
 >   `conformance/blast_radius.rego:15`), `scripts/pulse.sh` (`--predict` at
 >   `scripts/pulse.sh:61`), `.github/workflows/blast-radius-pulse.yml` (which runs
 >   `scripts/pulse.sh` at `.github/workflows/blast-radius-pulse.yml:60`; that script
->   evaluates the verdict with `opa eval` at `scripts/pulse.sh:242`), and
+>   evaluates the verdict with `opa eval` at `scripts/pulse.sh:239`), and
 >   `audit/blast-radius.jsonl`.
 >
 > **Amendment (2026-10-04).** The committed trace no longer lands on the default branch.

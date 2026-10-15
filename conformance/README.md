@@ -8,7 +8,7 @@ They are distinct from [`conformance/laas/`](laas/README.md), which gates autono
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 
 Package declarations: `laas/laas.rego:19`, `trust_dial.rego:21`, `blast_radius.rego:15`. The
-external workflow call is `.github/workflows/ci.yml:37`
+external workflow call is `.github/workflows/ci.yml:39`
 (see `.github/workflows/conformance.yml:4-5`).
 
 | File | Package | Asserts |
