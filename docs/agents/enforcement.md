@@ -7,23 +7,24 @@ How the conventions in **llm-agent-assurance-standard** are enforced — what is
 
 | Gate | Where it runs | What it checks |
 |------|--------------|----------------|
-| JSON well-formedness | CI (`.github/workflows/ci.yml:18`) | `jq empty` parses every `*.json` file in the tree. |
-| `scripts/check-sanitization.sh` | CI (`.github/workflows/ci.yml:34`) and the pre-commit hook (`lefthook.yml:7–8`) | No internal term from the denylist appears in the publishable tree. The denylist is base64-encoded inside the script so the script does not itself republish those terms. |
-| Markdown lint | CI (`.github/workflows/ci.yml:31`) | `markdownlint-cli2` over every Markdown file. |
-| Link check | CI (`.github/workflows/ci.yml:48`) | `lychee` resolves every link. |
-| `commitlint` | CI, on every pull request (`.github/workflows/commitlint.yml:18`) | Every commit message is a valid Conventional Commit. |
-| Conformance workflow | CI (`.github/workflows/ci.yml:37`) | The external reusable workflow `jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml`; what it evaluates cannot be inspected from this repository. |
+| JSON well-formedness | CI (`.github/workflows/ci.yml:20`) | `jq empty` parses every `*.json` file in the tree. |
+| `scripts/check-sanitization.sh` | CI (`.github/workflows/ci.yml:36`) and the pre-commit hook (`lefthook.yml:7–8`) | No internal term from the denylist appears in the publishable tree. The denylist is base64-encoded inside the script so the script does not itself republish those terms. |
+| Markdown lint | CI (`.github/workflows/ci.yml:33`) | `markdownlint-cli2` over every Markdown file. |
+| Link check | CI (`.github/workflows/ci.yml:164`) | `lychee` resolves every link. |
+| `commitlint` | CI, on every pull request (`.github/workflows/commitlint.yml:21`) | Every commit message is a valid Conventional Commit. |
+| Conformance workflow | CI (`.github/workflows/ci.yml:39`) | The external reusable workflow `jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml`; what it evaluates cannot be inspected from this repository. |
 | Agentic gates | CI (`.github/workflows/conformance.yml:7`) | Repo-hygiene checks IC-1..IC-7 (`.github/workflows/conformance.yml:19`) and the D6 ADR citation check (`.github/workflows/conformance.yml:88`). |
 | Branch tier | CI, on every pull request (`.github/workflows/validate-branch-tier.yml:24`) | The pull request follows the tiered merge model (`.github/workflows/validate-branch-tier.yml:10–13`). |
 | External branch name | CI, on pull requests from `external/*` branches only (`.github/workflows/validate-branch-name.yml:14`) | The branch name matches the `external/` naming pattern. |
 | Linked issue | CI, on pull requests from `external/*` branches only (`.github/workflows/validate-linked-issue.yml:19`) | The issue named in the branch is open and carries the `codeowner-approved` label (`.github/workflows/validate-linked-issue.yml:12–13`, `:23`). |
-| Trust-dial gate | CI, on pull requests only (`.github/workflows/trust-dial-gate.yml:113`) | `opa eval` of `data.kellerai.oss.trust_dial.decision` against `conformance/`. |
-| Blast-radius pulse | CI, on pull requests only (`.github/workflows/blast-radius-pulse.yml:60`) | `scripts/pulse.sh` runs `opa eval` of `data.kellerai.oss.blast_radius.result` (`scripts/pulse.sh:242`). |
-| OPA test | CI (`.github/workflows/ci.yml` job `opa-test`, added by PR #23); not a required check until added to the rulesets | `opa check conformance/`, then `opa test conformance/laas/` and `opa test conformance/`, failing on any failing, erroring, or skipped test or a count below 44 and 115. |
+| Trust-dial gate | CI, on pull requests only (`.github/workflows/trust-dial-gate.yml:121`) | `opa eval` of `data.kellerai.oss.trust_dial.decision` against `conformance/`. |
+| Blast-radius pulse | CI, on pull requests only (`.github/workflows/blast-radius-pulse.yml:60`) | `scripts/pulse.sh` runs `opa eval` of `data.kellerai.oss.blast_radius.result` (`scripts/pulse.sh:239`). |
+| OPA test | CI (`.github/workflows/ci.yml:49-100`, job `opa-test`); not a required check until added to the rulesets | `opa check conformance/`, then `opa test conformance/laas/` and `opa test conformance/`, failing on any failing, erroring, or skipped test or a count below 123 and 194. |
+| Python tests and proof scripts | CI (`.github/workflows/ci.yml:106-155`, job `python-gates`); not a required check until added to the rulesets | `python3 -m unittest discover scripts/laas` on Python 3.13, failing on any skipped test or a count below 81; `scripts/laas/check.sh`, which must end with the `compliant` verdict `true`; and `scripts/laas/osi_check.sh`. |
 
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`, `conformance/blast_radius.rego:15`.
-External conformance workflow: `.github/workflows/conformance.yml:4-5`, `.github/workflows/ci.yml:37`.
+External conformance workflow: `.github/workflows/conformance.yml:4-5`, `.github/workflows/ci.yml:39`.
 
 The pre-commit hook is managed by `lefthook`.
 Install it once with `lefthook install`; it then runs the sanitization gate before every commit.
@@ -102,8 +103,7 @@ The test suite lives at `conformance/laas/laas_test.rego`.
 `opa test` must exit zero before any change to `conformance/laas/laas.rego`
 or `conformance/laas/data.json` is committed.
 Run it locally first; CI runs it again in the `OPA test (conformance/)` job.
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus `opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job `OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`). It is not a required status check until it is added to the branch rulesets. The Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
-Sources: `.github/workflows/ci.yml:33–34`, `.github/workflows/ci.yml:37`, `.github/workflows/trust-dial-gate.yml:113`, `.github/workflows/blast-radius-pulse.yml:60`, `scripts/pulse.sh:242`, `.github/workflows/ci.yml` job `opa-test`.
+The full list of CI gates, with sources, is in `docs/agents/conventions.md` ("Local gates").
 
 ## The LaaS action-conformance policy
 

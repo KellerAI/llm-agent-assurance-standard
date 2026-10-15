@@ -7,7 +7,7 @@ govern this repository's own automation. Normative prose: [`standard/LAAS.md`](.
 The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
 
 Package declarations: `conformance/laas/laas.rego:19`, `conformance/trust_dial.rego:21`,
-`conformance/blast_radius.rego:15`. The external workflow call is `.github/workflows/ci.yml:37`
+`conformance/blast_radius.rego:15`. The external workflow call is `.github/workflows/ci.yml:39`
 (see `.github/workflows/conformance.yml:4-5`).
 
 ## Files
@@ -93,20 +93,17 @@ regardless of lineage or correlation (`laas.rego:226-231`).
 `trace.actor_chain_prev_hash`, `trace.merkle_anchor`, and `escalation_approved`.
 These fields are part of the record schema, but no rule in `laas.rego` reads them.
 
-## CI wiring (proposed)
+## CI wiring
 
-Not implemented: no workflow in this repository evaluates this policy. A future reusable
-workflow could run `opa test` on this directory and `opa eval` against a stream or sample of
-decision records, blocking on `error`-severity violations and reporting `warning`-severity ones.
-Pin such a workflow to a commit SHA, not a branch.
+CI runs `opa check` and `opa test` on this directory, and evaluates two sample decision
+records with `opa eval` through `scripts/laas/check.sh` and `scripts/laas/osi_check.sh`
+(`.github/workflows/ci.yml:49-155`).
 
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
-
-Supporting lines: `.github/workflows/ci.yml:33-34` (sanitization gate),
-`.github/workflows/ci.yml:37` (external conformance workflow),
-`.github/workflows/trust-dial-gate.yml:113` (`opa eval`), and
-`.github/workflows/blast-radius-pulse.yml:60` (`bash scripts/pulse.sh`, which runs `opa eval` at
-`scripts/pulse.sh:242`).
+Not implemented: no workflow evaluates a stream or sample of real decision records from a
+deployed gate. A future reusable workflow could do that, blocking on `error`-severity
+violations and reporting `warning`-severity ones. Pin such a workflow to a commit SHA, not a
+branch. The full list of CI gates, with sources, is in `docs/agents/conventions.md`
+("Local gates").
 
 > Re-verified on OPA 1.18.2 (2026-10-12): `opa check` and `opa test` (123/123 PASS). The
 > conformance predicate references only declared trace fields, so it is mechanically evaluable —

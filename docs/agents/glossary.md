@@ -60,7 +60,7 @@ Cites into `conformance/laas/` show where the policy implements a term; they add
 - **`kellerai.laas.actions`** — the package of the LAAS policy (`conformance/laas/laas.rego:19`).
   Its declared entry points are `violations`, `summary`, `compliant`, and `error_ids` (`conformance/laas/laas.rego:10-14`).
   The in-repo OPA packages are `kellerai.laas.actions` (the LAAS agent-action policy in `conformance/laas/`) and two verdict policies in `conformance/`: `kellerai.oss.trust_dial` (the Dependabot trust-dial verdict policy) and `kellerai.oss.blast_radius` (the blast-radius pulse verdict policy); this repository has no `kellerai.oss.conformance` package, and the repo-structure check is run by the external reusable conformance workflow that `ci.yml` calls.
-  Sources: `.github/workflows/ci.yml:37` (the external workflow call) and `.github/workflows/conformance.yml:4-5`.
+  Sources: `.github/workflows/ci.yml:39` (the external workflow call) and `.github/workflows/conformance.yml:4-5`.
 - **Trust dial** — the "trust-dial Dependabot auto-merge verdict policy" (`conformance/trust_dial.rego:2`), package `kellerai.oss.trust_dial` (`conformance/trust_dial.rego:21`).
   Its tiers are `Observed`, `Assisted`, `Supervised`, and `Trusted` (`conformance/trust_dial_data.json:3`).
 - **Blast-radius pulse** — the "blast-radius pulse verdict policy" (`conformance/blast_radius.rego:2`), package `kellerai.oss.blast_radius` (`conformance/blast_radius.rego:15`).
@@ -131,7 +131,7 @@ Obligation wording is from `standard/LAAS.md:70-81`; IDs, severities, and CT flo
 ## Interpretability and internal-state terms
 
 Advisory, non-normative terms from the J-space annex, [`../laas/j-space-internal-state-annex.md`](../laas/j-space-internal-state-annex.md).
-"The paper" below is Gurnee et al. (Anthropic), "Verbalizable Representations Form a Global Workspace in Language Models," Transformer Circuits, 2026 (`docs/laas/j-space-internal-state-annex.md:198`).
+"The paper" below is Anthropic, "Verbalizable Representations Form a Global Workspace in Language Models," Transformer Circuits, 2026 (`docs/laas/j-space-internal-state-annex.md:198`).
 The annex, like the paper, addresses access consciousness only (`docs/laas/j-space-internal-state-annex.md:7-8`).
 
 - **Global workspace** — the paper's account of a workspace shared across the model's residual stream through which verbalizable representations are broadcast for report, reasoning, and behavioral modulation, addressing access consciousness only.

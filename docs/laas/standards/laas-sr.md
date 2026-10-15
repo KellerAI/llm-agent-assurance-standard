@@ -1,4 +1,4 @@
-# Action-Level Assurance for Autonomous AI Agents (LAAS): Supervisory Expectations for Governing Agent Actions in Regulated Institutions
+# Action-Level Assurance for Autonomous AI Agents (LAAS): Model Supervisory Expectations Proposed by KellerAI for Governing Agent Actions in Regulated Institutions
 
 *SR-letter-format rendering of the LLM-Agent Assurance Standard (LAAS), published by KellerAI.*
 
@@ -176,7 +176,7 @@ in-scope agents, examiners should evaluate the following evidence:
 - **Cumulative and untrusted-input controls.** Evidence that windowed aggregation re-tiers
   structured action sequences and that untrusted-input-driven actions are elevated or blocked.
 
-Examiners should treat the absence of an out-of-process gate, the use of agent self-classification
+KellerAI suggests that examiners treat the absence of an out-of-process gate, the use of agent self-classification
 to set the operative tier, or the inability to produce trace evidence for committed high-tier
 actions as material weaknesses in the institution's model-risk and operational-risk controls.
 

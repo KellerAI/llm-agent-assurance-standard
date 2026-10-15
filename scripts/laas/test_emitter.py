@@ -4,7 +4,9 @@
 Run: python3 -m unittest discover scripts/laas
 
 Each test runs the real CLI in a subprocess, so the exit code and stderr are
-what a caller of `python3 emitter.py` observes.
+what a caller of `python3 emitter.py` observes. The exception is
+test_stdin_closed_is_input_error, which calls _read_spec directly because a
+closed stdin cannot be passed to a subprocess portably.
 - positive: the transfer fixture plus the real data.json still emits a record.
 - negative: an unreadable, malformed, non-UTF-8, too-deep, or wrong-shape
   effect-surface spec (file or stdin) exits 2 with a one-line message naming
@@ -20,6 +22,7 @@ what a caller of `python3 emitter.py` observes.
 """
 
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -27,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _EMITTER = os.path.join(_HERE, "emitter.py")
@@ -403,6 +407,26 @@ class TestEmitterCli(unittest.TestCase):
         proc = _run_stdin(b"\xff\xfe", "-b", _DATA_JSON)
         self._assert_input_error(proc, "<stdin>")
         self.assertIn("cannot read spec", proc.stderr)
+
+    def test_stdin_closed_is_input_error(self):
+        # Python sets sys.stdin to None when fd 0 is closed at startup; a
+        # stdin closed later raises ValueError on read. Both fail closed.
+        sys.path.insert(0, _HERE)
+        try:
+            import emitter
+        finally:
+            sys.path.remove(_HERE)
+        closed = io.TextIOWrapper(io.BytesIO(b"{}"))
+        closed.close()
+        cases = (
+            ("None", None, "cannot read spec <stdin>: stdin is closed"),
+            ("closed", closed, "cannot read spec <stdin>: I/O operation on closed file."),
+        )
+        for label, stdin, message in cases:
+            with self.subTest(stdin=label), mock.patch.object(sys, "stdin", stdin):
+                with self.assertRaises(emitter.EmitterInputError) as cm:
+                    emitter._read_spec(None)
+                self.assertEqual(str(cm.exception), message)
 
     def test_spec_too_deep_exits_2(self):
         spec = self._write("deep.effect-surface.json", "[" * 200000 + "]" * 200000)

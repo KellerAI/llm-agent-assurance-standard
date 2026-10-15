@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use or reference this artifact, please cite it as below."
 title: "llm-agent-assurance-standard"
-type: dataset
+type: software
 authors:
   - family-names: Bowe
     given-names: "Jonathan A."

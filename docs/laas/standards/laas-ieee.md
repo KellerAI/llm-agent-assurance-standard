@@ -11,7 +11,7 @@ Formatted after the drafting conventions of the IEEE. Not issued, approved, or e
 
 ---
 
-- **Prepared by:** KellerAI Open-Source Working Group
+- **Prepared by:** KellerAI
 - **Machine source of truth:** `conformance/laas/data.json` (machine-readable bundle `laas-fin-2.0.0`)
 - **Enforcing policy:** `conformance/laas/laas.rego` (OPA package `kellerai.laas.actions`)
 - **Rationale and design record:** `docs/laas/proposal-v1.1.md`

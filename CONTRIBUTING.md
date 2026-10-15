@@ -23,7 +23,7 @@ Agents should start at [`AGENTS.md`](AGENTS.md) — it and [`docs/agents/`](docs
   Edge cases are documented in [`docs/agents/conventions.md`](docs/agents/conventions.md).
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org):
   `<type>(<scope>): <subject>`, imperative mood, subject ideally ≤ 50 characters.
-  `commitlint` checks every pull request commit against the Conventional Commits format as a hard CI gate (`commitlint.config.js:2`, `:7`; `.github/workflows/commitlint.yml:18`).
+  `commitlint` checks every pull request commit against the Conventional Commits format as a hard CI gate (`commitlint.config.js:2`, `:7`; `.github/workflows/commitlint.yml:21`).
   The ≤ 50-character subject is a convention, not a build-breaking rule (`commitlint.config.js:3-5`), and subject case is not checked (`commitlint.config.js:9`).
 
 ## Validation
@@ -42,10 +42,10 @@ python3 -m unittest discover scripts/laas
 
 Every command must exit 0.
 
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus `opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job `OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`). It is not a required status check until it is added to the branch rulesets. The Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
-
-Sources: `.github/workflows/ci.yml:33-34` (sanitization gate), `.github/workflows/ci.yml:37` (external reusable conformance workflow), `.github/workflows/trust-dial-gate.yml:113` and `scripts/pulse.sh:242` (`opa eval`), `.github/workflows/blast-radius-pulse.yml:60` (runs `scripts/pulse.sh`), `.github/workflows/ci.yml` job `opa-test` (`opa check`, `opa test`).
-CI also runs a JSON well-formedness check (`.github/workflows/ci.yml:18`), Markdown lint (`.github/workflows/ci.yml:30-31`), and a link check (`.github/workflows/ci.yml:47-48`).
+CI runs every one of these commands on each pull request and on pushes to `dev` and `main`,
+plus a JSON well-formedness check, Markdown lint, and a link check. The OPA and Python test
+jobs are not yet required status checks. Detail and line-level sources:
+[`docs/agents/conventions.md`](docs/agents/conventions.md) ("Local gates").
 
 `lefthook install` sets up a pre-commit hook that runs only the sanitization gate (the `sanitization` command in `lefthook.yml`); run the other commands by hand.
 

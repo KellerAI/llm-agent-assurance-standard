@@ -36,7 +36,7 @@ jobs:
         run: bash scripts/check-sanitization.sh
 
   conformance:
-    uses: KellerAI/kellerai-oss-template/.github/workflows/conformance.yml@8c0f533df8d19f1ebbb560b31021436c05ff537d
+    uses: jonathan-kellerai/kellerai-oss-template/.github/workflows/conformance.yml@8c0f533df8d19f1ebbb560b31021436c05ff537d
     with:
       artifact_type: "rego-policy"
 
@@ -51,8 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      LAAS_MIN_TESTS: "44"   # conformance/laas/laas_test.rego
-      ALL_MIN_TESTS: "115"   # conformance/ (laas + trust_dial + blast_radius)
+      LAAS_MIN_TESTS: "123"  # conformance/laas/laas_test.rego
+      ALL_MIN_TESTS: "194"   # conformance/ (laas + trust_dial + blast_radius)
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -98,6 +98,61 @@ jobs:
             echo "::error::conformance/ ran ${total} tests, below the floor of ${ALL_MIN_TESTS}"
             exit 1
           fi
+
+  # The reference tooling's gates: the Python unit tests for scripts/laas/
+  # and the two end-to-end proof scripts, which emit or convert a decision
+  # record and evaluate it with `opa eval`. PY_MIN_TESTS works like the OPA
+  # floors above. The scripts use only the standard library.
+  python-gates:
+    name: Python tests and proof scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PY_MIN_TESTS: "81"     # scripts/laas/test_*.py
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install OPA
+        uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
+        with:
+          version: "1.14.1"
+
+      # The unit tests are run on 3.13: the recursion-depth tests in
+      # scripts/laas/test_emitter.py do not reach their limit on 3.11 or 3.12.
+      - name: Install Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+
+      - name: Python unit tests (scripts/laas/)
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m unittest discover scripts/laas 2>&1 | tee unittest.log
+          ran="$(sed -n 's/^Ran \([0-9]*\) tests\{0,1\} in .*/\1/p' unittest.log)"
+          echo "scripts/laas: ran ${ran:-0} tests (floor ${PY_MIN_TESTS})"
+          if [ "${ran:-0}" -lt "$PY_MIN_TESTS" ]; then
+            echo "::error::scripts/laas ran ${ran:-0} tests, below the floor of ${PY_MIN_TESTS}"
+            exit 1
+          fi
+          if grep -q 'skipped=' unittest.log; then
+            echo "::error::scripts/laas skipped tests; every test must run in CI"
+            exit 1
+          fi
+
+      # check.sh prints the verdict but exits 0 either way, so assert it here.
+      - name: Proof script (emitter to opa eval)
+        run: |
+          set -euo pipefail
+          bash scripts/laas/check.sh | tee check.log
+          if [ "$(tail -n 1 check.log)" != "true" ]; then
+            echo "::error::check.sh did not end with compliant true"
+            exit 1
+          fi
+
+      - name: Proof script (OSI adapter to opa eval)
+        run: bash scripts/laas/osi_check.sh
 
   links:
     runs-on: ubuntu-latest

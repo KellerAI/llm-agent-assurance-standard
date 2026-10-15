@@ -3,6 +3,7 @@
 LLM-Agent Assurance Standard (LAAS) — normative spec, OPA enforcement policy, and reference
 tooling for action-level assurance of autonomous LLM agents.
 
+[![CI](https://github.com/KellerAI/llm-agent-assurance-standard/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/KellerAI/llm-agent-assurance-standard/actions/workflows/ci.yml)
 [![Agentic gates](https://github.com/KellerAI/llm-agent-assurance-standard/actions/workflows/conformance.yml/badge.svg)](https://github.com/KellerAI/llm-agent-assurance-standard/actions/workflows/conformance.yml)
 
 - **License:** Apache-2.0
@@ -22,6 +23,39 @@ apparatus: a conforming system must not let the constrained party tier, grade, o
 Conformance asserts that the right checks ran, by the right party, with evidence.
 It is a **standard of care**, not a correctness guarantee.
 
+## Try it
+
+You need `opa` (CI pins 1.14.1) and Python 3.13; on 3.11 and 3.12 the recursion-depth tests in
+`scripts/laas/` fail. From the repository root:
+
+```sh
+opa test conformance/ -v                    # 194 policy tests
+python3 -m unittest discover scripts/laas   # 81 reference-tooling tests
+bash scripts/laas/check.sh                  # emit a decision record, then evaluate it
+```
+
+`check.sh` emits a decision record from a sample effect surface, evaluates it against the
+policy with `opa eval`, and ends by printing the `compliant` verdict: `true`.
+
+## Status
+
+`v0.1.0` is the only tagged release; unreleased changes are listed in [`CHANGELOG.md`](CHANGELOG.md).
+Three version labels are in use, and each tracks a different thing:
+
+- **Repository release:** `v0.1.0` (git tag; [`CITATION.cff`](CITATION.cff)).
+- **Standard text:** Draft v1.1 (`standard/LAAS.md:3`).
+- **Policy bundle:** `laas-fin-2.0.0` (`conformance/laas/data.json:4`), versioned with the
+  obligation data the policy reads.
+
+What is and is not measured:
+
+- The policy suites, the reference-tooling tests, and both proof scripts run in CI on every
+  pull request (see [What CI runs](#what-ci-runs)).
+- The escape-rate backtest harness (`scripts/laas/backtest.py`) has run only on its bundled
+  synthetic fixture: 1,240 samples built to show a pass, a fail, and an indeterminate result
+  (`docs/laas/backtest-demo.md`). This repository publishes no escape rate measured on real
+  agent traces. Dataset provenance and labeling are an open question (`docs/laas/backtest.md:181`).
+
 ## What this repository contains
 
 - [`standard/LAAS.md`](standard/LAAS.md) — normative prose standard, Draft v1.1.
@@ -29,7 +63,7 @@ It is a **standard of care**, not a correctness guarantee.
   This is the canonical source; `conformance/laas/data.json` is derived from it.
 - [`conformance/laas/`](conformance/laas/) — OPA/Rego policy (`package kellerai.laas.actions`)
   that machine-checks gate-produced decision records against the standard.
-  Includes the obligation bundle, a 96-case test suite, and a bundled CT4-blocked example.
+  Includes the obligation bundle, a 123-case test suite, and a bundled CT4-blocked example.
 - [`docs/laas/standards/`](docs/laas/standards/) — four KellerAI renderings of LAAS in IEEE-, ISO-,
   NIST-, and SR-letter formats (the last after SR 11-7 / SR 26-2), none issued by those bodies.
   A PDF build pipeline with KellerAI covers and per-format CSS themes lives under
@@ -65,15 +99,15 @@ It is a **standard of care**, not a correctness guarantee.
 | Path | What it contains |
 |------|-----------------|
 | [`standard/LAAS.md`](standard/LAAS.md) | Normative standard — tiers, obligations, governing invariant |
-| [`conformance/laas/`](conformance/laas/) | OPA policy + data bundle + 96-case test suite + CT4 example |
-| [`docs/laas/standards/`](docs/laas/standards/) | IEEE, NIST, ISO, SR renderings + PDF pipeline |
+| [`conformance/laas/`](conformance/laas/) | OPA policy + data bundle + 123-case test suite + CT4 example |
+| [`docs/laas/standards/`](docs/laas/standards/) | KellerAI renderings in IEEE-, ISO-, NIST-, and SR-letter formats + PDF pipeline |
 | [`scripts/laas/`](scripts/laas/) | Emitter, backtest harness, OSI adapter, proof scripts (`check.sh`, `osi_check.sh`) |
 | [`docs/laas/`](docs/laas/) | Design docs: v1.1 proposal, steelman, backtest spec and demo, emitter, OSI adapter, J-space annex |
 | [`docs/laas/profiles/`](docs/laas/profiles/) | Controlled-language (STE) profiles: core rule base + 9 industry profiles |
 | [`conformance/`](conformance/) | Verdict policies: blast-radius pulse, trust-dial (+ test suites) |
 | [`docs/agents/`](docs/agents/) | Tier-2 agent guides: conventions, enforcement, glossary, citation |
 | [`docs/adr/`](docs/adr/) | Architecture decision records |
-| [`docs/articles/`](docs/articles/) | 25-article LAAS bibliography |
+| [`docs/articles/`](docs/articles/) | Index of 25 KellerAI articles on LAAS (kellerai.blog) |
 | [`.github/`](.github/) | Workflows, issue and PR templates, CODEOWNERS, Dependabot config |
 
 ## Verify the policy
@@ -83,7 +117,7 @@ Run the LAAS policy against the bundled example decision record:
 ```bash
 cd conformance/laas
 
-# Syntax check + test suite (expect: 101/101 PASS)
+# Syntax check + test suite (expect: 123/123 PASS)
 opa check laas.rego laas_test.rego
 opa test . -v
 
@@ -97,26 +131,14 @@ opa eval -d laas.rego -d data.json \
 
 ## What CI runs
 
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`,
-in `ci.yml`), invoke OPA as `opa eval` (in the trust-dial gate workflow, and in the
-blast-radius pulse workflow via `scripts/pulse.sh`), and run `opa check conformance/` plus
-`opa test conformance/laas/` and `opa test conformance/` in the `ci.yml` job
-`OPA test (conformance/)` (added by PR #23). That job fails on any failing, erroring, or skipped
-test and on a test count below its floors (44 for `conformance/laas/`, 115 for `conformance/`).
-It is not a required status check until it is added to the branch rulesets. The Python unit
-tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow
-in this repository's `.github/workflows/` runs, and what the external reusable conformance
-workflow called from `ci.yml` runs cannot be inspected from this repository.
+CI runs every gate below on each pull request and on pushes to `dev` and `main`, plus a JSON
+well-formedness check, Markdown lint, and a link check. The blast-radius workflow also evaluates
+its verdict policy with `opa eval` on pull requests, and the trust-dial workflow does so on
+Dependabot and maintainer pull requests. The OPA and
+Python test jobs are not yet required status checks. Line-level detail and sources:
+[`docs/agents/conventions.md`](docs/agents/conventions.md) ("Local gates").
 
-Sources: `.github/workflows/ci.yml:33-34` (sanitization gate), `.github/workflows/ci.yml:37`
-(external conformance workflow), `.github/workflows/trust-dial-gate.yml:113` (`opa eval`),
-`.github/workflows/blast-radius-pulse.yml:60` and `scripts/pulse.sh:242` (`opa eval`),
-`.github/workflows/ci.yml` job `opa-test` (`opa check`, `opa test`).
-Both OPA workflows trigger on `pull_request` only (`.github/workflows/trust-dial-gate.yml:21`,
-`.github/workflows/blast-radius-pulse.yml:19`); the trust-dial job runs only for Dependabot or
-maintainer pull requests (`.github/workflows/trust-dial-gate.yml:31`).
-
-Run the local gates from the repository root before opening a pull request:
+Run the same gates from the repository root before opening a pull request:
 
 ```sh
 opa check conformance/laas/laas.rego conformance/laas/laas_test.rego
@@ -128,12 +150,8 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 101/101` for `conformance/laas/`, `PASS: 172/172` for all of `conformance/`, and
-exit 0 from every other command.
-
-## Status
-
-`v0.1.0` — initial public release. Standard at Draft v1.1.
+Expected: `PASS: 123/123` for `conformance/laas/`, `PASS: 194/194` for all of `conformance/`,
+`Ran 81 tests` and `OK` from the unit tests, and exit 0 from every other command.
 
 ## License
 

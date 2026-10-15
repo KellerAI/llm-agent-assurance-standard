@@ -130,11 +130,29 @@ bash scripts/laas/osi_check.sh
 python3 -m unittest discover scripts/laas
 ```
 
-Expected: `PASS: 101/101` for `conformance/laas/` and `PASS: 172/172` for all of `conformance/`.
+Expected: `PASS: 123/123` for `conformance/laas/`, `PASS: 194/194` for all of `conformance/`,
+`OK` from the sanitization script, `true` as the last line of `check.sh` (the `compliant`
+verdict), `PASS` from `osi_check.sh`, and `Ran 81 tests` then `OK` from the unit tests.
 
-In CI, this repository's workflows run the sanitization gate (`bash scripts/check-sanitization.sh`, in `ci.yml`) and invoke OPA only as `opa eval` (in the trust-dial gate workflow, and in the blast-radius pulse workflow via `scripts/pulse.sh`); `opa check`, `opa test`, the Python unit tests, `scripts/laas/check.sh`, and `scripts/laas/osi_check.sh` are local gates that no workflow in this repository's `.github/workflows/` runs, and what the external reusable conformance workflow called from `ci.yml` runs cannot be inspected from this repository.
+CI runs every one of these gates on each pull request and on pushes to `dev` and `main`
+(`.github/workflows/ci.yml:3-8`):
 
-Sources: `.github/workflows/ci.yml:33-34` (sanitization gate), `.github/workflows/ci.yml:37` (external reusable conformance workflow), `.github/workflows/trust-dial-gate.yml:113` and `scripts/pulse.sh:242` (`opa eval`), `.github/workflows/blast-radius-pulse.yml:60` (runs `scripts/pulse.sh`).
+- `validate` runs the sanitization gate, a JSON well-formedness check, and Markdown lint
+  (`.github/workflows/ci.yml:14-36`).
+- `OPA test (conformance/)` runs `opa check conformance/` and both `opa test` suites, and fails
+  below a test-count floor of 123 for `conformance/laas/` and 194 for `conformance/`
+  (`.github/workflows/ci.yml:49-100`).
+- `Python tests and proof scripts` runs the unit tests with a floor of 81 on Python 3.13, failing on any skipped test, `check.sh` (the step
+  fails unless its last line is `true`), and `osi_check.sh` (`.github/workflows/ci.yml:106-155`).
+- `links` runs a link check (`.github/workflows/ci.yml:157-167`).
+
+The blast-radius pulse workflow also runs `opa eval` on pull requests
+(`.github/workflows/blast-radius-pulse.yml:60`, which runs `scripts/pulse.sh:239`), and the
+trust-dial gate does so on Dependabot and maintainer pull requests
+(`.github/workflows/trust-dial-gate.yml:31`, `:121`). The `OPA test (conformance/)` and
+`Python tests and proof scripts` jobs are not required status checks until a maintainer adds
+them to the branch rulesets. What the external reusable conformance workflow called at
+`.github/workflows/ci.yml:39` runs cannot be inspected from this repository.
 
 ## Citations
 
