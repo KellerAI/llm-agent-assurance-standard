@@ -15,7 +15,7 @@ Output contract is fixed by laas.rego + examples/action.ct4-blocked.json.
 Every field the policy reads is sourced here from the effect surface or from
 gate-controlled configuration. A field the emitter cannot yet source from a
 real harness is emitted as a conservative (fail-closed) default and called out
-as a TODO in DESIGN.md -- never fabricated to make a record pass.
+as a TODO in docs/laas/emitter.md -- never fabricated to make a record pass.
 
 Stdlib only (json, argparse, hashlib, datetime, sys). No third-party deps.
 """
@@ -554,12 +554,12 @@ def _read_spec(path: Optional[str]) -> Any:
     read error. A closed stdin (sys.stdin is None) is an unreadable spec.
     """
     where = f"spec {path or '<stdin>'}"
+    if not path and sys.stdin is None:
+        raise EmitterInputError(f"cannot read {where}: stdin is closed")
     try:
         if path:
             with open(path, encoding="utf-8") as fh:
                 raw = fh.read()
-        elif sys.stdin is None:
-            raise EmitterInputError(f"cannot read {where}: stdin is closed")
         else:
             buffer = getattr(sys.stdin, "buffer", None)
             if buffer is None:  # stdin already replaced by a text stream
@@ -577,6 +577,8 @@ def _read_spec(path: Optional[str]) -> Any:
     except OSError as e:
         raise EmitterInputError(f"cannot read {where}: {e.strerror}") from e
     except UnicodeDecodeError as e:
+        raise EmitterInputError(f"cannot read {where}: {e}") from e
+    except ValueError as e:  # e.g. "I/O operation on closed file"
         raise EmitterInputError(f"cannot read {where}: {e}") from e
     try:
         return json.loads(raw)
