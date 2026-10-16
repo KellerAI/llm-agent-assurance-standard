@@ -294,7 +294,7 @@ jobs:
             }' >> .audit/audit/decision-trace.jsonl
 
       - name: Upload outcome trace artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: trust-dial-outcome-${{ github.run_id }}
           include-hidden-files: true   # .audit/ is the audit-trail worktree
