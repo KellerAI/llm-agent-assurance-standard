@@ -26,7 +26,9 @@ Spec grounding (LAAS_proposal_v1.1.md):
     `residual_error_bound` is the upper CI bound (what the policy consumes).
   - laas.rego: `residual_tolerance` is looked up by string CT key
     (sprintf("%d", [effective_ct])) against data.laas.escape_rate_tolerance_by_ct,
-    and LAAS-OBL-RES-001 fires when input.residual_error_bound > residual_tolerance.
+    and LAAS-OBL-RES-001 fires when the valid residual_error_bound (`_valid_bound`,
+    laas.rego:345) > residual_tolerance. At a zero tolerance (CT4) that comparison
+    is skipped for a Bucket-A or human-gated action (laas.rego:318-346).
     This harness emits exactly that `residual_error_bound` field plus an evidence
     artifact whose id is referenceable from a decision trace's `evidence_refs`.
 
@@ -60,13 +62,15 @@ never PASS. For t == 0 no finite n can demonstrate it by sampling alone; see bel
 
 tolerance == 0 (e.g. CT4)
 -------------------------
-data.json sets CT4 tolerance to exactly 0. A binomial *upper bound* over any finite
-sample is strictly > 0, so backtesting can never PASS a 0 tolerance on its own. This
+data.json sets CT4 tolerance to exactly 0. measure() routes tolerance == 0 to
+INDETERMINATE before the bound is ever compared, so backtesting never PASSes it. This
 mirrors the spec: CT4 is the deterministic/human-gated tier -- Bucket-B sampling does
-not license a CT4 commit. The harness returns verdict INDETERMINATE with
-disposition "requires_deterministic_or_human_gate" and sets residual_error_bound to
-the achieved upper bound (so the rego LAAS-OBL-RES-001 check still fires if anyone
-tries to treat it as a pass: any bound > 0 > tolerance 0).
+not license a CT4 commit. The verdict is INDETERMINATE with disposition
+"requires_deterministic_or_human_gate"; residual_error_bound, the achieved bound to 6
+places, is stored as 0.0 if tiny; below confidence 0.5 Wilson can store -0.0. The rego
+LAAS-OBL-RES-001 check fires on a stored bound > 0 only for a trace neither Bucket A nor
+human-gated. For those two the deterministic or human gate is the control
+(standard/LAAS.md:108-114), and the bound is evidence, not a pass condition.
 """
 
 from __future__ import annotations
@@ -78,8 +82,9 @@ import json
 import math
 import sys
 from dataclasses import dataclass, field, asdict
+from fractions import Fraction
 from pathlib import Path
-from typing import Optional
+from typing import NoReturn, Optional
 
 # Field name the conformance policy consumes (laas.rego: input.residual_error_bound).
 RESIDUAL_FIELD = "residual_error_bound"
@@ -241,11 +246,26 @@ def min_samples_for_tolerance(tolerance: float, confidence: float) -> Optional[i
     Smallest n at which a zero-escape backtest yields an exact upper bound <= tolerance.
     Returns None when tolerance == 0 (no finite n suffices by sampling alone).
     Rule-of-three family: n_min = ceil( ln(alpha) / ln(1 - t) ).
+    Returns 1 when tolerance == 1, where the formula would take ln(0): every upper
+    bound is <= 1 (the zero-escape exact bound is 1 - alpha**(1/n)), so one sample
+    demonstrates it. This is the formula's limit, as n_min(t) == 1 for 1-alpha <= t < 1.
+
+    ln(1 - t) is computed as log1p(-t): for t <= ~5e-17, 1.0 - t rounds to 1.0 and
+    log(1.0 - t) is 0. For t below ~1e-308 the float quotient overflows to inf, so
+    it is redone exactly on the two floats' rational values. Either way n_min is a
+    finite, very large int: any t in (0, 1] is demonstrable in principle, and a
+    backtest smaller than n_min is INDETERMINATE, not an input error.
     """
     if tolerance <= 0.0:
         return None
+    if tolerance >= 1.0:
+        return 1
     alpha = 1.0 - confidence
-    return math.ceil(math.log(alpha) / math.log(1.0 - tolerance))
+    ln_alpha, ln_one_minus_t = math.log(alpha), math.log1p(-tolerance)
+    quotient = ln_alpha / ln_one_minus_t
+    if math.isfinite(quotient):
+        return math.ceil(quotient)
+    return math.ceil(Fraction(ln_alpha) / Fraction(ln_one_minus_t))
 
 
 # ---------------------------------------------------------------------------
@@ -257,16 +277,85 @@ class ToleranceLookupError(Exception):
     pass
 
 
+class BacktestInputError(Exception):
+    """An input file is unreadable, not valid JSON, lacks a required key, or holds
+    a tolerance that is not a number in [0, 1] or a bundle_id that is not a string.
+
+    The CLI exits 3 on it (the harness's error code, never a verdict code), so
+    malformed input can never read as pass, fail, or indeterminate.
+    """
+
+
+def _read_json(path: Path) -> object:
+    """Parse `path` as JSON; raise BacktestInputError naming the file."""
+    try:
+        text = path.read_text()
+    except (OSError, UnicodeDecodeError) as e:
+        reason = getattr(e, "strerror", None) or e
+        raise BacktestInputError(f"{path}: cannot read file: {reason}") from e
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, RecursionError) as e:
+        # RecursionError: nesting too deep for the parser.
+        raise BacktestInputError(f"{path}: invalid JSON: {e}") from e
+    except ValueError as e:
+        # An integer literal over Python's int digit limit (sys.int_info).
+        if "integer string conversion" not in str(e):
+            raise
+        raise BacktestInputError(f"{path}: invalid JSON: {e}") from e
+
+
+def load_bundle(data_json_path: Path) -> dict:
+    """Read the conformance bundle data.json; it must be a JSON object."""
+    blob = _read_json(data_json_path)
+    if not isinstance(blob, dict):
+        raise BacktestInputError(
+            f"{data_json_path}: expected a JSON object, got {type(blob).__name__}"
+        )
+    return blob
+
+
 def load_tolerance_map(data_json_path: Path) -> dict[str, float]:
     """Read escape_rate_tolerance_by_ct from the real conformance bundle data.json."""
-    blob = json.loads(data_json_path.read_text())
+    blob = load_bundle(data_json_path)
     # data.json nests the bundle under "laas".
     cfg = blob.get("laas", blob)
     if TOLERANCE_MAP_KEY not in cfg:
         raise ToleranceLookupError(
             f"{data_json_path} has no '{TOLERANCE_MAP_KEY}' key under .laas"
         )
-    return cfg[TOLERANCE_MAP_KEY]
+    tol_map = cfg[TOLERANCE_MAP_KEY]
+    if not isinstance(tol_map, dict):
+        raise BacktestInputError(
+            f"{data_json_path}: {TOLERANCE_MAP_KEY} must be a JSON object, "
+            f"got {type(tol_map).__name__}"
+        )
+    # Validate every entry, not only the CT being measured: a bundle with any
+    # malformed tolerance is malformed input, never a verdict.
+    return {
+        key: _tolerance_value(f"{data_json_path}: {TOLERANCE_MAP_KEY}", key, value)
+        for key, value in tol_map.items()
+    }
+
+
+def _tolerance_value(where: str, key: str, value: object) -> float:
+    """Return `value` as a float if it is a finite JSON number t with 0 <= t <= 1.
+
+    bool is rejected (JSON true/false are not numbers), and so are numeric strings.
+    The range test runs before isfinite: comparing a huge int to 0 and 1 is exact,
+    while isfinite would convert it to float and raise OverflowError.
+    """
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not 0 <= value <= 1
+        or not math.isfinite(value)
+    ):
+        raise BacktestInputError(
+            f"{where}['{key}'] must be a finite number in [0, 1], "
+            f"got {json.dumps(value, default=repr)}"
+        )
+    return float(value)
 
 
 def tolerance_for_ct(tol_map: dict[str, float], ct: int) -> float:
@@ -284,7 +373,7 @@ def tolerance_for_ct(tol_map: dict[str, float], ct: int) -> float:
             f"tolerance carries no Bucket-B residual obligation -- the harness "
             f"refuses to emit a pass/fail and the caller must handle it explicitly."
         )
-    return float(tol_map[key])
+    return _tolerance_value(TOLERANCE_MAP_KEY, key, tol_map[key])
 
 
 # ---------------------------------------------------------------------------
@@ -311,18 +400,33 @@ class Sample:
 
 
 def load_dataset(path: Path) -> list[Sample]:
-    raw = json.loads(path.read_text())
-    rows = raw["samples"] if isinstance(raw, dict) else raw
-    out: list[Sample] = []
-    for r in rows:
-        out.append(
-            Sample(
-                action_id=str(r["action_id"]),
-                ct=int(r["ct"]),
-                verifier_verdict=str(r["verifier_verdict"]).lower(),
-                ground_truth=str(r["ground_truth"]).lower(),
-            )
+    raw = _read_json(path)
+    if isinstance(raw, dict):
+        if "samples" not in raw:
+            raise BacktestInputError(f"{path}: missing key 'samples'")
+        rows = raw["samples"]
+    else:
+        rows = raw
+    if not isinstance(rows, list):
+        raise BacktestInputError(
+            f"{path}: samples must be a JSON array, got {type(rows).__name__}"
         )
+    out: list[Sample] = []
+    for i, r in enumerate(rows):
+        try:
+            out.append(
+                Sample(
+                    action_id=str(r["action_id"]),
+                    ct=int(r["ct"]),
+                    verifier_verdict=str(r["verifier_verdict"]).lower(),
+                    ground_truth=str(r["ground_truth"]).lower(),
+                )
+            )
+        except KeyError as e:
+            raise BacktestInputError(f"{path}: sample {i}: missing key {e}") from e
+        except (TypeError, ValueError, OverflowError) as e:
+            # OverflowError: int() of an infinite ct (Infinity, 1e999).
+            raise BacktestInputError(f"{path}: sample {i}: malformed: {e}") from e
     return out
 
 
@@ -414,7 +518,7 @@ def measure(
         art.verdict = "indeterminate"
         art.disposition = "requires_deterministic_or_human_gate"
         art.notes.append(
-            "Tolerance is 0; a binomial upper bound over finite n is strictly > 0, "
+            "Tolerance is 0; this branch runs before any bound comparison, "
             "so Bucket-B sampling can never PASS. This CT must be gated by a "
             "deterministic/exact verifier or human (LAAS §5 / CT4)."
         )
@@ -454,10 +558,37 @@ def _sha256_file(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _split_usage_error(message: str) -> tuple[str, str]:
+    """Split an argparse error message into (argument, reason), on one line."""
+    message = " ".join(message.splitlines())
+    for prefix, reason in (
+        ("the following arguments are required: ", "required argument missing"),
+        ("unrecognized arguments: ", "unrecognized argument"),
+    ):
+        if message.startswith(prefix):
+            return message[len(prefix) :], reason
+    for prefix, sep in (("argument ", ": "), ("ambiguous option: ", " ")):
+        if message.startswith(prefix):
+            arg, found, reason = message[len(prefix) :].partition(sep)
+            if found:
+                return arg, reason
+    return "command line", message
+
+
+class _ArgumentParser(argparse.ArgumentParser):
+    """ArgumentParser whose usage errors exit 3 with one BACKTEST INPUT ERROR line.
+
+    argparse's own error() prints the usage block and exits 2, which is the
+    indeterminate verdict code. --help still prints help and exits 0.
+    """
+
+    def error(self, message: str) -> NoReturn:
+        arg, reason = _split_usage_error(message)
+        self.exit(3, f"BACKTEST INPUT ERROR: {arg}: {reason}\n")
+
+
 def main(argv: Optional[list[str]] = None) -> int:
-    ap = argparse.ArgumentParser(
-        description="LAAS Bucket-B escape-rate backtest harness"
-    )
+    ap = _ArgumentParser(description="LAAS Bucket-B escape-rate backtest harness")
     ap.add_argument("--dataset", required=True, type=Path, help="backtest dataset JSON")
     ap.add_argument(
         "--data-json",
@@ -473,13 +604,29 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
     args = ap.parse_args(argv)
 
-    blob = json.loads(args.data_json.read_text())
-    bundle_id = blob.get("laas", {}).get("bundle_id", "")
-    tol_map = load_tolerance_map(args.data_json)
-    samples = load_dataset(args.dataset)
-    ds_hash = _sha256_file(args.dataset)
-
     try:
+        c = args.confidence
+        # alpha = 1.0 - c, as in clopper_pearson_upper_bound and
+        # min_samples_for_tolerance; alpha == 1.0 would make n_min 0.
+        if not (math.isfinite(c) and 0.0 < c < 1.0 and 1.0 - c < 1.0):
+            raise BacktestInputError(
+                "--confidence: must be a finite number with 0 < c < 1 and "
+                f"1 - c < 1 in float (c > 2**-54), got {c}"
+            )
+        blob = load_bundle(args.data_json)
+        laas_cfg = blob.get("laas", {})
+        if not isinstance(laas_cfg, dict):
+            raise BacktestInputError(f"{args.data_json}: .laas must be a JSON object")
+        bundle_id = laas_cfg.get("bundle_id", "")
+        if not isinstance(bundle_id, str):
+            # Type name only: repr of a deeply nested list would recurse.
+            raise BacktestInputError(
+                f"{args.data_json}: bundle_id must be a JSON string, "
+                f"got {type(bundle_id).__name__}"
+            )
+        tol_map = load_tolerance_map(args.data_json)
+        samples = load_dataset(args.dataset)
+        ds_hash = _sha256_file(args.dataset)
         art = measure(
             samples,
             args.ct,
@@ -490,6 +637,10 @@ def main(argv: Optional[list[str]] = None) -> int:
             tolerance_source=str(args.data_json),
             dataset_sha256=ds_hash,
         )
+    except BacktestInputError as e:
+        # One line on stderr; exit 3 is the harness's error code, never a verdict.
+        print(f"BACKTEST INPUT ERROR: {e}", file=sys.stderr)
+        return 3
     except ToleranceLookupError as e:
         print(
             json.dumps({"error": "tolerance_lookup", "detail": str(e)}, indent=2),
@@ -499,7 +650,12 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     payload = json.dumps(asdict(art), indent=2)
     if args.out:
-        args.out.write_text(payload + "\n")
+        # Write before printing, so a failed write leaves stdout empty.
+        try:
+            args.out.write_text(payload + "\n")
+        except OSError as e:
+            print(f"BACKTEST INPUT ERROR: --out: {e.strerror or e}", file=sys.stderr)
+            return 3
     print(payload)
     # Exit code mirrors the gate semantics: 0 pass, 1 fail, 2 indeterminate.
     return {"pass": 0, "fail": 1, "indeterminate": 2}[art.verdict]

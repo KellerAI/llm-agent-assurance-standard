@@ -37,10 +37,10 @@ jobs:
             <p>Normative spec, OPA enforcement policy, and reference tooling for action-level assurance of autonomous LLM agents.</p>
             <h2>Standards renderings</h2>
             <ul>
-              <li><a href="laas/standards/laas-ieee.md">IEEE</a></li>
-              <li><a href="laas/standards/laas-iso.md">ISO</a></li>
-              <li><a href="laas/standards/laas-nist.md">NIST</a></li>
-              <li><a href="laas/standards/laas-sr.md">SR</a></li>
+              <li><a href="laas/standards/laas-ieee.md">IEEE-format</a></li>
+              <li><a href="laas/standards/laas-iso.md">ISO-format</a></li>
+              <li><a href="laas/standards/laas-nist.md">NIST-format</a></li>
+              <li><a href="laas/standards/laas-sr.md">SR-letter-format</a></li>
             </ul>
             <h2>Docs</h2>
             <ul>

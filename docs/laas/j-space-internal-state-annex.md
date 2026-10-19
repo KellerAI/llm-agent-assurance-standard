@@ -196,4 +196,4 @@ This annex explicitly does not address, and should not be read as addressing:
 ## Sources
 
 - Gurnee et al. (Anthropic), "Verbalizable Representations Form a Global Workspace in Language Models," Transformer Circuits, 2026 — <https://transformer-circuits.pub/2026/workspace/index.html>
-- Lynch et al., "Agentic Misalignment," arXiv:2510.05179, 2025 — <https://arxiv.org/abs/2510.05179> — the blackmail scenario referenced in the C7 discussion above is borrowed from this work.
+- Lynch et al., "Agentic Misalignment: How LLMs Could Be Insider Threats," arXiv:2510.05179, 2025 — <https://arxiv.org/abs/2510.05179> — the blackmail scenario referenced in the C7 discussion above is borrowed from this work.

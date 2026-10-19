@@ -1,17 +1,17 @@
-/* ISO/IEC-Directives-style emulation for LAAS: UNOFFICIAL draft rendering.
+/* ISO-format theme for the KellerAI LAAS rendering: unofficial draft.
    No ISO or IEC logos, seals, or trademarks are used. A4 page. */
 
 @page {
   size: A4;
   margin: 26mm 22mm 24mm 22mm;
   @top-right {
-    content: "ISO/IEC XXXXX:2026(E)";
+    content: "KellerAI LAAS 1.1 · ISO-format rendering · Draft";
     font-family: Arial, "Helvetica Neue", sans-serif;
     font-size: 8.5pt;
     color: #222;
   }
   @bottom-left {
-    content: "© ISO/IEC 2026 · All rights reserved · UNOFFICIAL DRAFT";
+    content: "Unofficial: not a publication of ISO and IEC.";
     font-size: 7.5pt;
     color: #555;
   }
@@ -100,7 +100,7 @@ h2 {
   page-break-before: always;
 }
 
-/* The first h2 is the ISO title subtitle; keep it on the populated title page
+/* Keep the first h2 on the populated title page
    with the h1 instead of orphaning a blank page after the cover. */
 h2:first-of-type {
   break-before: auto;
