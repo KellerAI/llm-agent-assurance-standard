@@ -10,7 +10,7 @@
 **Status:** Draft, not approved
 
 > **Disclaimer:** This document is not an ASD publication and is not endorsed by the
-> AeroSpace and Defence Industries Association of Europe.
+> Aerospace, Security and Defence Industries Association of Europe.
 > It adapts ASD-STE100 principles; it does not reproduce ASD rule text or the ASD
 > controlled dictionary. The dictionary in section 3 is original work.
 > This document is not regulatory guidance and does not state a legal obligation.

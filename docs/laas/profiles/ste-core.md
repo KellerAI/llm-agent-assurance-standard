@@ -8,7 +8,7 @@
 **Status:** Draft, not approved
 
 > **Disclaimer:** This document is not an ASD publication and is not endorsed by the
-> AeroSpace and Defence Industries Association of Europe.
+> Aerospace, Security and Defence Industries Association of Europe.
 > It adapts the *principles* of ASD-STE100 Simplified Technical English to LLM-agent
 > decision traces. It does not reproduce the ASD rule text and it does not reproduce the
 > ASD controlled dictionary. The domain dictionaries in the profiles that adopt this core
